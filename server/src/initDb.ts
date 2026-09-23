@@ -1,4 +1,4 @@
-﻿import { prisma } from './db';
+import { prisma } from './db';
 import { 
   PRODUCT_CATEGORIES, 
   CLIENT_PRODUCTS_MASTER, 
@@ -6,276 +6,34 @@ import {
   CLIENT_BOM_MASTER 
 } from './data/masterData';
 
-const DDL_STATEMENTS = [
-  CREATE TABLE IF NOT EXISTS public.Branch (
-    id TEXT NOT NULL,
-    code TEXT NOT NULL,
-    name TEXT NOT NULL,
-    badge TEXT NOT NULL,
-    location TEXT NOT NULL,
-    fullAddress TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'Operational (Live)',
-    tablesCount INTEGER NOT NULL DEFAULT 24,
-    posTerminals INTEGER NOT NULL DEFAULT 3,
-    accentColor TEXT NOT NULL DEFAULT '#0D3B2E',
-    badgeBg TEXT NOT NULL DEFAULT 'bg-[#0D3B2E]',
-    badgeText TEXT NOT NULL DEFAULT 'text-white',
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Branch_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Branch_code_key ON public.Branch(code);,
-
-  CREATE TABLE IF NOT EXISTS public.StoreSetting (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    branchId TEXT NOT NULL,
-    storeName TEXT NOT NULL DEFAULT 'Kanchivaram Café',
-    branchName TEXT NOT NULL,
-    gstin TEXT NOT NULL DEFAULT '33AAACK1234F1Z9',
-    fssaiNo TEXT NOT NULL DEFAULT '12421008000142',
-    contactPhone TEXT NOT NULL DEFAULT '+91 98765 43210',
-    contactEmail TEXT NOT NULL DEFAULT 'contact@kanchivaram.cafe',
-    cgstPercent DOUBLE PRECISION NOT NULL DEFAULT 2.5,
-    sgstPercent DOUBLE PRECISION NOT NULL DEFAULT 2.5,
-    autoPrintReceipt BOOLEAN NOT NULL DEFAULT true,
-    defaultPaymentMode TEXT NOT NULL DEFAULT 'CASH',
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT StoreSetting_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS StoreSetting_branchId_key ON public.StoreSetting(branchId);,
-
-  CREATE TABLE IF NOT EXISTS public.ProductCategory (
-    id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    icon TEXT NOT NULL DEFAULT '✨',
-    displayOrder INTEGER NOT NULL DEFAULT 0,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ProductCategory_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS ProductCategory_name_key ON public.ProductCategory(name);,
-  CREATE UNIQUE INDEX IF NOT EXISTS ProductCategory_slug_key ON public.ProductCategory(slug);,
-
-  CREATE TABLE IF NOT EXISTS public.Product (
-    id TEXT NOT NULL,
-    branchId TEXT,
-    categoryId TEXT NOT NULL,
-    categoryName TEXT NOT NULL,
-    name TEXT NOT NULL,
-    servingQty DOUBLE PRECISION NOT NULL,
-    uom TEXT NOT NULL,
-    dineInPrice DOUBLE PRECISION NOT NULL,
-    deliveryPrice DOUBLE PRECISION NOT NULL,
-    packingCharge DOUBLE PRECISION NOT NULL DEFAULT 5.0,
-    description TEXT,
-    image TEXT,
-    isAvailable BOOLEAN NOT NULL DEFAULT true,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Product_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.InventoryItem (
-    id TEXT NOT NULL,
-    branchId TEXT,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    unit TEXT NOT NULL,
-    openingStock DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    stockIn DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    stockOut DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    wasteSpoilage DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    minThreshold DOUBLE PRECISION NOT NULL DEFAULT 5.0,
-    pricePerUnit DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    department TEXT NOT NULL DEFAULT 'Kitchen',
-    lastMovement TIMESTAMP(3),
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT InventoryItem_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.Recipe (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    productId TEXT NOT NULL,
-    productName TEXT NOT NULL,
-    category TEXT NOT NULL,
-    servingQty DOUBLE PRECISION NOT NULL,
-    uom TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'COMPLETE',
-    finalProcess TEXT,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Recipe_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Recipe_productId_key ON public.Recipe(productId);,
-
-  CREATE TABLE IF NOT EXISTS public.RecipeItem (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    recipeId TEXT NOT NULL,
-    stepNumber INTEGER NOT NULL DEFAULT 1,
-    rawMaterialName TEXT NOT NULL,
-    inventoryItemId TEXT,
-    quantity DOUBLE PRECISION NOT NULL,
-    uom TEXT NOT NULL,
-    process TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT RecipeItem_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.Sale (
-    id TEXT NOT NULL,
-    branchId TEXT NOT NULL,
-    billNumber TEXT NOT NULL,
-    customerId TEXT,
-    customerName TEXT,
-    customerPhone TEXT,
-    channel TEXT NOT NULL DEFAULT 'POS',
-    subtotal DOUBLE PRECISION NOT NULL,
-    discount DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    tax DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    grandTotal DOUBLE PRECISION NOT NULL,
-    paymentMethod TEXT NOT NULL DEFAULT 'CASH',
-    receiptType TEXT NOT NULL DEFAULT 'PAPER',
-    status TEXT NOT NULL DEFAULT 'COMPLETED',
-    cashierName TEXT NOT NULL DEFAULT 'Shruthy',
-    orderNote TEXT,
-    isCancelled BOOLEAN NOT NULL DEFAULT false,
-    dateIso TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Sale_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Sale_billNumber_key ON public.Sale(billNumber);,
-
-  CREATE TABLE IF NOT EXISTS public.SaleItem (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    saleId TEXT NOT NULL,
-    productId TEXT,
-    name TEXT NOT NULL,
-    quantity DOUBLE PRECISION NOT NULL,
-    price DOUBLE PRECISION NOT NULL,
-    total DOUBLE PRECISION NOT NULL,
-    unit TEXT NOT NULL DEFAULT 'units',
-    categoryName TEXT,
-    CONSTRAINT SaleItem_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.StockLedger (
-    id TEXT NOT NULL,
-    branchId TEXT NOT NULL,
-    itemId TEXT NOT NULL,
-    itemName TEXT NOT NULL,
-    type TEXT NOT NULL,
-    qty DOUBLE PRECISION NOT NULL,
-    unit TEXT NOT NULL,
-    supplier TEXT DEFAULT '-',
-    ref TEXT NOT NULL,
-    source TEXT NOT NULL DEFAULT 'POS / Sales',
-    notes TEXT,
-    remainingAfter DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    purchaseId TEXT,
-    dateIso TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT StockLedger_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.Customer (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    branchId TEXT,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT,
-    notes TEXT,
-    loyaltyPoints INTEGER NOT NULL DEFAULT 0,
-    totalOrders INTEGER NOT NULL DEFAULT 0,
-    totalSpent DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    lastOrderDate TIMESTAMP(3),
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Customer_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Customer_phone_key ON public.Customer(phone);,
-
-  CREATE TABLE IF NOT EXISTS public.Purchase (
-    id TEXT NOT NULL,
-    branchId TEXT NOT NULL,
-    poNumber TEXT NOT NULL,
-    supplierName TEXT NOT NULL,
-    supplierPhone TEXT,
-    invoiceNumber TEXT,
-    subtotal DOUBLE PRECISION NOT NULL,
-    gstAmount DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    grandTotal DOUBLE PRECISION NOT NULL,
-    paymentStatus TEXT NOT NULL DEFAULT 'PAID',
-    paymentMethod TEXT NOT NULL DEFAULT 'BANK_TRANSFER',
-    status TEXT NOT NULL DEFAULT 'RECEIVED',
-    receivedBy TEXT NOT NULL DEFAULT 'Shruthy',
-    notes TEXT,
-    dateIso TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Purchase_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Purchase_poNumber_key ON public.Purchase(poNumber);,
-
-  CREATE TABLE IF NOT EXISTS public.PurchaseItem (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    purchaseId TEXT NOT NULL,
-    inventoryItemId TEXT NOT NULL,
-    itemName TEXT NOT NULL,
-    quantity DOUBLE PRECISION NOT NULL,
-    unit TEXT NOT NULL,
-    unitCost DOUBLE PRECISION NOT NULL,
-    totalCost DOUBLE PRECISION NOT NULL,
-    CONSTRAINT PurchaseItem_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.Expense (
-    id TEXT NOT NULL,
-    branchId TEXT NOT NULL,
-    voucherNo TEXT NOT NULL,
-    category TEXT NOT NULL,
-    title TEXT NOT NULL,
-    amount DOUBLE PRECISION NOT NULL,
-    paymentMethod TEXT NOT NULL DEFAULT 'CASH',
-    paidTo TEXT,
-    authorizedBy TEXT NOT NULL DEFAULT 'Shruthy',
-    notes TEXT,
-    dateIso TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Expense_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS Expense_voucherNo_key ON public.Expense(voucherNo);,
-
-  CREATE TABLE IF NOT EXISTS public.Staff (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    branchId TEXT NOT NULL,
-    name TEXT NOT NULL,
-    role TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    email TEXT,
-    salary DOUBLE PRECISION NOT NULL DEFAULT 0.0,
-    shift TEXT NOT NULL DEFAULT 'MORNING',
-    isActive BOOLEAN NOT NULL DEFAULT true,
-    joinDate TEXT NOT NULL,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT Staff_pkey PRIMARY KEY (id)
-  );,
-
-  CREATE TABLE IF NOT EXISTS public.User (
-    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    branchId TEXT,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    role TEXT NOT NULL DEFAULT 'Owner & General Manager',
-    passwordHash TEXT NOT NULL,
-    avatar TEXT NOT NULL DEFAULT 'SA',
-    isActive BOOLEAN NOT NULL DEFAULT true,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT User_pkey PRIMARY KEY (id)
-  );,
-  CREATE UNIQUE INDEX IF NOT EXISTS User_email_key ON public.User(email);,
-  CREATE UNIQUE INDEX IF NOT EXISTS User_phone_key ON public.User(phone);
+const DDL_STATEMENTS: string[] = [
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Branch\" (\n    \"id\" TEXT NOT NULL,\n    \"code\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"badge\" TEXT NOT NULL,\n    \"location\" TEXT NOT NULL,\n    \"fullAddress\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'Operational (Live)',\n    \"tablesCount\" INTEGER NOT NULL DEFAULT 24,\n    \"posTerminals\" INTEGER NOT NULL DEFAULT 3,\n    \"accentColor\" TEXT NOT NULL DEFAULT '#0D3B2E',\n    \"badgeBg\" TEXT NOT NULL DEFAULT 'bg-[#0D3B2E]',\n    \"badgeText\" TEXT NOT NULL DEFAULT 'text-white',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Branch_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Branch_code_key\" ON \"public\".\"Branch\"(\"code\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"StoreSetting\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"storeName\" TEXT NOT NULL DEFAULT 'Kanchivaram Café',\n    \"branchName\" TEXT NOT NULL,\n    \"gstin\" TEXT NOT NULL DEFAULT '33AAACK1234F1Z9',\n    \"fssaiNo\" TEXT NOT NULL DEFAULT '12421008000142',\n    \"contactPhone\" TEXT NOT NULL DEFAULT '+91 98765 43210',\n    \"contactEmail\" TEXT NOT NULL DEFAULT 'contact@kanchivaram.cafe',\n    \"cgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"sgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"autoPrintReceipt\" BOOLEAN NOT NULL DEFAULT true,\n    \"defaultPaymentMode\" TEXT NOT NULL DEFAULT 'CASH',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StoreSetting_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"StoreSetting_branchId_key\" ON \"public\".\"StoreSetting\"(\"branchId\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"ProductCategory\" (\n    \"id\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"slug\" TEXT NOT NULL,\n    \"icon\" TEXT NOT NULL DEFAULT '✨',\n    \"displayOrder\" INTEGER NOT NULL DEFAULT 0,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"ProductCategory_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_name_key\" ON \"public\".\"ProductCategory\"(\"name\");",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_slug_key\" ON \"public\".\"ProductCategory\"(\"slug\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Product\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"categoryId\" TEXT NOT NULL,\n    \"categoryName\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"servingQty\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"dineInPrice\" DOUBLE PRECISION NOT NULL,\n    \"deliveryPrice\" DOUBLE PRECISION NOT NULL,\n    \"packingCharge\" DOUBLE PRECISION NOT NULL DEFAULT 5.0,\n    \"description\" TEXT,\n    \"image\" TEXT,\n    \"isAvailable\" BOOLEAN NOT NULL DEFAULT true,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Product_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"InventoryItem\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"openingStock\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockIn\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockOut\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"wasteSpoilage\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"minThreshold\" DOUBLE PRECISION NOT NULL DEFAULT 5.0,\n    \"pricePerUnit\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"department\" TEXT NOT NULL DEFAULT 'Kitchen',\n    \"lastMovement\" TIMESTAMP(3),\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"InventoryItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Recipe\" (\n    \"id\" TEXT NOT NULL,\n    \"productId\" TEXT NOT NULL,\n    \"productName\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"servingQty\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETE',\n    \"finalProcess\" TEXT,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Recipe_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Recipe_productId_key\" ON \"public\".\"Recipe\"(\"productId\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"RecipeItem\" (\n    \"id\" TEXT NOT NULL,\n    \"recipeId\" TEXT NOT NULL,\n    \"stepNumber\" INTEGER NOT NULL DEFAULT 1,\n    \"rawMaterialName\" TEXT NOT NULL,\n    \"inventoryItemId\" TEXT,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"process\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"RecipeItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Sale\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"billNumber\" TEXT NOT NULL,\n    \"customerId\" TEXT,\n    \"customerName\" TEXT,\n    \"customerPhone\" TEXT,\n    \"channel\" TEXT NOT NULL DEFAULT 'POS',\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"discount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"tax\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"receiptType\" TEXT NOT NULL DEFAULT 'PAPER',\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETED',\n    \"cashierName\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"orderNote\" TEXT,\n    \"isCancelled\" BOOLEAN NOT NULL DEFAULT false,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Sale_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Sale_billNumber_key\" ON \"public\".\"Sale\"(\"billNumber\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"SaleItem\" (\n    \"id\" TEXT NOT NULL,\n    \"saleId\" TEXT NOT NULL,\n    \"productId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"price\" DOUBLE PRECISION NOT NULL,\n    \"total\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL DEFAULT 'units',\n    \"categoryName\" TEXT,\n    CONSTRAINT \"SaleItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"StockLedger\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"itemId\" TEXT NOT NULL,\n    \"itemName\" TEXT NOT NULL,\n    \"type\" TEXT NOT NULL,\n    \"qty\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"supplier\" TEXT DEFAULT '-',\n    \"ref\" TEXT NOT NULL,\n    \"source\" TEXT NOT NULL DEFAULT 'POS / Sales',\n    \"notes\" TEXT,\n    \"remainingAfter\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"purchaseId\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StockLedger_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Customer\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"phone\" TEXT NOT NULL,\n    \"email\" TEXT,\n    \"notes\" TEXT,\n    \"loyaltyPoints\" INTEGER NOT NULL DEFAULT 0,\n    \"totalOrders\" INTEGER NOT NULL DEFAULT 0,\n    \"totalSpent\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"lastOrderDate\" TIMESTAMP(3),\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Customer_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Customer_phone_key\" ON \"public\".\"Customer\"(\"phone\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Purchase\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"poNumber\" TEXT NOT NULL,\n    \"supplierName\" TEXT NOT NULL,\n    \"supplierPhone\" TEXT,\n    \"invoiceNumber\" TEXT,\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"gstAmount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentStatus\" TEXT NOT NULL DEFAULT 'PAID',\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'BANK_TRANSFER',\n    \"status\" TEXT NOT NULL DEFAULT 'RECEIVED',\n    \"receivedBy\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"notes\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Purchase_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Purchase_poNumber_key\" ON \"public\".\"Purchase\"(\"poNumber\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"PurchaseItem\" (\n    \"id\" TEXT NOT NULL,\n    \"purchaseId\" TEXT NOT NULL,\n    \"inventoryItemId\" TEXT NOT NULL,\n    \"itemName\" TEXT NOT NULL,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"unitCost\" DOUBLE PRECISION NOT NULL,\n    \"totalCost\" DOUBLE PRECISION NOT NULL,\n    CONSTRAINT \"PurchaseItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Expense\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"voucherNo\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"title\" TEXT NOT NULL,\n    \"amount\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"paidTo\" TEXT,\n    \"authorizedBy\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"notes\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Expense_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"Expense_voucherNo_key\" ON \"public\".\"Expense\"(\"voucherNo\");",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Staff\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"role\" TEXT NOT NULL,\n    \"phone\" TEXT NOT NULL,\n    \"email\" TEXT,\n    \"salary\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"shift\" TEXT NOT NULL DEFAULT 'MORNING',\n    \"isActive\" BOOLEAN NOT NULL DEFAULT true,\n    \"joinDate\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Staff_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"User\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"email\" TEXT NOT NULL,\n    \"phone\" TEXT NOT NULL,\n    \"role\" TEXT NOT NULL DEFAULT 'Owner & General Manager',\n    \"passwordHash\" TEXT NOT NULL,\n    \"avatar\" TEXT NOT NULL DEFAULT 'SA',\n    \"isActive\" BOOLEAN NOT NULL DEFAULT true,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"User_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"User_email_key\" ON \"public\".\"User\"(\"email\");",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"User_phone_key\" ON \"public\".\"User\"(\"phone\");"
 ];
 
 export async function ensureDatabaseInitialized() {
@@ -287,7 +45,7 @@ export async function ensureDatabaseInitialized() {
   console.log('🔄 [DB Init] Verifying PostgreSQL schema tables via raw SQL DDL...');
   try {
     for (const ddl of DDL_STATEMENTS) {
-      await prisma.(ddl);
+      await prisma.$executeRawUnsafe(ddl);
     }
     console.log('✅ [DB Init] All PostgreSQL tables and indexes verified successfully.');
   } catch (err: any) {
@@ -297,7 +55,7 @@ export async function ensureDatabaseInitialized() {
   // Check and seed master data if empty
   try {
     const productCount = await prisma.product.count();
-    console.log([DB Init] Current product count in PostgreSQL: );
+    console.log(`[DB Init] Current product count in PostgreSQL: ${productCount}`);
 
     if (productCount < 59) {
       console.log('🌱 [DB Init] Seeding Branches, Categories, Products, Inventory & BOM...');
@@ -355,6 +113,7 @@ export async function ensureDatabaseInitialized() {
             defaultPaymentMode: 'CASH'
           },
           create: {
+            id: `setting-${b.id}`,
             branchId: b.id,
             storeName: 'Kanchivaram Café',
             branchName: b.name,
@@ -461,6 +220,7 @@ export async function ensureDatabaseInitialized() {
             finalProcess: bom.finalProcess || ''
           },
           create: {
+            id: `recipe-${bom.productId}`,
             productId: bom.productId,
             productName: bom.productName,
             status: bom.status,
@@ -480,6 +240,7 @@ export async function ensureDatabaseInitialized() {
             const item = bom.items[step];
             await prisma.recipeItem.create({
               data: {
+                id: `ri-${recipeRecord.id}-${step + 1}`,
                 recipeId: recipeRecord.id,
                 stepNumber: step + 1,
                 rawMaterialName: item.rawMaterialName,
