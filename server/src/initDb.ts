@@ -7,7 +7,7 @@ import {
 } from './data/masterData';
 
 const DDL_STATEMENTS: string[] = [
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Branch\" (\n    \"id\" TEXT NOT NULL,\n    \"code\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"badge\" TEXT NOT NULL,\n    \"location\" TEXT NOT NULL,\n    \"fullAddress\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'Operational (Live)',\n    \"tablesCount\" INTEGER NOT NULL DEFAULT 24,\n    \"posTerminals\" INTEGER NOT NULL DEFAULT 3,\n    \"accentColor\" TEXT NOT NULL DEFAULT '#0D3B2E',\n    \"badgeBg\" TEXT NOT NULL DEFAULT 'bg-[#0D3B2E]',\n    \"badgeText\" TEXT NOT NULL DEFAULT 'text-white',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Branch_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Branch\" (\n    \"id\" TEXT NOT NULL,\n    \"code\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"badge\" TEXT NOT NULL,\n    \"location\" TEXT NOT NULL,\n    \"fullAddress\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'Operational (Live)',\n    \"tablesCount\" INTEGER NOT NULL DEFAULT 24,\n    \"posTerminals\" INTEGER NOT NULL DEFAULT 3,\n    \"accentColor\" TEXT NOT NULL DEFAULT '#0D3B2E',\n    \"badgeBg\" TEXT NOT NULL DEFAULT 'bg-[#0D3B2E]',\n    \"badgeText\" TEXT NOT NULL DEFAULT 'text-white',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Branch_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Branch_code_key\" ON \"public\".\"Branch\"(\"code\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"StoreSetting\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"storeName\" TEXT NOT NULL DEFAULT 'Kanchivaram Café',\n    \"branchName\" TEXT NOT NULL,\n    \"gstin\" TEXT NOT NULL DEFAULT '33AAACK1234F1Z9',\n    \"fssaiNo\" TEXT NOT NULL DEFAULT '12421008000142',\n    \"contactPhone\" TEXT NOT NULL DEFAULT '+91 98765 43210',\n    \"contactEmail\" TEXT NOT NULL DEFAULT 'contact@kanchivaram.cafe',\n    \"cgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"sgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"autoPrintReceipt\" BOOLEAN NOT NULL DEFAULT true,\n    \"defaultPaymentMode\" TEXT NOT NULL DEFAULT 'CASH',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StoreSetting_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"StoreSetting_branchId_key\" ON \"public\".\"StoreSetting\"(\"branchId\");",
@@ -15,9 +15,12 @@ const DDL_STATEMENTS: string[] = [
   "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_name_key\" ON \"public\".\"ProductCategory\"(\"name\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_slug_key\" ON \"public\".\"ProductCategory\"(\"slug\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Product\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"categoryId\" TEXT NOT NULL,\n    \"categoryName\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"servingQty\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"dineInPrice\" DOUBLE PRECISION NOT NULL,\n    \"deliveryPrice\" DOUBLE PRECISION NOT NULL,\n    \"packingCharge\" DOUBLE PRECISION NOT NULL DEFAULT 5.0,\n    \"description\" TEXT,\n    \"image\" TEXT,\n    \"isAvailable\" BOOLEAN NOT NULL DEFAULT true,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Product_pkey\" PRIMARY KEY (\"id\")\n  );",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"InventoryItem\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"openingStock\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockIn\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockOut\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"wasteSpoilage\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"minThreshold\" DOUBLE PRECISION NOT NULL DEFAULT 5.0,\n    \"pricePerUnit\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"department\" TEXT NOT NULL DEFAULT 'Kitchen',\n    \"lastMovement\" TIMESTAMP(3),\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"InventoryItem_pkey\" PRIMARY KEY (\"id\")\n  );",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Recipe\" (\n    \"id\" TEXT NOT NULL,\n    \"productId\" TEXT NOT NULL,\n    \"productName\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"servingQty\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETE',\n    \"finalProcess\" TEXT,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Recipe_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"InventoryItem\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"category\" TEXT,\n    \"unit\" TEXT NOT NULL DEFAULT 'units',\n    \"openingStock\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockIn\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"stockOut\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"minThreshold\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"costPerUnit\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"supplier\" TEXT,\n    \"lastMovement\" TIMESTAMP(3),\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"InventoryItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "ALTER TABLE \"public\".\"InventoryItem\" ADD COLUMN IF NOT EXISTS \"costPerUnit\" DOUBLE PRECISION NOT NULL DEFAULT 0.0;",
+  "ALTER TABLE \"public\".\"InventoryItem\" ADD COLUMN IF NOT EXISTS \"supplier\" TEXT;",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Recipe\" (\n    \"id\" TEXT NOT NULL,\n    \"productId\" TEXT NOT NULL,\n    \"productName\" TEXT NOT NULL,\n    \"servingQty\" DOUBLE PRECISION NOT NULL,\n    \"servingUom\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETE',\n    \"finalProcess\" TEXT,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Recipe_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Recipe_productId_key\" ON \"public\".\"Recipe\"(\"productId\");",
+  "ALTER TABLE \"public\".\"Recipe\" ADD COLUMN IF NOT EXISTS \"servingUom\" TEXT NOT NULL DEFAULT 'units';",
   "CREATE TABLE IF NOT EXISTS \"public\".\"RecipeItem\" (\n    \"id\" TEXT NOT NULL,\n    \"recipeId\" TEXT NOT NULL,\n    \"stepNumber\" INTEGER NOT NULL DEFAULT 1,\n    \"rawMaterialName\" TEXT NOT NULL,\n    \"inventoryItemId\" TEXT,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"process\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"RecipeItem_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Sale\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"billNumber\" TEXT NOT NULL,\n    \"customerId\" TEXT,\n    \"customerName\" TEXT,\n    \"customerPhone\" TEXT,\n    \"channel\" TEXT NOT NULL DEFAULT 'POS',\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"discount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"tax\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"receiptType\" TEXT NOT NULL DEFAULT 'PAPER',\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETED',\n    \"cashierName\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"orderNote\" TEXT,\n    \"isCancelled\" BOOLEAN NOT NULL DEFAULT false,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Sale_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Sale_billNumber_key\" ON \"public\".\"Sale\"(\"billNumber\");",
@@ -25,9 +28,8 @@ const DDL_STATEMENTS: string[] = [
   "CREATE TABLE IF NOT EXISTS \"public\".\"StockLedger\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"itemId\" TEXT NOT NULL,\n    \"itemName\" TEXT NOT NULL,\n    \"type\" TEXT NOT NULL,\n    \"qty\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"supplier\" TEXT DEFAULT '-',\n    \"ref\" TEXT NOT NULL,\n    \"source\" TEXT NOT NULL DEFAULT 'POS / Sales',\n    \"notes\" TEXT,\n    \"remainingAfter\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"purchaseId\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StockLedger_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Customer\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"phone\" TEXT NOT NULL,\n    \"email\" TEXT,\n    \"notes\" TEXT,\n    \"loyaltyPoints\" INTEGER NOT NULL DEFAULT 0,\n    \"totalOrders\" INTEGER NOT NULL DEFAULT 0,\n    \"totalSpent\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"lastOrderDate\" TIMESTAMP(3),\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Customer_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Customer_phone_key\" ON \"public\".\"Customer\"(\"phone\");",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Purchase\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"poNumber\" TEXT NOT NULL,\n    \"supplierName\" TEXT NOT NULL,\n    \"supplierPhone\" TEXT,\n    \"invoiceNumber\" TEXT,\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"gstAmount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentStatus\" TEXT NOT NULL DEFAULT 'PAID',\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'BANK_TRANSFER',\n    \"status\" TEXT NOT NULL DEFAULT 'RECEIVED',\n    \"receivedBy\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"notes\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Purchase_pkey\" PRIMARY KEY (\"id\")\n  );",
-  "CREATE UNIQUE INDEX IF NOT EXISTS \"Purchase_poNumber_key\" ON \"public\".\"Purchase\"(\"poNumber\");",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"PurchaseItem\" (\n    \"id\" TEXT NOT NULL,\n    \"purchaseId\" TEXT NOT NULL,\n    \"inventoryItemId\" TEXT NOT NULL,\n    \"itemName\" TEXT NOT NULL,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"unitCost\" DOUBLE PRECISION NOT NULL,\n    \"totalCost\" DOUBLE PRECISION NOT NULL,\n    CONSTRAINT \"PurchaseItem_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Purchase\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"invoiceRef\" TEXT NOT NULL,\n    \"supplier\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL DEFAULT 'Raw Ingredients',\n    \"notes\" TEXT,\n    \"totalAmount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Shruthy A',\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Purchase_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"PurchaseItem\" (\n    \"id\" TEXT NOT NULL,\n    \"purchaseId\" TEXT NOT NULL,\n    \"itemId\" TEXT,\n    \"itemName\" TEXT NOT NULL,\n    \"category\" TEXT,\n    \"qty\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"pricePerUnit\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"totalCost\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    CONSTRAINT \"PurchaseItem_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Expense\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"voucherNo\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL,\n    \"title\" TEXT NOT NULL,\n    \"amount\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"paidTo\" TEXT,\n    \"authorizedBy\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"notes\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Expense_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Expense_voucherNo_key\" ON \"public\".\"Expense\"(\"voucherNo\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Staff\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"role\" TEXT NOT NULL,\n    \"phone\" TEXT NOT NULL,\n    \"email\" TEXT,\n    \"salary\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"shift\" TEXT NOT NULL DEFAULT 'MORNING',\n    \"isActive\" BOOLEAN NOT NULL DEFAULT true,\n    \"joinDate\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Staff_pkey\" PRIMARY KEY (\"id\")\n  );",
@@ -188,9 +190,8 @@ export async function ensureDatabaseInitialized() {
             name: rm.name,
             category: rm.category,
             unit: rm.unit || 'units',
-            minThreshold: rm.minThreshold || 5,
-            pricePerUnit: rm.pricePerUnit || 10,
-            department: rm.department || 'Kitchen'
+            minThreshold: rm.minThreshold || 0.0,
+            costPerUnit: 0.0
           },
           create: {
             id: rm.id,
@@ -200,10 +201,8 @@ export async function ensureDatabaseInitialized() {
             openingStock: 0,
             stockIn: 0,
             stockOut: 0,
-            wasteSpoilage: 0,
-            minThreshold: rm.minThreshold || 5,
-            pricePerUnit: rm.pricePerUnit || 10,
-            department: rm.department || 'Kitchen'
+            minThreshold: rm.minThreshold || 0.0,
+            costPerUnit: 0.0
           }
         });
       }
@@ -214,9 +213,8 @@ export async function ensureDatabaseInitialized() {
           update: {
             productName: bom.productName,
             status: bom.status,
-            category: bom.category,
             servingQty: bom.servingQty,
-            uom: bom.uom,
+            servingUom: bom.uom || 'units',
             finalProcess: bom.finalProcess || ''
           },
           create: {
@@ -224,9 +222,8 @@ export async function ensureDatabaseInitialized() {
             productId: bom.productId,
             productName: bom.productName,
             status: bom.status,
-            category: bom.category,
             servingQty: bom.servingQty,
-            uom: bom.uom,
+            servingUom: bom.uom || 'units',
             finalProcess: bom.finalProcess || ''
           }
         });
