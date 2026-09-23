@@ -69,6 +69,20 @@ export async function createSaleTransaction(salePayload) {
   }
 }
 
+export async function fetchSales(period = 'today', branchId = 'branch-1', channel = 'ALL') {
+  try {
+    const url = `${API_BASE_URL}/sales?period=${period}&branchId=${branchId}&channel=${channel}`;
+    const res = await fetch(url, {
+      headers: { 'x-branch-id': branchId }
+    });
+    const json = await res.json();
+    return json.sales || [];
+  } catch (err) {
+    console.warn('[API] Fetch sales error:', err);
+    return [];
+  }
+}
+
 export async function sendChatbotQuery(queryText) {
   try {
     const res = await fetch(`${API_BASE_URL}/chatbot/query`, {

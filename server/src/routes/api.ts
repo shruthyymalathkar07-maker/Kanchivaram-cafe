@@ -373,7 +373,82 @@ export function createApiRouter(io: SocketServer) {
     }
   });
 
-  // 7. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
+  // 7. GET /api/sales (Fetch Real-Time Transaction Ledger from PostgreSQL)
+  router.get('/sales', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const period = (req.query.period as string) || 'today';
+    const channel = (req.query.channel as string) || 'ALL';
+    const today = new Date();
+    const todayIso = today.toISOString().split('T')[0];
+
+    try {
+      if (prisma) {
+        let dateFilter: any = {};
+        if (period === 'today') {
+          dateFilter = { dateIso: todayIso };
+        } else if (period === 'week') {
+          const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateFilter = { createdAt: { gte: sevenDaysAgo } };
+        } else if (period === 'month') {
+          const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          dateFilter = { createdAt: { gte: firstDayOfMonth } };
+        } else if (period === 'prev_month') {
+          const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+          dateFilter = { createdAt: { gte: firstDayPrevMonth, lte: lastDayPrevMonth } };
+        } else if (period === 'custom') {
+          const start = (req.query.startDate as string) || todayIso;
+          const end = (req.query.endDate as string) || todayIso;
+          dateFilter = { dateIso: { gte: start, lte: end } };
+        }
+
+        let whereClause: any = {
+          branchId,
+          isCancelled: false,
+          ...dateFilter
+        };
+
+        if (channel === 'POS') {
+          whereClause.channel = { in: ['POS', 'IN_STORE', 'In-Store POS'] };
+        } else if (channel === 'ONLINE') {
+          whereClause.channel = { notIn: ['POS', 'IN_STORE', 'In-Store POS'] };
+        }
+
+        const sales = await prisma.sale.findMany({
+          where: whereClause,
+          include: { items: true },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        const formattedSales = sales.map(s => ({
+          ...s,
+          date: s.dateIso || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : todayIso),
+          time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+        }));
+
+        return res.json({
+          success: true,
+          count: formattedSales.length,
+          branchId,
+          sales: formattedSales
+        });
+      }
+
+      // Fallback
+      const branchData = branchDb.getBranchData(branchId);
+      const sales = (branchData.sales || []).filter(s => {
+        if (period === 'today') return s.dateIso === todayIso;
+        return true;
+      });
+      return res.json({ success: true, count: sales.length, branchId, sales, fallback: true });
+    } catch (err: any) {
+      console.error('[API /sales Error]:', err.message);
+      const branchData = branchDb.getBranchData(branchId);
+      return res.json({ success: true, count: (branchData.sales || []).length, branchId, sales: branchData.sales || [], fallback: true });
+    }
+  });
+
+  // 8. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     const period = (req.query.period as string) || 'today';

@@ -37,8 +37,12 @@ io.on('connection', (socket) => {
   });
 });
 
+import { ensureDatabaseInitialized } from './initDb';
+
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`⚡ Kanchivaram Cafe Backend Server running on http://localhost:${PORT}`);
+ensureDatabaseInitialized().finally(() => {
+  server.listen(PORT, () => {
+    console.log(`⚡ Kanchivaram Cafe Backend Server running on http://localhost:${PORT}`);
+  });
 });

@@ -19,34 +19,48 @@ import {
   Sparkles
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
-import { fetchDashboardStats } from '../services/api';
+import { fetchDashboardStats, fetchSales } from '../services/api';
 
 export default function SalesReportView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
   const [period, setPeriod] = useState('today'); // 'today', 'week', 'month'
   const [selectedChannelFilter, setSelectedChannelFilter] = useState('ALL'); // 'ALL', 'POS', 'ONLINE'
-  const [sales, setSales] = useState(() => inventoryStore.getState().sales || []);
+  const [sales, setSales] = useState([]);
   const [reportStats, setReportStats] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch live PostgreSQL sales data
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
+      setIsLoading(true);
       const branchId = selectedBranch?.id || 'branch-1';
-      const data = await fetchDashboardStats(period, branchId);
-      if (isMounted && data) {
-        setReportStats(data);
-        if (data.recentTransactions) {
-          setSales(data.recentTransactions);
+      try {
+        const [statsData, salesData] = await Promise.all([
+          fetchDashboardStats(period, branchId),
+          fetchSales(period, branchId, 'ALL')
+        ]);
+
+        if (isMounted) {
+          if (statsData) setReportStats(statsData);
+          if (salesData && Array.isArray(salesData)) {
+            setSales(salesData);
+          } else if (statsData?.recentTransactions) {
+            setSales(statsData.recentTransactions);
+          }
         }
+      } catch (err) {
+        console.warn('[SalesReportView] Error loading PostgreSQL data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
     loadData();
     return () => { isMounted = false; };
   }, [period, selectedBranch?.id]);
 
-  const periodSales = reportStats?.recentTransactions || sales;
+  const periodSales = sales.length > 0 ? sales : (reportStats?.recentTransactions || []);
 
   // Dynamic Sales & Tax Calculations
   const grossSales = periodSales.reduce((sum, s) => {
