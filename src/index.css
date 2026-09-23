@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Genuine 6-Sided Hexagon Clip Paths */
+  .clip-hexagon-flat {
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+
+  .clip-hexagon-pointy {
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  /* 5-Sided Pentagon & Polygon Clip Paths for Interlocking Ceramic Layout */
+  .clip-pentagon-top-right {
+    clip-path: polygon(15% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 35%);
+  }
+
+  .clip-polygon-mid-right {
+    clip-path: polygon(0% 15%, 85% 0%, 100% 25%, 100% 85%, 25% 100%, 0% 85%);
+  }
+
+  .clip-polygon-mid-left {
+    clip-path: polygon(0% 15%, 85% 0%, 100% 30%, 100% 85%, 15% 100%, 0% 85%);
+  }
+
+  .clip-polygon-bottom-right {
+    clip-path: polygon(15% 0%, 100% 0%, 100% 85%, 75% 100%, 0% 100%, 0% 15%);
+  }
+
+  /* Inverted 3D Notch above Hexagon section */
+  .clip-notch-trapezoid {
+    clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);
+  }
+
+  /* Organic Pebble Cutout for Top-Left Logo Badge */
+  .organic-pebble-frame {
+    border-radius: 40px 80px 50px 90px / 70px 50px 80px 40px;
+  }
+
+  /* Safe area insets for mobile / notch / bottom bar */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Hide scrollbar for Chrome, Safari, Edge, Firefox */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Authentic Ceramic 3D Bevelled Styling matching reference photo strictly */
+.ceramic-hex-card {
+  background: linear-gradient(145deg, #fbf7f0 0%, #ede3d4 60%, #e2d4c0 100%);
+  box-shadow: 
+    -6px -6px 14px rgba(255, 255, 255, 0.9),
+    8px 8px 24px rgba(0, 0, 0, 0.45),
+    inset 2px 2px 3px rgba(255, 255, 255, 1),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e3d5c3;
+}
+
+.ceramic-pebble-bg {
+  background: linear-gradient(135deg, #ded4c5 0%, #c9bda9 100%);
+  box-shadow: 
+    inset 2px 2px 5px rgba(255, 255, 255, 0.6),
+    inset -3px -3px 8px rgba(0, 0, 0, 0.25),
+    0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Marble Dark Green Texture for Main Dashboard Board & Chart Card */
+.dark-marble-bg {
+  background-color: #10291e;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(32, 74, 55, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(12, 33, 23, 0.95) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(22, 54, 40, 0.5) 0%, transparent 70%);
+}
+
+.chart-marble-bg {
+  background-color: #123023;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(36, 84, 62, 0.6) 0%, transparent 40%),
+    linear-gradient(160deg, #183d2d 0%, #0d2319 100%);
+}
+
+/* Metallic Gold 3D Bevel Rim Frame with Cream Inner Face matching reference image strictly */
+.gold-metallic-card-frame {
+  background: linear-gradient(135deg, #d4af37 0%, #fff2b2 30%, #b8860b 70%, #ffd700 100%);
+  padding: 8px;
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.25),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.gold-inner-cream-face {
+  background: linear-gradient(160deg, #fdfbf7 0%, #f7f3ea 100%);
+  box-shadow: 
+    inset 2px 2px 5px rgba(0, 0, 0, 0.15),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+}
+
+/* Semi-circular stone arch cutout for top coffee branding card */
+.semi-circle-coffee-arch {
+  background: linear-gradient(145deg, #f7f2ea 0%, #ebe4d5 60%, #ded4c1 100%);
+  border-radius: 9999px 9999px 3rem 3rem;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 3px 6px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.15);
+  border: 2px solid #e3d5c3;
+}
+
+/* Hide scrollbars globally so pages scroll smoothly without green vertical lines */
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+/* Suppress Browser-Native Duplicate Password Eye/Clear Icons */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+
+

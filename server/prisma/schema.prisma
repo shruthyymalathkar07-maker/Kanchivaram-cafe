@@ -1,0 +1,312 @@
+// Kanchivaram Café Production PostgreSQL & Relational Schema
+// Multi-tenant with branch-isolation ('branch-1' Main Branch, 'branch-2' City Branch)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. CAFÉ BRANCHES MASTER
+model Branch {
+  id              String           @id // 'branch-1', 'branch-2'
+  code            String           @unique // 'KCB-MAIN-01', 'KCB-CITY-02'
+  name            String
+  badge           String
+  location        String
+  fullAddress     String
+  status          String           @default("Operational (Live)")
+  tablesCount     Int              @default(24)
+  posTerminals    Int              @default(3)
+  accentColor     String           @default("#0D3B2E")
+  badgeBg         String           @default("bg-[#0D3B2E]")
+  badgeText       String           @default("text-white")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  users           User[]
+  products        Product[]
+  inventoryItems  InventoryItem[]
+  sales           Sale[]
+  purchases       Purchase[]
+  expenses        Expense[]
+  staff           Staff[]
+  customers       Customer[]
+  stockLedgers    StockLedger[]
+  settings        StoreSetting?
+}
+
+// 2. USER AUTHENTICATION & ACCESS
+model User {
+  id              String           @id @default(uuid())
+  branchId        String?
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  name            String
+  email           String           @unique
+  phone           String           @unique
+  role            String           @default("Owner & General Manager")
+  passwordHash    String
+  avatar          String           @default("SA")
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+// 3. PRODUCT / MENU CATEGORIES
+model ProductCategory {
+  id              String           @id // e.g. 'cat-kc-signatures', 'cat-juices'
+  name            String           @unique // 'KC Signatures', 'Sandwich', 'Snacks', etc.
+  slug            String           @unique
+  icon            String           @default("✨")
+  displayOrder    Int              @default(0)
+  createdAt       DateTime         @default(now())
+
+  products        Product[]
+}
+
+// 4. PRODUCT / MENU MASTER (59 Client Products)
+model Product {
+  id                   String           @id // 'prod-1' to 'prod-59'
+  branchId             String?
+  branch               Branch?          @relation(fields: [branchId], references: [id])
+  categoryId           String
+  category             ProductCategory  @relation(fields: [categoryId], references: [id])
+  categoryName         String
+  name                 String
+  servingQty           Float            // Product serving quantity (e.g. 10 Nos, 300 ml, 60 g)
+  uom                  String           // 'Nos.', 'g', 'ml'
+  dineInPrice          Float            // Dine-In Price (e.g. ₹35.00)
+  deliveryPrice        Float            // Delivery Partner Price (e.g. ₹53.00, or 0 where specified)
+  packingCharge        Float            @default(5.0) // Common Packing Charge (₹5.00, or 0 where specified)
+  description          String?
+  image                String?
+  isAvailable          Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  recipe               Recipe?
+  saleItems            SaleItem[]
+
+  @@unique([name, branchId])
+}
+
+// 5. RAW MATERIAL / INVENTORY MASTER (117 Client Items)
+model InventoryItem {
+  id              String           @id // 'rm-1' to 'rm-117'
+  branchId        String?
+  branch          Branch?          @relation(fields: [branchId], references: [id])
+  name            String           // e.g. 'Ulundhu Paruppu', 'Lemon'
+  category        String?          // Groceries, Fruit, Vegetables, Consumables, or NULL
+  unit            String           @default("units")
+  openingStock    Float            @default(0.0) // DO NOT invent default stock
+  stockIn         Float            @default(0.0)
+  stockOut        Float            @default(0.0)
+  minThreshold    Float            @default(0.0)
+  costPerUnit     Float            @default(0.0)
+  supplier        String?          // Unassigned until purchase invoice
+  lastMovement    DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  recipeItems     RecipeItem[]
+  stockLedgers    StockLedger[]
+  purchaseItems   PurchaseItem[]
+
+  @@unique([name, branchId])
+}
+
+// 6. BILL OF MATERIALS / RECIPE MASTER
+model Recipe {
+  id              String           @id @default(uuid())
+  productId       String           @unique
+  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productName     String
+  servingQty      Float            // e.g. 300
+  servingUom      String           // e.g. 'ml'
+  status          String           @default("COMPLETE") // 'COMPLETE', 'AWAITING_RECIPE_DETAILS'
+  finalProcess    String?          // e.g. "Grind in Mixie, Pour in Juice Cup and Serve to Customer"
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  items           RecipeItem[]
+}
+
+// 7. RECIPE INGREDIENTS / PROCESS ITEMS
+model RecipeItem {
+  id              String           @id @default(uuid())
+  recipeId        String
+  recipe          Recipe           @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  stepNumber      Int              @default(1)
+  rawMaterialName String           // e.g. 'Lemon', 'Sugar', 'Water', 'Ice'
+  inventoryItemId String?
+  inventoryItem   InventoryItem?   @relation(fields: [inventoryItemId], references: [id])
+  quantity        Float            // e.g. 1, 4, 100, 250
+  uom             String           // e.g. 'Nos.', 'tsp.', 'ml', 'Cubes', 'g'
+  process         String           // e.g. 'Cut & Squeeze', 'Add', 'Pour'
+  createdAt       DateTime         @default(now())
+}
+
+// 8. SALES MASTER (POS & Online Master Transactions)
+model Sale {
+  id              String           @id // 'sale-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  billNumber      String           @unique
+  customerId      String?
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  customerName    String?
+  customerPhone   String?
+  channel         String           @default("POS") // 'POS', 'Swiggy', 'Zomato', 'Direct Online'
+  subtotal        Float
+  discount        Float            @default(0.0)
+  tax             Float            @default(0.0) // 5% GST
+  grandTotal      Float
+  paymentMethod   String           @default("CASH") // 'CASH', 'UPI', 'CARD'
+  receiptType     String           @default("PAPER") // 'PAPER', 'DIGITAL'
+  status          String           @default("COMPLETED")
+  cashierName     String           @default("Shruthy")
+  orderNote       String?
+  isCancelled     Boolean          @default(false)
+  dateIso         String           // 'YYYY-MM-DD'
+  createdAt       DateTime         @default(now())
+
+  items           SaleItem[]
+}
+
+model SaleItem {
+  id              String           @id @default(uuid())
+  saleId          String
+  sale            Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId       String?
+  product         Product?         @relation(fields: [productId], references: [id])
+  name            String
+  quantity        Float
+  price           Float
+  total           Float
+  unit            String           @default("units")
+  categoryName    String?
+}
+
+// 9. STOCK LEDGER AUDIT TRAIL
+model StockLedger {
+  id              String           @id // 'MV-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  itemId          String
+  item            InventoryItem    @relation(fields: [itemId], references: [id])
+  itemName        String
+  type            String           // 'STOCK_IN', 'STOCK_OUT', 'ADJUSTMENT'
+  qty             Float
+  unit            String
+  supplier        String?          @default("-")
+  ref             String           // e.g. Bill #KC-2026-1001 or PO #PUR-1001
+  source          String           @default("POS / Sales")
+  notes           String?
+  remainingAfter  Float
+  purchaseId      String?
+  dateIso         String
+  createdAt       DateTime         @default(now())
+}
+
+// 10. PURCHASES & INVOICES MASTER
+model Purchase {
+  id              String           @id // 'PUR-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  invoiceRef      String
+  supplier        String
+  category        String           @default("Raw Ingredients")
+  notes           String?
+  totalAmount     Float            @default(0.0)
+  recordedBy      String           @default("Shruthy A")
+  dateIso         String
+  createdAt       DateTime         @default(now())
+
+  items           PurchaseItem[]
+}
+
+model PurchaseItem {
+  id              String           @id @default(uuid())
+  purchaseId      String
+  purchase        Purchase         @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  itemId          String?
+  item            InventoryItem?   @relation(fields: [itemId], references: [id])
+  itemName        String
+  category        String?
+  qty             Float
+  unit            String
+  pricePerUnit    Float
+  total           Float
+}
+
+// 11. OPERATIONAL EXPENSES
+model Expense {
+  id              String           @id // 'exp-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  description     String
+  category        String           // 'Utilities', 'Rent & Lease', 'Staff Wages', etc.
+  amount          Float
+  dateIso         String
+  notes           String?
+  recordedBy      String           @default("Shruthy A")
+  createdAt       DateTime         @default(now())
+}
+
+// 12. STAFF & SHIFTS
+model Staff {
+  id              String           @id // 'stf-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  name            String
+  role            String
+  shift           String
+  shiftType       String           // 'Morning', 'Evening', 'Full Day', 'Night'
+  startTime       String
+  endTime         String
+  phone           String
+  status          String           @default("On Duty")
+  monthlyPay      Float            @default(18000.0)
+  joinedDate      String           @default("Today")
+  createdAt       DateTime         @default(now())
+}
+
+// 13. CUSTOMERS DIRECTORY
+model Customer {
+  id              String           @id // 'c-...'
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  name            String
+  phone           String
+  email           String?          @default("Not specified")
+  visits          Int              @default(0)
+  totalSpent      Float            @default(0.0)
+  tier            String           @default("Regular") // 'Regular', 'Frequent', 'VIP Gold'
+  favoriteItem    String?
+  lastVisit       String?
+  createdAt       DateTime         @default(now())
+
+  sales           Sale[]
+
+  @@unique([phone, branchId])
+}
+
+// 14. STORE SETTINGS
+model StoreSetting {
+  branchId        String           @id
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  storeName       String           @default("Kanchivaram Café")
+  branchName      String
+  gstin           String           @default("33AAACK1234F1Z9")
+  fssaiNo         String           @default("12421008000142")
+  contactPhone    String           @default("+91 98765 43210")
+  contactEmail    String           @default("contact@kanchivaram.cafe")
+  cgstPercent     Float            @default(2.5)
+  sgstPercent     Float            @default(2.5)
+  autoPrintReceipt Boolean         @default(true)
+  defaultPaymentMode String        @default("CASH")
+  updatedAt       DateTime         @updatedAt
+}
