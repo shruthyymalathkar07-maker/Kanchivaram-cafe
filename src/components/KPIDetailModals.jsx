@@ -15,7 +15,7 @@ import {
   Percent,
   FileText
 } from 'lucide-react';
-import { inventoryStore } from '../services/inventoryStore';
+import { fetchDashboardStats } from '../services/api';
 
 export default function KPIDetailModals({ activeModal, onClose, stats, selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -24,67 +24,56 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const [taxPeriod, setTaxPeriod] = useState('today'); // 'today', 'week', 'month', 'prev_month', 'custom'
   const [customStart, setCustomStart] = useState(() => new Date().toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split('T')[0]);
-  const [allSales, setAllSales] = useState(() => inventoryStore.getState().sales || []);
+  const [taxStats, setTaxStats] = useState(null);
 
+  // Fetch real PostgreSQL tax data whenever activeModal is TAX_AUDIT or filter changes
   useEffect(() => {
-    setAllSales(inventoryStore.getState().sales || []);
-    const unsubscribe = inventoryStore.subscribe((state) => {
-      setAllSales(state.sales || []);
-    });
-    return () => unsubscribe();
-  }, []);
+    let isMounted = true;
+    const loadTaxData = async () => {
+      const branchId = selectedBranch?.id || 'branch-1';
+      const data = await fetchDashboardStats(taxPeriod, branchId, customStart, customEnd);
+      if (isMounted && data) {
+        setTaxStats(data);
+      }
+    };
+
+    if (activeModal === 'TAX_AUDIT') {
+      loadTaxData();
+    }
+    return () => { isMounted = false; };
+  }, [activeModal, taxPeriod, customStart, customEnd, selectedBranch?.id]);
 
   if (!activeModal) return null;
 
+  // Use passed stats or fetched stats
   const kpis = stats?.kpis || {};
+  const totalSalesAmount = kpis.totalSales?.amount ?? 0;
+  const orderCount = kpis.totalSales?.orderCount ?? 0;
+  const inStoreSales = kpis.totalSales?.inStore ?? 0;
+  const onlineSales = kpis.totalSales?.online ?? 0;
+  const swiggySales = kpis.onlineSales?.swiggy ?? kpis.totalSales?.swiggy ?? 0;
+  const directOnlineSales = kpis.onlineSales?.otherChannels ?? kpis.totalSales?.otherOnline ?? 0;
+  const growthRate = kpis.totalSales?.growth ?? 0;
 
-  // Tax period filtering logic on actual sales transactions
-  const getTaxFilteredSales = () => {
-    if (!allSales || allSales.length === 0) return [];
-    const todayIso = new Date().toISOString().split('T')[0];
-    const now = new Date();
+  const inStorePct = totalSalesAmount > 0 ? Math.round((inStoreSales / totalSalesAmount) * 100) : 0;
+  const onlinePct = totalSalesAmount > 0 ? Math.round((onlineSales / totalSalesAmount) * 100) : 0;
+  const swiggyPct = totalSalesAmount > 0 ? Math.round((swiggySales / totalSalesAmount) * 100) : 0;
+  const directOnlinePct = totalSalesAmount > 0 ? Math.round((directOnlineSales / totalSalesAmount) * 100) : 0;
+  const avgBill = orderCount > 0 ? Math.round(totalSalesAmount / orderCount) : 0;
 
-    if (taxPeriod === 'today') {
-      return allSales.filter(s => s.dateIso === todayIso || !s.dateIso);
-    }
-    if (taxPeriod === 'week') {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return allSales.filter(s => new Date(s.createdAt || s.dateIso || Date.now()) >= sevenDaysAgo);
-    }
-    if (taxPeriod === 'month') {
-      const currentMonthPrefix = todayIso.slice(0, 7);
-      return allSales.filter(s => (s.dateIso || '').startsWith(currentMonthPrefix));
-    }
-    if (taxPeriod === 'prev_month') {
-      const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const prevMonthPrefix = prevMonthDate.toISOString().slice(0, 7);
-      return allSales.filter(s => (s.dateIso || '').startsWith(prevMonthPrefix));
-    }
-    if (taxPeriod === 'custom') {
-      return allSales.filter(s => {
-        const d = s.dateIso || todayIso;
-        return d >= customStart && d <= customEnd;
-      });
-    }
-    return allSales;
-  };
+  // Tax Modal Dynamic Data (Real PostgreSQL aggregation)
+  const activeTaxData = taxStats?.kpis?.tax || kpis.tax || {};
+  const taxFilteredSales = taxStats?.recentTransactions || stats?.recentTransactions || [];
 
-  const taxFilteredSales = getTaxFilteredSales();
+  const taxTotalSales = activeTaxData.totalSales ?? 0;
+  const taxTaxableSales = activeTaxData.taxableSales ?? 0;
+  const taxGstAmount = activeTaxData.gstAmount ?? 0;
+  const taxTransactionCount = activeTaxData.orderCount ?? taxFilteredSales.length;
 
-  // Dynamic Sales Tax Calculations
-  const taxTotalSales = taxFilteredSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
-  const taxGstAmount = taxFilteredSales.reduce((acc, s) => acc + (s.tax || 0), 0);
-  const taxTaxableSales = Math.max(0, taxTotalSales - taxGstAmount);
-  const taxTransactionCount = taxFilteredSales.length;
-
-  const cgstAmount = taxGstAmount / 2;
-  const sgstAmount = taxGstAmount / 2;
-
-  const posTaxSales = taxFilteredSales.filter(s => !s.channel || s.channel === 'POS' || s.channel === 'In-Store POS');
-  const posGstAmount = posTaxSales.reduce((acc, s) => acc + (s.tax || 0), 0);
-
-  const onlineTaxSales = taxFilteredSales.filter(s => s.channel && !['POS', 'In-Store POS'].includes(s.channel));
-  const onlineGstAmount = onlineTaxSales.reduce((acc, s) => acc + (s.tax || 0), 0);
+  const cgstAmount = activeTaxData.cgst ?? (taxGstAmount / 2);
+  const sgstAmount = activeTaxData.sgst ?? (taxGstAmount / 2);
+  const posTaxGst = activeTaxData.inStoreGst ?? 0;
+  const onlineTaxGst = activeTaxData.onlineGst ?? 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -145,25 +134,25 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1">
                   <p className="text-xs font-black text-[#456351] uppercase tracking-wider">Gross Revenue</p>
                   <h3 className="text-2xl font-black font-mono text-[#0f3823]">
-                    ₹{(kpis.totalSales?.amount || 18450).toLocaleString('en-IN')}
+                    ₹{totalSalesAmount.toLocaleString('en-IN')}
                   </h3>
-                  <span className="text-[11px] text-emerald-700 font-extrabold">+14.2% vs yesterday</span>
+                  <span className="text-[11px] text-emerald-700 font-extrabold">+{growthRate}% vs yesterday</span>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1">
                   <p className="text-xs font-black text-[#456351] uppercase tracking-wider">Total Orders</p>
                   <h3 className="text-2xl font-black font-mono text-[#11291f]">
-                    {kpis.totalSales?.orderCount || 186}
+                    {orderCount}
                   </h3>
                   <span className="text-[11px] text-[#547363] font-bold">
-                    Avg bill ₹{Math.round((kpis.totalSales?.amount || 18450) / (kpis.totalSales?.orderCount || 186))}
+                    Avg bill ₹{avgBill.toLocaleString('en-IN')}
                   </span>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1">
                   <p className="text-xs font-black text-[#456351] uppercase tracking-wider">In-Store vs Online</p>
-                  <h3 className="text-2xl font-black font-mono text-[#0f3823]">65% / 35%</h3>
-                  <span className="text-[11px] text-[#547363] font-bold">Strong counter sales</span>
+                  <h3 className="text-2xl font-black font-mono text-[#0f3823]">{inStorePct}% / {onlinePct}%</h3>
+                  <span className="text-[11px] text-[#547363] font-bold">{orderCount > 0 ? 'Active store channels' : 'No transactions recorded'}</span>
                 </div>
 
               </div>
@@ -181,11 +170,11 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                         <Store className={`w-4 h-4 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} /> In-Store POS Sales
                       </span>
                       <span className={`${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-mono font-black`}>
-                        ₹{(kpis.totalSales?.inStore || 12000).toLocaleString('en-IN')} (65%)
+                        ₹{inStoreSales.toLocaleString('en-IN')} ({inStorePct}%)
                       </span>
                     </div>
                     <div className="w-full bg-[#ebdcc8] h-2.5 rounded-full overflow-hidden">
-                      <div className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} h-full rounded-full`} style={{ width: '65%' }} />
+                      <div className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} h-full rounded-full transition-all duration-500`} style={{ width: `${inStorePct}%` }} />
                     </div>
                   </div>
 
@@ -196,11 +185,11 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                         <ShoppingBag className="w-4 h-4 text-amber-600" /> Swiggy Orders
                       </span>
                       <span className="text-amber-700 font-mono font-black">
-                        ₹{(kpis.totalSales?.swiggy || 4500).toLocaleString('en-IN')} (24%)
+                        ₹{swiggySales.toLocaleString('en-IN')} ({swiggyPct}%)
                       </span>
                     </div>
                     <div className="w-full bg-[#ebdcc8] h-2.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-600 h-full rounded-full" style={{ width: '24%' }} />
+                      <div className="bg-amber-600 h-full rounded-full transition-all duration-500" style={{ width: `${swiggyPct}%` }} />
                     </div>
                   </div>
 
@@ -211,11 +200,11 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                         <ExternalLink className="w-4 h-4 text-blue-600" /> Direct Online Website
                       </span>
                       <span className="text-blue-700 font-mono font-black">
-                        ₹{(kpis.totalSales?.otherOnline || 1950).toLocaleString('en-IN')} (11%)
+                        ₹{directOnlineSales.toLocaleString('en-IN')} ({directOnlinePct}%)
                       </span>
                     </div>
                     <div className="w-full bg-[#ebdcc8] h-2.5 rounded-full overflow-hidden">
-                      <div className="bg-blue-600 h-full rounded-full" style={{ width: '11%' }} />
+                      <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${directOnlinePct}%` }} />
                     </div>
                   </div>
 
@@ -352,9 +341,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
               <div className="bg-[#fbf8f3] p-5 rounded-2xl border border-[#cabb9e] space-y-4 shadow-xs">
                 <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Payment Method Distribution</h4>
                 {(kpis.cashCollection?.split || [
-                  { method: 'Cash Payments', amount: kpis.cashCollection?.amount ?? 0, percentage: 0 },
-                  { method: 'UPI / QR Payments (GPay, PhonePe)', amount: kpis.cashCollection?.upiAmount ?? 0, percentage: 0 },
-                  { method: 'Card Swipes', amount: kpis.cashCollection?.cardAmount ?? 0, percentage: 0 }
+                  { method: 'Cash Payments', amount: kpis.cashCollection?.amount ?? 0, percentage: totalSalesAmount > 0 ? Math.round(((kpis.cashCollection?.amount ?? 0) / totalSalesAmount) * 100) : 0 },
+                  { method: 'UPI / QR Payments (GPay, PhonePe)', amount: kpis.cashCollection?.upiAmount ?? 0, percentage: totalSalesAmount > 0 ? Math.round(((kpis.cashCollection?.upiAmount ?? 0) / totalSalesAmount) * 100) : 0 },
+                  { method: 'Card Swipes', amount: kpis.cashCollection?.cardAmount ?? 0, percentage: totalSalesAmount > 0 ? Math.round(((kpis.cashCollection?.cardAmount ?? 0) / totalSalesAmount) * 100) : 0 }
                 ]).map((m, idx) => (
                   <div key={idx} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-bold text-[#11291f]">
@@ -362,7 +351,7 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                       <span className={`font-mono ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-black`}>₹{m.amount.toLocaleString('en-IN')} ({m.percentage}%)</span>
                     </div>
                     <div className="w-full bg-[#ebdcc8] h-2.5 rounded-full overflow-hidden">
-                      <div className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} h-full rounded-full`} style={{ width: `${m.percentage}%` }} />
+                      <div className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} h-full rounded-full transition-all duration-500`} style={{ width: `${m.percentage}%` }} />
                     </div>
                   </div>
                 ))}

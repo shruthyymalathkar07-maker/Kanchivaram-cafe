@@ -24,9 +24,13 @@ socket.on('connect_error', (err) => {
   console.warn('[Socket.IO] Connection notice:', err.message);
 });
 
-export async function fetchDashboardStats(period = 'today', branchId = 'branch-1') {
+export async function fetchDashboardStats(period = 'today', branchId = 'branch-1', startDate = '', endDate = '') {
   try {
-    const res = await fetch(`${API_BASE_URL}/dashboard/stats?period=${period}`, {
+    let url = `${API_BASE_URL}/dashboard/stats?period=${period}&branchId=${branchId}`;
+    if (period === 'custom' && startDate && endDate) {
+      url += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+    }
+    const res = await fetch(url, {
       headers: {
         'x-branch-id': branchId
       }

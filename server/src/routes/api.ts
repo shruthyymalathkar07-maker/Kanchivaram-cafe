@@ -470,6 +470,9 @@ export function createApiRouter(io: SocketServer) {
         { name: 'Direct Online', value: Math.round(directOnlineSales), percentage: totalSales > 0 ? Math.round((directOnlineSales / totalSales) * 100) : 0, color: '#3b82f6' }
       ];
 
+      const posTax = sales.filter(s => isPos(s.channel)).reduce((acc, s) => acc + (s.tax || 0), 0);
+      const onlineTax = sales.filter(s => !isPos(s.channel)).reduce((acc, s) => acc + (s.tax || 0), 0);
+
       return res.json({
         success: true,
         branchId,
@@ -481,7 +484,11 @@ export function createApiRouter(io: SocketServer) {
               growth: 0,
               inStore: Math.round(posSales),
               online: Math.round(onlineSales),
-              orderCount: sales.length
+              orderCount: sales.length,
+              swiggy: Math.round(swiggySales),
+              zomato: Math.round(zomatoSales),
+              dunzo: Math.round(dunzoSales),
+              otherOnline: Math.round(directOnlineSales)
             },
             netSales: {
               amount: Math.round(netSales),
@@ -492,7 +499,8 @@ export function createApiRouter(io: SocketServer) {
             discounts: {
               amount: Math.round(totalDiscounts),
               transactionCount: discountedBills.length,
-              avgDiscount
+              avgDiscount,
+              byType: []
             },
             cashCollection: {
               amount: Math.round(cashCollected),
@@ -519,7 +527,9 @@ export function createApiRouter(io: SocketServer) {
               gstAmount: Math.round(totalTax),
               cgst: Math.round(totalTax / 2),
               sgst: Math.round(totalTax / 2),
-              orderCount: sales.length
+              orderCount: sales.length,
+              inStoreGst: Math.round(posTax),
+              onlineGst: Math.round(onlineTax)
             }
           },
           productsSold,
@@ -527,7 +537,10 @@ export function createApiRouter(io: SocketServer) {
             salesTrend,
             salesDistribution
           },
-          recentTransactions: sales.slice(0, 10)
+          recentTransactions: sales.slice(0, 50).map(s => ({
+            ...s,
+            date: s.dateIso || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : todayIso)
+          }))
         }
       });
     } catch (err: any) {

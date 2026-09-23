@@ -94,7 +94,7 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
 
         {/* 4. BOTTOM RIGHT: GOLD METALLIC RIMMED CIRCLE BADGE */}
         <div 
-          onClick={() => onOpenModal && onOpenModal('TOTAL_SALES')}
+          onClick={() => onOpenModal && onOpenModal('CASH_COLLECTION')}
           className="relative w-full aspect-square max-w-[140px] max-h-[140px] rounded-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] flex items-center justify-center shadow-lg border border-[#fff8c4] cursor-pointer transition-all duration-300 transform hover:scale-105 group"
           title="Click for Cash Collection details"
         >
@@ -115,7 +115,7 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
 
       {/* 5. GOLDEN METALLIC CYLINDRICAL CARD FOR NET SALES (Below Discounts & Cash Collection) */}
       <div 
-        onClick={() => onOpenModal && onOpenModal('TOTAL_SALES')}
+        onClick={() => onOpenModal && onOpenModal('NET_SALES')}
         className="w-full rounded-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] shadow-xl border border-[#fff8c4] cursor-pointer transition-all duration-300 transform hover:scale-102 group mt-0.5"
         title="Click for Net Sales Breakdown"
       >
