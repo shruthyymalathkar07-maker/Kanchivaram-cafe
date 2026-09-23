@@ -16,7 +16,8 @@ import {
   X,
   RefreshCw,
   AlertTriangle,
-  ArrowLeft
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { createSaleTransaction } from '../services/api';
 import { PrintService } from '../services/printService';
@@ -202,9 +203,12 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     setCustomerName('');
     setPhoneInput('');
     setOrderNote('');
+    setSaveCustomer(false);
+    setPaymentMethod('CASH');
     setIsCheckoutOpen(false);
     setIsMobileCartOpen(false);
     setCompletedSale(null);
+    setIsSubmitting(false);
   };
 
   return (
@@ -710,8 +714,29 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* BILL COMPLETED SUCCESS OVERLAY MODAL                                      */}
       {/* ========================================================================= */}
       {completedSale && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              resetOrder();
+            }
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn"
+        >
+          <div className="relative bg-[#fdfbf7] border-2 border-[#d4af37] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                resetOrder();
+              }}
+              className="absolute top-3.5 right-3.5 p-1.5 text-[#557361] hover:text-[#11291f] hover:bg-[#ebdcc8] rounded-full transition-colors cursor-pointer"
+              title="Close & Next Order"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <CheckCircle className="w-12 h-12 text-emerald-700 mx-auto animate-bounce" />
             <h3 className="text-lg font-serif font-black text-[#0f3823]">Bill Completed Successfully!</h3>
             <div className="p-3 bg-[#f4ebd9] rounded-xl text-left space-y-1 text-xs text-[#456351]">
@@ -721,10 +746,18 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <p>Receipt Mode: <strong className="text-[#11291f]">{completedSale.receiptType}</strong></p>
             </div>
             <button
-              onClick={resetOrder}
-              className="w-full py-3 bg-[#0f3823] hover:bg-[#15422e] text-white font-black text-xs rounded-xl shadow-md cursor-pointer"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                resetOrder();
+              }}
+              className={`w-full py-3.5 ${
+                isBrownBranch ? 'bg-[#3E2312] hover:bg-[#542A16]' : 'bg-[#0f3823] hover:bg-[#15422e]'
+              } text-white font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 transition-all`}
             >
-              Start Next Order
+              <span>Go to Next Order</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
