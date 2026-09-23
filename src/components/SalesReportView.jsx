@@ -19,6 +19,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
+import { fetchDashboardStats } from '../services/api';
 
 export default function SalesReportView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -26,36 +27,26 @@ export default function SalesReportView({ selectedBranch }) {
   const [period, setPeriod] = useState('today'); // 'today', 'week', 'month'
   const [selectedChannelFilter, setSelectedChannelFilter] = useState('ALL'); // 'ALL', 'POS', 'ONLINE'
   const [sales, setSales] = useState(() => inventoryStore.getState().sales || []);
+  const [reportStats, setReportStats] = useState(null);
 
-  // Real-time subscription to inventoryStore sales
+  // Fetch live PostgreSQL sales data
   useEffect(() => {
-    setSales(inventoryStore.getState().sales || []);
-    const unsubscribe = inventoryStore.subscribe(state => {
-      setSales(state.sales || []);
-    });
-    return () => unsubscribe();
-  }, []);
+    let isMounted = true;
+    const loadData = async () => {
+      const branchId = selectedBranch?.id || 'branch-1';
+      const data = await fetchDashboardStats(period, branchId);
+      if (isMounted && data) {
+        setReportStats(data);
+        if (data.recentTransactions) {
+          setSales(data.recentTransactions);
+        }
+      }
+    };
+    loadData();
+    return () => { isMounted = false; };
+  }, [period, selectedBranch?.id]);
 
-  // Filter sales by selected time period
-  const getFilteredByPeriod = (allSales, selectedPeriod) => {
-    if (!allSales || allSales.length === 0) return [];
-    const todayIso = new Date().toISOString().split('T')[0];
-    
-    if (selectedPeriod === 'today') {
-      return allSales.filter(s => s.dateIso === todayIso || !s.dateIso);
-    }
-    if (selectedPeriod === 'week') {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return allSales.filter(s => new Date(s.createdAt || s.dateIso || Date.now()) >= sevenDaysAgo);
-    }
-    if (selectedPeriod === 'month') {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      return allSales.filter(s => new Date(s.createdAt || s.dateIso || Date.now()) >= thirtyDaysAgo);
-    }
-    return allSales;
-  };
-
-  const periodSales = getFilteredByPeriod(sales, period);
+  const periodSales = reportStats?.recentTransactions || sales;
 
   // Dynamic Sales & Tax Calculations
   const grossSales = periodSales.reduce((sum, s) => {

@@ -25,28 +25,38 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const [customStart, setCustomStart] = useState(() => new Date().toISOString().split('T')[0]);
   const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split('T')[0]);
   const [taxStats, setTaxStats] = useState(null);
+  const [modalStats, setModalStats] = useState(stats);
 
-  // Fetch real PostgreSQL tax data whenever activeModal is TAX_AUDIT or filter changes
+  useEffect(() => {
+    setModalStats(stats);
+  }, [stats]);
+
+  // Fetch real PostgreSQL data whenever any modal opens or filter changes
   useEffect(() => {
     let isMounted = true;
-    const loadTaxData = async () => {
+    const loadData = async () => {
       const branchId = selectedBranch?.id || 'branch-1';
-      const data = await fetchDashboardStats(taxPeriod, branchId, customStart, customEnd);
+      const period = activeModal === 'TAX_AUDIT' ? taxPeriod : 'today';
+      const data = await fetchDashboardStats(period, branchId, customStart, customEnd);
       if (isMounted && data) {
-        setTaxStats(data);
+        setModalStats(data);
+        if (activeModal === 'TAX_AUDIT') {
+          setTaxStats(data);
+        }
       }
     };
 
-    if (activeModal === 'TAX_AUDIT') {
-      loadTaxData();
+    if (activeModal) {
+      loadData();
     }
     return () => { isMounted = false; };
   }, [activeModal, taxPeriod, customStart, customEnd, selectedBranch?.id]);
 
   if (!activeModal) return null;
 
-  // Use passed stats or fetched stats
-  const kpis = stats?.kpis || {};
+  // Use dynamically loaded modalStats or passed stats
+  const currentStats = modalStats || stats;
+  const kpis = currentStats?.kpis || {};
   const totalSalesAmount = kpis.totalSales?.amount ?? 0;
   const orderCount = kpis.totalSales?.orderCount ?? 0;
   const inStoreSales = kpis.totalSales?.inStore ?? 0;
@@ -62,8 +72,8 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const avgBill = orderCount > 0 ? Math.round(totalSalesAmount / orderCount) : 0;
 
   // Tax Modal Dynamic Data (Real PostgreSQL aggregation)
-  const activeTaxData = taxStats?.kpis?.tax || kpis.tax || {};
-  const taxFilteredSales = taxStats?.recentTransactions || stats?.recentTransactions || [];
+  const activeTaxData = taxStats?.kpis?.tax || currentStats?.kpis?.tax || {};
+  const taxFilteredSales = taxStats?.recentTransactions || currentStats?.recentTransactions || [];
 
   const taxTotalSales = activeTaxData.totalSales ?? 0;
   const taxTaxableSales = activeTaxData.taxableSales ?? 0;
