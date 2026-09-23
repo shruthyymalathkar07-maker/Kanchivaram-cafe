@@ -89,13 +89,14 @@ export default function App() {
   // Load initial backend state & subscribe to real-time Socket.IO events
   useEffect(() => {
     const loadInitialData = async () => {
-      const liveStats = await fetchDashboardStats(salesTimeframe);
+      const branchId = authState.selectedBranch?.id || 'branch-1';
+      const liveStats = await fetchDashboardStats(salesTimeframe, branchId);
       const liveProducts = await fetchProducts();
       if (liveStats) setStats(liveStats);
       if (liveProducts) setProductsData(liveProducts);
     };
 
-    if (authState.isAuthenticated) {
+    if (authState.isAuthenticated && authState.selectedBranch) {
       loadInitialData();
     }
 
@@ -114,7 +115,7 @@ export default function App() {
       socket.off('sale_created');
       socket.off('stock_updated');
     };
-  }, [salesTimeframe, authState.isAuthenticated]);
+  }, [salesTimeframe, authState.isAuthenticated, authState.selectedBranch?.id]);
 
   // UNAUTHENTICATED ROUTE PROTECTION: Show Login & Auth Flow
   if (!authState.isAuthenticated) {
@@ -147,9 +148,9 @@ export default function App() {
   const selectedBranch = authState.selectedBranch;
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
-  const currentTotalSales = stats?.kpis?.totalSales?.amount || 18450;
-  const currentPosSales = stats?.kpis?.totalSales?.inStore || 12000;
-  const currentOnlineSales = stats?.kpis?.totalSales?.online || 6450;
+  const currentTotalSales = stats?.kpis?.totalSales?.amount ?? 0;
+  const currentPosSales = stats?.kpis?.totalSales?.inStore ?? 0;
+  const currentOnlineSales = stats?.kpis?.totalSales?.online ?? 0;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a]">
@@ -379,7 +380,7 @@ export default function App() {
 
                   {/* Right Panel: 4 Gold Metric Badges */}
                   <div className="lg:col-span-5 flex flex-col justify-center relative">
-                    <HexagonCards onOpenModal={(modalType) => setActiveModal(modalType)} selectedBranch={selectedBranch} />
+                    <HexagonCards stats={stats} onOpenModal={(modalType) => setActiveModal(modalType)} selectedBranch={selectedBranch} />
                   </div>
 
                 </div>

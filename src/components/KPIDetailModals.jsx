@@ -240,9 +240,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                   </h3>
                 </div>
                 <div className="text-right text-xs text-[#456351] font-bold space-y-0.5">
-                  <p>Gross Sales: <strong className="text-[#11291f]">₹{(kpis.totalSales?.amount || 18450).toLocaleString('en-IN')}</strong></p>
-                  <p>Taxes (5%): <strong className="text-rose-700">-₹922.50</strong></p>
-                  <p>Discounts: <strong className="text-rose-700">-₹1,320.00</strong></p>
+                  <p>Gross Sales: <strong className="text-[#11291f]">₹{(kpis.totalSales?.amount ?? 0).toLocaleString('en-IN')}</strong></p>
+                  <p>Taxes: <strong className="text-rose-700">-₹{(kpis.tax?.gstAmount ?? 0).toLocaleString('en-IN')}</strong></p>
+                  <p>Discounts: <strong className="text-rose-700">-₹{(kpis.discounts?.amount ?? 0).toLocaleString('en-IN')}</strong></p>
                 </div>
               </div>
 
@@ -256,9 +256,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     <Store className={`w-4 h-4 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
                   </div>
                   <h4 className={`text-2xl font-black font-mono ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>
-                    ₹{(kpis.netSales?.inStoreNet || 10800).toLocaleString('en-IN')}
+                    ₹{(kpis.netSales?.inStoreNet ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-emerald-700 font-extrabold">Direct profit margin (100%)</p>
+                  <p className="text-[11px] text-emerald-700 font-extrabold">Direct counter sales</p>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
@@ -267,9 +267,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     <ShoppingBag className="w-4 h-4 text-amber-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.netSales?.swiggyNet || 3825).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.swiggy ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">After 15% platform fee</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Swiggy channel</p>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
@@ -278,9 +278,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     <ExternalLink className="w-4 h-4 text-blue-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.netSales?.otherOnlineNet || 1755).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.otherChannels ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">After 10% gateway fee</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Direct Online channel</p>
                 </div>
 
               </div>
@@ -298,31 +298,31 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div>
                   <p className="text-xs font-black text-rose-900 uppercase tracking-wider">Total Discounts Applied</p>
                   <h3 className="text-3xl font-black font-mono text-rose-700 mt-1">
-                    ₹{(kpis.discounts?.amount || 1320).toLocaleString('en-IN')}
+                    ₹{(kpis.discounts?.amount ?? 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="text-right text-xs text-rose-900 font-bold space-y-0.5">
-                  <p className="font-extrabold">{kpis.discounts?.transactionCount || 52} Discounted Bills</p>
-                  <p>Avg discount: <strong className="text-rose-700">₹25.38 / bill</strong></p>
+                  <p className="font-extrabold">{kpis.discounts?.transactionCount ?? 0} Discounted Bills</p>
+                  <p>Avg discount: <strong className="text-rose-700">₹{kpis.discounts?.avgDiscount ?? 0} / bill</strong></p>
                 </div>
               </div>
 
               {/* Discount Categories */}
               <div className="space-y-3 bg-[#fbf8f3] p-5 rounded-2xl border border-[#cabb9e] shadow-xs">
-                <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Discount Breakdown by Category</h4>
-                {(kpis.discounts?.byType || [
-                  { name: 'Staff / Owner Courtesy Discount', count: 18, amount: 450 },
-                  { name: 'Promotional Coupon Code', count: 22, amount: 620 },
-                  { name: 'Regular Loyalty Discount', count: 12, amount: 250 }
-                ]).map((d, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#f0ebd9] border border-[#cabb9e]">
-                    <div>
-                      <p className="text-xs font-bold text-[#11291f]">{d.name}</p>
-                      <p className="text-[11px] text-[#547363] font-semibold">{d.count} transactions</p>
+                <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Discount Breakdown</h4>
+                {(kpis.discounts?.transactionCount === 0 || !kpis.discounts?.byType) ? (
+                  <p className="text-xs font-bold text-[#628774] text-center py-3">No promotional discounts recorded in selected timeframe.</p>
+                ) : (
+                  kpis.discounts.byType.map((d, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#f0ebd9] border border-[#cabb9e]">
+                      <div>
+                        <p className="text-xs font-bold text-[#11291f]">{d.name}</p>
+                        <p className="text-[11px] text-[#547363] font-semibold">{d.count} transactions</p>
+                      </div>
+                      <span className="text-sm font-extrabold text-rose-700 font-mono">-₹{d.amount}</span>
                     </div>
-                    <span className="text-sm font-extrabold text-rose-700 font-mono">-₹{d.amount}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
 
             </div>
@@ -339,12 +339,12 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div>
                   <p className="text-xs font-black text-[#456351] uppercase tracking-wider">Physical Cash Collected</p>
                   <h3 className={`text-3xl font-black font-mono ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} mt-1`}>
-                    ₹{(kpis.cashCollection?.amount || 9800).toLocaleString('en-IN')}
+                    ₹{(kpis.cashCollection?.amount ?? 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="text-right text-xs text-[#456351] font-bold space-y-0.5">
-                  <p className="text-[#11291f] font-extrabold">{kpis.cashCollection?.cashTransactions || 96} Cash Bills</p>
-                  <p className="text-emerald-700 font-extrabold">In-Till Cash Verified ✓</p>
+                  <p>UPI Total: <strong className="text-[#11291f]">₹{(kpis.cashCollection?.upiAmount ?? 0).toLocaleString('en-IN')}</strong></p>
+                  <p>Card Swipes: <strong className="text-[#11291f]">₹{(kpis.cashCollection?.cardAmount ?? 0).toLocaleString('en-IN')}</strong></p>
                 </div>
               </div>
 
@@ -352,9 +352,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
               <div className="bg-[#fbf8f3] p-5 rounded-2xl border border-[#cabb9e] space-y-4 shadow-xs">
                 <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Payment Method Distribution</h4>
                 {(kpis.cashCollection?.split || [
-                  { method: 'Cash Payments', amount: 9800, percentage: 53 },
-                  { method: 'UPI / QR Payments (GPay, PhonePe)', amount: 6450, percentage: 35 },
-                  { method: 'Card Swipes', amount: 2200, percentage: 12 }
+                  { method: 'Cash Payments', amount: kpis.cashCollection?.amount ?? 0, percentage: 0 },
+                  { method: 'UPI / QR Payments (GPay, PhonePe)', amount: kpis.cashCollection?.upiAmount ?? 0, percentage: 0 },
+                  { method: 'Card Swipes', amount: kpis.cashCollection?.cardAmount ?? 0, percentage: 0 }
                 ]).map((m, idx) => (
                   <div key={idx} className="space-y-1.5">
                     <div className="flex justify-between text-xs font-bold text-[#11291f]">
@@ -382,12 +382,12 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div>
                   <p className="text-xs font-black text-amber-900 uppercase tracking-wider">Total Online Channel Revenue</p>
                   <h3 className="text-3xl font-black font-mono text-amber-800 mt-1">
-                    ₹{(kpis.onlineSales?.amount || 6450).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.amount ?? 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="text-right text-xs text-amber-900 font-bold space-y-0.5">
-                  <p className="font-extrabold">{kpis.onlineSales?.orderCount || 42} Online Orders</p>
-                  <p>Net: <strong className="text-emerald-700">₹{(kpis.onlineSales?.netOnlineSales || 5408).toLocaleString('en-IN')}</strong></p>
+                  <p className="font-extrabold">{kpis.onlineSales?.orderCount ?? 0} Online Orders</p>
+                  <p>Net: <strong className="text-emerald-700">₹{(kpis.onlineSales?.netOnlineSales ?? 0).toLocaleString('en-IN')}</strong></p>
                 </div>
               </div>
 
@@ -399,9 +399,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.swiggy || 4500).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.swiggy ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">32 orders dispatched</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Swiggy channel</p>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-2">
@@ -410,9 +410,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.otherChannels || 1950).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.otherChannels ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">10 pickup orders</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Direct app / online orders</p>
                 </div>
 
               </div>

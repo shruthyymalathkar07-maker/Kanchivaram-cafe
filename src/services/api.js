@@ -24,9 +24,13 @@ socket.on('connect_error', (err) => {
   console.warn('[Socket.IO] Connection notice:', err.message);
 });
 
-export async function fetchDashboardStats(period = 'today') {
+export async function fetchDashboardStats(period = 'today', branchId = 'branch-1') {
   try {
-    const res = await fetch(`${API_BASE_URL}/dashboard/stats?period=${period}`);
+    const res = await fetch(`${API_BASE_URL}/dashboard/stats?period=${period}`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
     const json = await res.json();
     return json.data;
   } catch (err) {

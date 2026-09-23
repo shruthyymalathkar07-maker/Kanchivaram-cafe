@@ -15,19 +15,19 @@ import { TrendingUp, PieChart as PieIcon, Calendar } from 'lucide-react';
 
 export default function DashboardCharts({ stats, timeframe, setTimeframe }) {
   const trendData = stats?.charts?.salesTrend || [
-    { time: '08:00 AM', sales: 1200, orders: 12 },
-    { time: '10:00 AM', sales: 3400, orders: 34 },
-    { time: '12:00 PM', sales: 5800, orders: 58 },
-    { time: '02:00 PM', sales: 3100, orders: 28 },
-    { time: '04:00 PM', sales: 4200, orders: 40 },
-    { time: '06:00 PM', sales: 6500, orders: 62 },
-    { time: '08:00 PM', sales: 4800, orders: 45 }
+    { time: '08:00 AM', sales: 0, orders: 0 },
+    { time: '10:00 AM', sales: 0, orders: 0 },
+    { time: '12:00 PM', sales: 0, orders: 0 },
+    { time: '02:00 PM', sales: 0, orders: 0 },
+    { time: '04:00 PM', sales: 0, orders: 0 },
+    { time: '06:00 PM', sales: 0, orders: 0 },
+    { time: '08:00 PM', sales: 0, orders: 0 }
   ];
 
   const distributionData = stats?.charts?.salesDistribution || [
-    { name: 'In-Store POS', value: 12000, percentage: 65, color: '#4ade80' },
-    { name: 'Swiggy Delivery', value: 4500, percentage: 24, color: '#f97316' },
-    { name: 'Direct Online', value: 1950, percentage: 11, color: '#3b82f6' }
+    { name: 'In-Store POS', value: 0, percentage: 0, color: '#4ade80' },
+    { name: 'Swiggy Delivery', value: 0, percentage: 0, color: '#f97316' },
+    { name: 'Direct Online', value: 0, percentage: 0, color: '#3b82f6' }
   ];
 
   const COLORS = ['#4ade80', '#f97316', '#3b82f6', '#a855f7'];

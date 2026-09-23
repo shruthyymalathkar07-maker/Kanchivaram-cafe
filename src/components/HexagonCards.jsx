@@ -1,8 +1,18 @@
 import React from 'react';
 import { Layers, Package, Tag, TrendingUp } from 'lucide-react';
 
-export default function HexagonCards({ onOpenModal, selectedBranch }) {
+export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
+  const kpis = stats?.kpis || {};
+  const totalOrders = kpis.totalSales?.orderCount ?? 0;
+  const productsSold = stats?.productsSold ?? 0;
+  const totalDiscounts = kpis.discounts?.amount ?? 0;
+  const cashCollection = kpis.cashCollection?.amount ?? 0;
+  const netSales = kpis.netSales?.amount ?? 0;
+  const swiggySales = kpis.onlineSales?.swiggy ?? 0;
+  const zomatoSales = kpis.onlineSales?.zomato ?? 0;
+  const dunzoSales = kpis.onlineSales?.dunzo ?? 0;
+
   return (
     <div className="flex flex-col gap-2.5 w-full max-w-[380px] mx-auto items-center justify-center p-0">
       
@@ -30,7 +40,7 @@ export default function HexagonCards({ onOpenModal, selectedBranch }) {
                 TOTAL ORDERS
               </p>
               <h4 className="text-xl font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-                186
+                {totalOrders}
               </h4>
             </div>
           </div>
@@ -57,7 +67,7 @@ export default function HexagonCards({ onOpenModal, selectedBranch }) {
                 PRODUCTS SOLD
               </p>
               <h4 className="text-xl font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-                421
+                {productsSold}
               </h4>
             </div>
           </div>
@@ -77,7 +87,7 @@ export default function HexagonCards({ onOpenModal, selectedBranch }) {
               TOTAL DISCOUNTS
             </p>
             <h4 className="text-lg font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-              ₹1,320
+              ₹{totalDiscounts.toLocaleString('en-IN')}
             </h4>
           </div>
         </div>
@@ -96,7 +106,7 @@ export default function HexagonCards({ onOpenModal, selectedBranch }) {
               CASH COLLECTION
             </p>
             <h4 className="text-lg font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-              ₹XX,XXX
+              ₹{cashCollection.toLocaleString('en-IN')}
             </h4>
           </div>
         </div>
@@ -119,15 +129,15 @@ export default function HexagonCards({ onOpenModal, selectedBranch }) {
                 NET SALES (ONLINE &amp; POS)
               </p>
               <h4 className="text-lg font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-                ₹18,450
+                ₹{netSales.toLocaleString('en-IN')}
               </h4>
             </div>
           </div>
 
           <div className={`hidden sm:flex items-center gap-1 text-[8.5px] font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} border-l border-[#cabb9e] pl-2.5`}>
-            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Swiggy <strong>₹8,450</strong></span>
-            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Zomato <strong>₹8,450</strong></span>
-            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Dunzo <strong>₹6,450</strong></span>
+            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Swiggy <strong>₹{swiggySales.toLocaleString('en-IN')}</strong></span>
+            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Zomato <strong>₹{zomatoSales.toLocaleString('en-IN')}</strong></span>
+            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Dunzo <strong>₹{dunzoSales.toLocaleString('en-IN')}</strong></span>
           </div>
         </div>
       </div>
