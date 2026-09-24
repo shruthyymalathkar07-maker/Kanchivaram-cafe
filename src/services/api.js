@@ -233,5 +233,69 @@ export async function deleteCustomer(customerId, branchId = 'branch-1') {
   }
 }
 
+export async function fetchExpenses(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch expenses error:', err);
+    return { success: false, expenses: [] };
+  }
+}
+
+export async function createExpense(expensePayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(expensePayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create expense error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function updateExpense(id, expensePayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(expensePayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update expense error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function deleteExpense(id, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Delete expense error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+
 
 

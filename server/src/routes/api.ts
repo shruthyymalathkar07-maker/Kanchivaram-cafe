@@ -1192,6 +1192,271 @@ export function createApiRouter(io: SocketServer) {
     return res.json({ success: true, message: `Customer ${id} deleted` });
   });
 
+  // 10b. GET /api/expenses (Fetch expenses for branch from PostgreSQL)
+  router.get('/expenses', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const todayIso = new Date().toISOString().split('T')[0];
+    const currentMonthPrefix = todayIso.slice(0, 7);
+
+    try {
+      if (prisma) {
+        const rows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt"
+           FROM "public"."Expense"
+           WHERE "branchId" = $1
+           ORDER BY "dateIso" DESC, "createdAt" DESC;`,
+          branchId
+        );
+
+        const mappedExpenses = rows.map(r => {
+          const dateObj = r.dateIso ? new Date(r.dateIso) : new Date(r.createdAt);
+          const displayDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          return {
+            id: r.id,
+            branchId: r.branchId,
+            description: r.description,
+            category: r.category || 'Other',
+            amount: parseFloat(r.amount) || 0,
+            date: r.dateIso || todayIso,
+            dateIso: r.dateIso || todayIso,
+            displayDate,
+            notes: r.notes || '',
+            recordedBy: r.recordedBy || 'Shruthy A',
+            createdAt: r.createdAt
+          };
+        });
+
+        const totalExpenses = mappedExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        const todayExpenses = mappedExpenses
+          .filter(e => e.date === todayIso)
+          .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        const monthExpenses = mappedExpenses
+          .filter(e => e.date.startsWith(currentMonthPrefix))
+          .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+        return res.json({
+          success: true,
+          branchId,
+          count: mappedExpenses.length,
+          expenses: mappedExpenses,
+          summary: {
+            totalExpenses,
+            todayExpenses,
+            monthExpenses,
+            totalRecordsCount: mappedExpenses.length,
+            todayIso
+          }
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /expenses GET] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve expenses from PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10c. POST /api/expenses (Create an operational expense in PostgreSQL)
+  router.post('/expenses', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { description, category, amount, date, notes, recordedBy } = req.body;
+
+    const numAmount = parseFloat(amount) || 0;
+    if (!description || typeof description !== 'string' || !description.trim() || numAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid description and positive amount are required.'
+      });
+    }
+
+    const expenseId = `exp-${Date.now()}`;
+    const todayIso = new Date().toISOString().split('T')[0];
+    const dateIso = date || todayIso;
+    const cleanDesc = description.trim();
+    const cleanCategory = (category || 'Other').trim();
+    const cleanNotes = notes ? String(notes).trim() : 'General operational expense';
+    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Shruthy A';
+
+    try {
+      if (prisma) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
+          expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
+        );
+
+        const dateObj = new Date(dateIso);
+        const displayDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        const createdExpense = {
+          id: expenseId,
+          branchId,
+          description: cleanDesc,
+          category: cleanCategory,
+          amount: numAmount,
+          date: dateIso,
+          dateIso,
+          displayDate,
+          notes: cleanNotes,
+          recordedBy: cleanRecordedBy,
+          createdAt: new Date().toISOString()
+        };
+
+        io.emit('expense_created', { expense: createdExpense, branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: 'Expense created successfully in PostgreSQL',
+          expense: createdExpense
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /expenses POST] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to write expense to PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10d. PUT/PATCH /api/expenses/:id (Update operational expense in PostgreSQL)
+  const handleUpdateExpense = async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+    const { description, category, amount, date, notes, recordedBy } = req.body;
+
+    const numAmount = amount !== undefined ? (parseFloat(amount) || 0) : undefined;
+    const cleanDesc = description ? String(description).trim() : undefined;
+    const cleanCategory = category ? String(category).trim() : undefined;
+    const cleanNotes = notes !== undefined ? String(notes).trim() : undefined;
+    const cleanDate = date ? String(date).trim() : undefined;
+    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : undefined;
+
+    try {
+      if (prisma) {
+        // Find existing
+        const existing = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT * FROM "public"."Expense" WHERE "id" = $1 AND "branchId" = $2;`,
+          id, branchId
+        );
+
+        if (existing.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: `Expense with ID ${id} not found in this branch`
+          });
+        }
+
+        const current = existing[0];
+        const finalDesc = cleanDesc !== undefined ? cleanDesc : current.description;
+        const finalCategory = cleanCategory !== undefined ? cleanCategory : current.category;
+        const finalAmount = numAmount !== undefined && numAmount > 0 ? numAmount : current.amount;
+        const finalDateIso = cleanDate !== undefined ? cleanDate : current.dateIso;
+        const finalNotes = cleanNotes !== undefined ? cleanNotes : current.notes;
+        const finalRecordedBy = cleanRecordedBy !== undefined ? cleanRecordedBy : current.recordedBy;
+
+        await prisma.$executeRawUnsafe(
+          `UPDATE "public"."Expense"
+           SET "description" = $1,
+               "category" = $2,
+               "amount" = $3,
+               "dateIso" = $4,
+               "notes" = $5,
+               "recordedBy" = $6
+           WHERE "id" = $7 AND "branchId" = $8;`,
+          finalDesc, finalCategory, finalAmount, finalDateIso, finalNotes, finalRecordedBy, id, branchId
+        );
+
+        const dateObj = new Date(finalDateIso);
+        const displayDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        const updatedExpense = {
+          id,
+          branchId,
+          description: finalDesc,
+          category: finalCategory,
+          amount: finalAmount,
+          date: finalDateIso,
+          dateIso: finalDateIso,
+          displayDate,
+          notes: finalNotes,
+          recordedBy: finalRecordedBy
+        };
+
+        io.emit('expense_updated', { expense: updatedExpense, branchId });
+
+        return res.json({
+          success: true,
+          message: `Expense ${id} updated successfully in PostgreSQL`,
+          expense: updatedExpense
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /expenses PUT/PATCH] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update expense in PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  };
+
+  router.put('/expenses/:id', handleUpdateExpense);
+  router.patch('/expenses/:id', handleUpdateExpense);
+
+  // 10e. DELETE /api/expenses/:id (Delete operational expense from PostgreSQL)
+  router.delete('/expenses/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+
+    try {
+      if (prisma) {
+        await prisma.$executeRawUnsafe(
+          `DELETE FROM "public"."Expense" WHERE "id" = $1 AND "branchId" = $2;`,
+          id, branchId
+        );
+
+        io.emit('expense_deleted', { id, branchId });
+
+        return res.json({
+          success: true,
+          message: `Expense ${id} deleted successfully from PostgreSQL`,
+          id
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /expenses DELETE] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete expense from PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
   // 11. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
