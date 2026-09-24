@@ -296,6 +296,74 @@ export async function deleteExpense(id, branchId = 'branch-1') {
   }
 }
 
+// -------------------------------------------------------------
+// STAFF & SHIFTS API SERVICES (PostgreSQL Connected)
+// -------------------------------------------------------------
+
+export async function fetchStaff(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff?branchId=${branchId}`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch staff error:', err);
+    return { success: false, staff: [] };
+  }
+}
+
+export async function createStaff(staffPayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(staffPayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create staff error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function updateStaff(id, staffPayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(staffPayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update staff error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function deleteStaff(id, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/staff/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Delete staff error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+
 
 
 

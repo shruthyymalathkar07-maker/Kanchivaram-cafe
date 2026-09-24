@@ -1457,6 +1457,305 @@ export function createApiRouter(io: SocketServer) {
     });
   });
 
+  // 10f. GET /api/staff (Fetch staff for branch from PostgreSQL)
+  router.get('/staff', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+
+    try {
+      if (prisma) {
+        const staffRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt"
+           FROM "public"."Staff"
+           WHERE "branchId" = $1
+           ORDER BY "createdAt" DESC;`,
+          branchId
+        );
+
+        const mappedStaff = staffRows.map(s => ({
+          id: s.id,
+          branchId: s.branchId,
+          name: s.name,
+          role: s.role,
+          shift: s.shift,
+          shiftType: s.shiftType,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          phone: s.phone,
+          status: s.status,
+          monthlyPay: Number(s.monthlyPay || 18000),
+          pay: s.monthlyPay ? `₹${Number(s.monthlyPay).toLocaleString('en-IN')}/mo` : '₹18,000/mo',
+          joined: s.joinedDate || 'Today',
+          joinedDate: s.joinedDate || 'Today',
+          createdAt: s.createdAt
+        }));
+
+        return res.json({
+          success: true,
+          branchId,
+          count: mappedStaff.length,
+          staff: mappedStaff
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /staff GET] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve staff from PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10g. POST /api/staff (Create a staff member in PostgreSQL)
+  router.post('/staff', async (req: Request, res: Response) => {
+    const branchId = req.body.branchId || getBranchId(req);
+    const {
+      id: customId,
+      name,
+      role = 'Master Filter Coffee Barista',
+      shift,
+      shiftType = 'Morning',
+      startTime = '06:30 AM',
+      endTime = '03:30 PM',
+      phone,
+      pay,
+      monthlyPay,
+      status = 'On Duty',
+      joined,
+      joinedDate
+    } = req.body;
+
+    if (!name || !name.trim() || !phone || !phone.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Staff name and phone number are required'
+      });
+    }
+
+    const trimmedName = name.trim();
+    const formattedPhone = phone.trim().startsWith('+91') ? phone.trim() : `+91 ${phone.trim()}`;
+    const staffId = customId || `stf-${Date.now()}`;
+    const finalShift = shift || `${shiftType} (${startTime} - ${endTime})`;
+    const finalJoined = joinedDate || joined || 'Today';
+
+    let parsedPay = 18000.0;
+    if (monthlyPay !== undefined && !isNaN(Number(monthlyPay))) {
+      parsedPay = Number(monthlyPay);
+    } else if (pay) {
+      const cleanPay = String(pay).replace(/[^0-9.]/g, '');
+      if (cleanPay && !isNaN(Number(cleanPay))) {
+        parsedPay = Number(cleanPay);
+      }
+    }
+
+    try {
+      if (prisma) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "public"."Staff" ("id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);`,
+          staffId, branchId, trimmedName, role, finalShift, shiftType, startTime, endTime, formattedPhone, status, parsedPay, finalJoined
+        );
+
+        const newStaff = {
+          id: staffId,
+          branchId,
+          name: trimmedName,
+          role,
+          shift: finalShift,
+          shiftType,
+          startTime,
+          endTime,
+          phone: formattedPhone,
+          status,
+          monthlyPay: parsedPay,
+          pay: `₹${parsedPay.toLocaleString('en-IN')}/mo`,
+          joined: finalJoined,
+          joinedDate: finalJoined,
+          createdAt: new Date().toISOString()
+        };
+
+        io.emit('staff_created', { staff: newStaff, branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: `Staff member ${trimmedName} created successfully in PostgreSQL`,
+          staff: newStaff
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /staff POST] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create staff member in PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10h. PUT/PATCH /api/staff/:id (Update staff member in PostgreSQL)
+  const handleUpdateStaff = async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = req.body.branchId || getBranchId(req);
+    const {
+      name,
+      role,
+      shift,
+      shiftType,
+      startTime,
+      endTime,
+      phone,
+      pay,
+      monthlyPay,
+      status,
+      joined,
+      joinedDate
+    } = req.body;
+
+    let parsedPay: number | null = null;
+    if (monthlyPay !== undefined && !isNaN(Number(monthlyPay))) {
+      parsedPay = Number(monthlyPay);
+    } else if (pay !== undefined) {
+      const cleanPay = String(pay).replace(/[^0-9.]/g, '');
+      if (cleanPay && !isNaN(Number(cleanPay))) {
+        parsedPay = Number(cleanPay);
+      }
+    }
+
+    const finalJoined = joinedDate || joined || null;
+
+    try {
+      if (prisma) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "public"."Staff"
+           SET "name" = COALESCE($1, "name"),
+               "role" = COALESCE($2, "role"),
+               "shift" = COALESCE($3, "shift"),
+               "shiftType" = COALESCE($4, "shiftType"),
+               "startTime" = COALESCE($5, "startTime"),
+               "endTime" = COALESCE($6, "endTime"),
+               "phone" = COALESCE($7, "phone"),
+               "status" = COALESCE($8, "status"),
+               "monthlyPay" = COALESCE($9, "monthlyPay"),
+               "joinedDate" = COALESCE($10, "joinedDate")
+           WHERE "id" = $11 AND "branchId" = $12;`,
+          name || null,
+          role || null,
+          shift || null,
+          shiftType || null,
+          startTime || null,
+          endTime || null,
+          phone || null,
+          status || null,
+          parsedPay,
+          finalJoined,
+          id,
+          branchId
+        );
+
+        const updatedRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt"
+           FROM "public"."Staff"
+           WHERE "id" = $1 AND "branchId" = $2;`,
+          id, branchId
+        );
+
+        if (updatedRows.length === 0) {
+          return res.status(404).json({
+            success: false,
+            message: `Staff member ${id} not found in branch ${branchId}`
+          });
+        }
+
+        const s = updatedRows[0];
+        const updatedStaff = {
+          id: s.id,
+          branchId: s.branchId,
+          name: s.name,
+          role: s.role,
+          shift: s.shift,
+          shiftType: s.shiftType,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          phone: s.phone,
+          status: s.status,
+          monthlyPay: Number(s.monthlyPay || 18000),
+          pay: s.monthlyPay ? `₹${Number(s.monthlyPay).toLocaleString('en-IN')}/mo` : '₹18,000/mo',
+          joined: s.joinedDate || 'Today',
+          joinedDate: s.joinedDate || 'Today',
+          createdAt: s.createdAt
+        };
+
+        io.emit('staff_updated', { staff: updatedStaff, branchId });
+
+        return res.json({
+          success: true,
+          message: `Staff member ${id} updated successfully in PostgreSQL`,
+          staff: updatedStaff
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /staff PUT/PATCH] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update staff member in PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  };
+
+  router.put('/staff/:id', handleUpdateStaff);
+  router.patch('/staff/:id', handleUpdateStaff);
+
+  // 10i. DELETE /api/staff/:id (Delete staff member from PostgreSQL)
+  router.delete('/staff/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+
+    try {
+      if (prisma) {
+        await prisma.$executeRawUnsafe(
+          `DELETE FROM "public"."Staff" WHERE "id" = $1 AND "branchId" = $2;`,
+          id, branchId
+        );
+
+        io.emit('staff_deleted', { id, branchId });
+
+        return res.json({
+          success: true,
+          message: `Staff member ${id} deleted successfully from PostgreSQL`,
+          id
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /staff DELETE] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete staff member from PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
   // 11. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);

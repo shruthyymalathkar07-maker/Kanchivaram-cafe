@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserCheck, 
   Plus, 
@@ -13,6 +13,7 @@ import {
   X,
   CheckCircle2
 } from 'lucide-react';
+import { fetchStaff, createStaff, deleteStaff, socket } from '../services/api';
 
 const INITIAL_STAFF = [];
 
@@ -27,7 +28,8 @@ const TIME_OPTIONS = [
 ];
 
 export default function StaffView({ selectedBranch }) {
-  const isBrownBranch = selectedBranch?.id === 'branch-2';
+  const branchId = selectedBranch?.id || 'branch-1';
+  const isBrownBranch = branchId === 'branch-2';
   const [staffList, setStaffList] = useState(INITIAL_STAFF);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('All');
@@ -41,6 +43,53 @@ export default function StaffView({ selectedBranch }) {
   const [endTime, setEndTime] = useState('03:30 PM');
   const [phoneInput, setPhoneInput] = useState('');
   const [payInput, setPayInput] = useState('');
+
+  const loadStaffData = async () => {
+    try {
+      const res = await fetchStaff(branchId);
+      if (res && res.success && Array.isArray(res.staff)) {
+        setStaffList(res.staff);
+      }
+    } catch (err) {
+      console.warn('[StaffView] Failed to load staff from PostgreSQL:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadStaffData();
+  }, [branchId]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleStaffCreated = (data) => {
+      if (data?.branchId === branchId && data.staff) {
+        setStaffList(prev => {
+          if (prev.some(s => s.id === data.staff.id)) return prev;
+          return [data.staff, ...prev];
+        });
+      }
+    };
+    const handleStaffUpdated = (data) => {
+      if (data?.branchId === branchId && data.staff) {
+        setStaffList(prev => prev.map(s => s.id === data.staff.id ? data.staff : s));
+      }
+    };
+    const handleStaffDeleted = (data) => {
+      if (data?.branchId === branchId && data.id) {
+        setStaffList(prev => prev.filter(s => s.id !== data.id));
+      }
+    };
+
+    socket.on('staff_created', handleStaffCreated);
+    socket.on('staff_updated', handleStaffUpdated);
+    socket.on('staff_deleted', handleStaffDeleted);
+
+    return () => {
+      socket.off('staff_created', handleStaffCreated);
+      socket.off('staff_updated', handleStaffUpdated);
+      socket.off('staff_deleted', handleStaffDeleted);
+    };
+  }, [branchId]);
 
   const handleShiftTypeChange = (val) => {
     setShiftType(val);
@@ -61,36 +110,48 @@ export default function StaffView({ selectedBranch }) {
 
   const filteredStaff = staffList.filter(s => {
     const matchesSearch = 
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.phone.includes(searchQuery);
+      (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.phone || '').includes(searchQuery);
 
     const matchesStatus = selectedStatusFilter === 'All' || s.status === selectedStatusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddStaff = (e) => {
+  const handleAddStaff = async (e) => {
     e.preventDefault();
     if (!nameInput.trim() || !phoneInput.trim()) return;
 
     const formattedSchedule = `${shiftType} (${startTime} - ${endTime})`;
+    const formattedPhone = phoneInput.trim().startsWith('+91') ? phoneInput.trim() : `+91 ${phoneInput.trim()}`;
+    const cleanPayNum = payInput ? Number(payInput) : 18000;
 
-    const newStaff = {
-      id: `stf-${Date.now()}`,
+    const payload = {
       name: nameInput.trim(),
       role: roleInput,
       shift: formattedSchedule,
       shiftType,
       startTime,
       endTime,
-      phone: phoneInput.trim().startsWith('+91') ? phoneInput.trim() : `+91 ${phoneInput.trim()}`,
+      phone: formattedPhone,
       status: 'On Duty',
-      joined: 'Today',
-      pay: payInput ? `₹${Number(payInput).toLocaleString('en-IN')}/mo` : '₹18,000/mo'
+      monthlyPay: cleanPayNum,
+      joinedDate: 'Today',
+      branchId
     };
 
-    setStaffList(prev => [newStaff, ...prev]);
+    try {
+      const res = await createStaff(payload, branchId);
+      if (res && res.success && res.staff) {
+        setStaffList(prev => [res.staff, ...prev.filter(s => s.id !== res.staff.id)]);
+      } else {
+        await loadStaffData();
+      }
+    } catch (err) {
+      console.error('[StaffView] Error adding staff:', err);
+    }
+
     setNameInput('');
     setPhoneInput('');
     setPayInput('');
@@ -100,8 +161,17 @@ export default function StaffView({ selectedBranch }) {
     setIsAddModalOpen(false);
   };
 
-  const handleDeleteStaff = (id) => {
-    setStaffList(prev => prev.filter(s => s.id !== id));
+  const handleDeleteStaff = async (id) => {
+    try {
+      const res = await deleteStaff(id, branchId);
+      if (res && res.success) {
+        setStaffList(prev => prev.filter(s => s.id !== id));
+      } else {
+        await loadStaffData();
+      }
+    } catch (err) {
+      console.error('[StaffView] Error deleting staff:', err);
+    }
   };
 
   return (
