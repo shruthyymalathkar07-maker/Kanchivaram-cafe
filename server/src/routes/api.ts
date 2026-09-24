@@ -413,18 +413,6 @@ export function createApiRouter(io: SocketServer) {
           }
         }
 
-            processedLineItems.push({
-              itemId: createdItem.id,
-              itemName: createdItem.name,
-              category: createdItem.category,
-              qty: numQty,
-              unit: createdItem.unit,
-              pricePerUnit: numPrice,
-              total: itemTotal
-            });
-          }
-        }
-
         const fullPurchase = {
           ...purchaseRecord,
           items: processedLineItems
