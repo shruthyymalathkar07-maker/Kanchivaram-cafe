@@ -282,21 +282,26 @@ export function createApiRouter(io: SocketServer) {
           }
         }
 
-        // 1. Create Purchase record in PostgreSQL
-        const purchaseRecord = await prisma.purchase.create({
-          data: {
-            id: purchaseId,
-            branchId,
-            invoiceRef: finalInvoiceRef,
-            supplier: finalSupplier,
-            supplierName: finalSupplier,
-            category: items[0]?.category || 'Raw Ingredients',
-            notes: notes || 'Incoming stock purchase',
-            totalAmount,
-            recordedBy: 'Shruthy A',
-            dateIso: todayIso
-          } as any
-        });
+        // 1. Create Purchase record in PostgreSQL via direct SQL
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+           ON CONFLICT ("id") DO NOTHING;`,
+          purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
+        );
+
+        const purchaseRecord = {
+          id: purchaseId,
+          branchId,
+          invoiceRef: finalInvoiceRef,
+          supplier: finalSupplier,
+          category: items[0]?.category || 'Raw Ingredients',
+          notes: notes || 'Incoming stock purchase',
+          totalAmount,
+          recordedBy: 'Shruthy A',
+          dateIso: todayIso,
+          createdAt: new Date()
+        };
 
         // 2. Process each item: Upsert InventoryItem, Create PurchaseItem, Create StockLedger
         for (const lineItem of items) {
@@ -306,73 +311,58 @@ export function createApiRouter(io: SocketServer) {
           const itemTotal = numQty * numPrice;
 
           // Find item by ID or name
-          let dbItem = null;
+          let dbItem: any = null;
           if (lineItem.itemId) {
-            dbItem = await prisma.inventoryItem.findUnique({ where: { id: lineItem.itemId } });
+            const foundById = await prisma.$queryRawUnsafe<any[]>(
+              `SELECT * FROM "public"."InventoryItem" WHERE "id" = $1;`,
+              lineItem.itemId
+            );
+            if (foundById.length > 0) dbItem = foundById[0];
           }
           if (!dbItem && lineItem.itemName) {
-            dbItem = await prisma.inventoryItem.findFirst({
-              where: { name: { equals: lineItem.itemName.trim(), mode: 'insensitive' } }
-            });
+            const foundByName = await prisma.$queryRawUnsafe<any[]>(
+              `SELECT * FROM "public"."InventoryItem" WHERE LOWER("name") = LOWER($1);`,
+              lineItem.itemName.trim()
+            );
+            if (foundByName.length > 0) dbItem = foundByName[0];
           }
 
           if (dbItem) {
             // Update existing inventory item stockIn
-            const updated = await prisma.inventoryItem.update({
-              where: { id: dbItem.id },
-              data: {
-                stockIn: { increment: numQty },
-                costPerUnit: numPrice > 0 ? numPrice : dbItem.costPerUnit,
-                supplier: finalSupplier || dbItem.supplier,
-                lastMovement: new Date()
-              }
-            });
+            await prisma.$executeRawUnsafe(
+              `UPDATE "public"."InventoryItem"
+               SET "stockIn" = "stockIn" + $1,
+                   "costPerUnit" = CASE WHEN $2 > 0 THEN $2 ELSE "costPerUnit" END,
+                   "supplier" = $3,
+                   "lastMovement" = CURRENT_TIMESTAMP
+               WHERE "id" = $4;`,
+              numQty, numPrice, finalSupplier, dbItem.id
+            );
 
+            const updatedRows = await prisma.$queryRawUnsafe<any[]>(
+              `SELECT * FROM "public"."InventoryItem" WHERE "id" = $1;`,
+              dbItem.id
+            );
+            const updated = updatedRows[0] || dbItem;
             const remainingAfter = Math.max(0, (updated.openingStock || 0) + (updated.stockIn || 0) - (updated.stockOut || 0));
 
             // Create PurchaseItem
-            await prisma.purchaseItem.create({
-              data: {
-                id: `pi-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                purchaseId: purchaseRecord.id,
-                itemId: updated.id,
-                itemName: updated.name,
-                category: updated.category,
-                qty: numQty,
-                unit: lineItem.unit || updated.unit,
-                pricePerUnit: numPrice,
-                total: itemTotal
-              }
-            });
+            const piId = `pi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "public"."PurchaseItem" ("id", "purchaseId", "itemId", "itemName", "category", "qty", "unit", "pricePerUnit", "total")
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               ON CONFLICT ("id") DO NOTHING;`,
+              piId, purchaseRecord.id, updated.id, updated.name, updated.category, numQty, lineItem.unit || updated.unit, numPrice, itemTotal
+            );
 
             // Create StockLedger movement
-            try {
-              await prisma.stockLedger.create({
-                data: {
-                  id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
-                  branchId,
-                  itemId: updated.id,
-                  itemName: updated.name,
-                  type: 'STOCK_IN',
-                  qty: numQty,
-                  unit: lineItem.unit || updated.unit,
-                  supplier: finalSupplier,
-                  ref: finalInvoiceRef,
-                  source: 'Purchase / Stock In',
-                  notes: notes || `Purchase In (${finalInvoiceRef})`,
-                  remainingAfter,
-                  purchaseId: purchaseRecord.id,
-                  dateIso: todayIso
-                }
-              });
-            } catch (slErr: any) {
-              await prisma.$executeRawUnsafe(
-                `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "purchaseId", "dateIso", "createdAt")
-                 VALUES ($1, $2, $3, $4, 'STOCK_IN', $5, $6, $7, $8, 'Purchase / Stock In', $9, $10, $11, $12, CURRENT_TIMESTAMP)
-                 ON CONFLICT ("id") DO NOTHING;`,
-                `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`, branchId, updated.id, updated.name, numQty, lineItem.unit || updated.unit, finalSupplier, finalInvoiceRef, notes || `Purchase In (${finalInvoiceRef})`, remainingAfter, purchaseRecord.id, todayIso
-              ).catch(() => {});
-            }
+            const mvId = `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "purchaseId", "dateIso", "createdAt")
+               VALUES ($1, $2, $3, $4, 'STOCK_IN', $5, $6, $7, $8, 'Purchase / Stock In', $9, $10, $11, $12, CURRENT_TIMESTAMP)
+               ON CONFLICT ("id") DO NOTHING;`,
+              mvId, branchId, updated.id, updated.name, numQty, lineItem.unit || updated.unit, finalSupplier, finalInvoiceRef, notes || `Purchase In (${finalInvoiceRef})`, remainingAfter, purchaseRecord.id, todayIso
+            );
 
             processedLineItems.push({
               itemId: updated.id,
@@ -386,57 +376,42 @@ export function createApiRouter(io: SocketServer) {
           } else if (lineItem.itemName) {
             // Genuinely new raw material item: create in catalog
             const newRmId = `rm-${Date.now().toString().slice(-6)}`;
-            const createdItem = await prisma.inventoryItem.create({
-              data: {
-                id: newRmId,
-                branchId,
-                name: lineItem.itemName.trim(),
-                category: lineItem.category || 'Raw Ingredients',
-                unit: lineItem.unit || 'kg',
-                openingStock: 0,
-                stockIn: numQty,
-                stockOut: 0,
-                minThreshold: 0,
-                costPerUnit: numPrice,
-                supplier: finalSupplier,
-                lastMovement: new Date()
-              }
-            });
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "public"."InventoryItem" ("id", "branchId", "name", "category", "unit", "openingStock", "stockIn", "stockOut", "minThreshold", "costPerUnit", "supplier", "lastMovement", "createdAt", "updatedAt")
+               VALUES ($1, $2, $3, $4, $5, 0, $6, 0, 0, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+               ON CONFLICT ("id") DO NOTHING;`,
+              newRmId, branchId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', lineItem.unit || 'kg', numQty, numPrice, finalSupplier
+            );
 
             // Create PurchaseItem
-            await prisma.purchaseItem.create({
-              data: {
-                id: `pi-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                purchaseId: purchaseRecord.id,
-                itemId: createdItem.id,
-                itemName: createdItem.name,
-                category: createdItem.category,
-                qty: numQty,
-                unit: createdItem.unit,
-                pricePerUnit: numPrice,
-                total: itemTotal
-              }
-            });
+            const piId = `pi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "public"."PurchaseItem" ("id", "purchaseId", "itemId", "itemName", "category", "qty", "unit", "pricePerUnit", "total")
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               ON CONFLICT ("id") DO NOTHING;`,
+              piId, purchaseRecord.id, newRmId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', numQty, lineItem.unit || 'kg', numPrice, itemTotal
+            );
 
             // Create StockLedger movement
-            await prisma.stockLedger.create({
-              data: {
-                id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
-                branchId,
-                itemId: createdItem.id,
-                itemName: createdItem.name,
-                type: 'STOCK_IN',
-                qty: numQty,
-                unit: createdItem.unit,
-                supplier: finalSupplier,
-                ref: finalInvoiceRef,
-                source: 'Purchase / Stock In',
-                notes: notes || `New Item Purchase (${finalInvoiceRef})`,
-                remainingAfter: numQty,
-                purchaseId: purchaseRecord.id,
-                dateIso: todayIso
-              }
+            const mvId = `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "purchaseId", "dateIso", "createdAt")
+               VALUES ($1, $2, $3, $4, 'STOCK_IN', $5, $6, $7, $8, 'Purchase / Stock In', $9, $10, $11, $12, CURRENT_TIMESTAMP)
+               ON CONFLICT ("id") DO NOTHING;`,
+              mvId, branchId, newRmId, lineItem.itemName.trim(), numQty, lineItem.unit || 'kg', finalSupplier, finalInvoiceRef, notes || `New Item Purchase (${finalInvoiceRef})`, numQty, purchaseRecord.id, todayIso
+            );
+
+            processedLineItems.push({
+              itemId: newRmId,
+              itemName: lineItem.itemName.trim(),
+              category: lineItem.category || 'Raw Ingredients',
+              qty: numQty,
+              unit: lineItem.unit || 'kg',
+              pricePerUnit: numPrice,
+              total: itemTotal
             });
+          }
+        }
 
             processedLineItems.push({
               itemId: createdItem.id,
