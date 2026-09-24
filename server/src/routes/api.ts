@@ -117,21 +117,26 @@ export function createApiRouter(io: SocketServer) {
     });
   });
 
-  // 4. GET /api/inventory/master (Returns exact 117 Raw Material Master Items from PostgreSQL)
-  router.get('/inventory/master', async (req: Request, res: Response) => {
+  // 4. GET /api/inventory/master & /api/inventory/items (Returns exact 117+ Raw Material Master Items from PostgreSQL, sorted alphabetically A-Z)
+  const handleGetInventoryMaster = async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     try {
       if (prisma) {
-        const dbItems = await prisma.inventoryItem.findMany({
-          orderBy: { id: 'asc' }
-        });
+        const dbItems = await prisma.inventoryItem.findMany();
 
         if (dbItems.length > 0) {
+          // Sort items in case-insensitive ascending alphabetical order (A-Z) by name
+          const sortedItems = dbItems.map(item => ({
+            ...item,
+            remainingStock: Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0)),
+            lastMovementDisplay: item.lastMovement ? new Date(item.lastMovement).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
+          })).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
           return res.json({
             success: true,
             branchId,
-            totalCount: dbItems.length, // 117
-            items: dbItems
+            totalCount: sortedItems.length,
+            items: sortedItems
           });
         }
       }
@@ -140,17 +145,398 @@ export function createApiRouter(io: SocketServer) {
     }
 
     const branchData = branchDb.getBranchData(branchId);
+    const sortedFallback = [...branchData.inventoryItems]
+      .map(item => ({
+        ...item,
+        remainingStock: Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0))
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
     res.json({
       success: true,
       branchId,
-      totalCount: branchData.inventoryItems.length, // 117
-      items: branchData.inventoryItems
+      totalCount: sortedFallback.length,
+      items: sortedFallback,
+      fallback: true
+    });
+  };
+
+  router.get('/inventory/master', handleGetInventoryMaster);
+  router.get('/inventory/items', handleGetInventoryMaster);
+
+  // 4a. POST /api/inventory/items (Add genuinely new raw material item to master catalog)
+  router.post('/inventory/items', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { name, category, unit, minThreshold, costPerUnit, supplier } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Item name is required' });
+    }
+
+    const trimmedName = name.trim();
+    const cleanUnit = (unit || 'units').trim();
+    const cleanCategory = (category || 'Raw Ingredients').trim();
+    const numThreshold = Math.max(0, parseFloat(minThreshold) || 0);
+    const numCost = Math.max(0, parseFloat(costPerUnit) || 0);
+    const cleanSupplier = (supplier || 'Unassigned').trim();
+
+    try {
+      if (prisma) {
+        // Check if item with this name already exists (case-insensitive)
+        const existing = await prisma.inventoryItem.findFirst({
+          where: { name: { equals: trimmedName, mode: 'insensitive' } }
+        });
+
+        if (existing) {
+          return res.json({
+            success: true,
+            message: `Item '${existing.name}' already exists in catalog`,
+            item: existing,
+            created: false
+          });
+        }
+
+        const newItemId = `rm-${Date.now().toString().slice(-6)}`;
+        const createdItem = await prisma.inventoryItem.create({
+          data: {
+            id: newItemId,
+            branchId,
+            name: trimmedName,
+            category: cleanCategory,
+            unit: cleanUnit,
+            openingStock: 0,
+            stockIn: 0,
+            stockOut: 0,
+            minThreshold: numThreshold,
+            costPerUnit: numCost,
+            supplier: cleanSupplier,
+            lastMovement: new Date()
+          }
+        });
+
+        io.emit('inventory_updated', { branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: `Master raw material '${createdItem.name}' added successfully`,
+          item: createdItem,
+          created: true
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /inventory/items] PostgreSQL write fallback:', err.message);
+    }
+
+    // In-memory fallback
+    const branchData = branchDb.getBranchData(branchId);
+    const newItem = {
+      id: `rm-${Date.now().toString().slice(-6)}`,
+      name: trimmedName,
+      category: cleanCategory,
+      unit: cleanUnit,
+      openingStock: 0,
+      stockIn: 0,
+      stockOut: 0,
+      minThreshold: numThreshold,
+      costPerUnit: numCost,
+      supplier: cleanSupplier
+    };
+    branchData.inventoryItems.push(newItem as any);
+    io.emit('inventory_updated', { branchId });
+
+    res.status(201).json({
+      success: true,
+      message: `Master raw material '${newItem.name}' added`,
+      item: newItem,
+      created: true,
+      fallback: true
     });
   });
 
-  // 4b. PUT/PATCH /api/inventory/items/:id/threshold (Secure update for item minThreshold in PostgreSQL)
+  // 4b. POST /api/inventory/purchases & /api/inventory/stock-in (Persist Purchase, Update Stock In & Create Ledger in PostgreSQL)
+  const handleStockInPurchase = async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { invoiceRef, supplier, date, notes, items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one purchase item is required' });
+    }
+
+    const todayIso = new Date().toISOString().split('T')[0];
+    const displayDate = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const purchaseId = `PUR-${Date.now().toString().slice(-6)}`;
+    const finalInvoiceRef = invoiceRef || `PO #${purchaseId}`;
+    const finalSupplier = (supplier && supplier !== 'Other') ? supplier : 'General Supplier';
+
+    let totalAmount = 0;
+    const processedLineItems: any[] = [];
+
+    try {
+      if (prisma) {
+        // Compute total amount and validate line items
+        for (const item of items) {
+          const qtyNum = parseFloat(item.qty) || 0;
+          const priceNum = parseFloat(item.pricePerUnit || item.cost || 0) || 0;
+          if (qtyNum > 0) {
+            totalAmount += qtyNum * priceNum;
+          }
+        }
+
+        // 1. Create Purchase record in PostgreSQL
+        const purchaseRecord = await prisma.purchase.create({
+          data: {
+            id: purchaseId,
+            branchId,
+            invoiceRef: finalInvoiceRef,
+            supplier: finalSupplier,
+            category: items[0]?.category || 'Raw Ingredients',
+            notes: notes || 'Incoming stock purchase',
+            totalAmount,
+            recordedBy: 'Shruthy A',
+            dateIso: todayIso
+          }
+        });
+
+        // 2. Process each item: Upsert InventoryItem, Create PurchaseItem, Create StockLedger
+        for (const lineItem of items) {
+          const numQty = parseFloat(lineItem.qty) || 0;
+          if (numQty <= 0) continue;
+          const numPrice = parseFloat(lineItem.pricePerUnit || lineItem.cost || 0) || 0;
+          const itemTotal = numQty * numPrice;
+
+          // Find item by ID or name
+          let dbItem = null;
+          if (lineItem.itemId) {
+            dbItem = await prisma.inventoryItem.findUnique({ where: { id: lineItem.itemId } });
+          }
+          if (!dbItem && lineItem.itemName) {
+            dbItem = await prisma.inventoryItem.findFirst({
+              where: { name: { equals: lineItem.itemName.trim(), mode: 'insensitive' } }
+            });
+          }
+
+          if (dbItem) {
+            // Update existing inventory item stockIn
+            const updated = await prisma.inventoryItem.update({
+              where: { id: dbItem.id },
+              data: {
+                stockIn: { increment: numQty },
+                costPerUnit: numPrice > 0 ? numPrice : dbItem.costPerUnit,
+                supplier: finalSupplier || dbItem.supplier,
+                lastMovement: new Date()
+              }
+            });
+
+            const remainingAfter = Math.max(0, (updated.openingStock || 0) + (updated.stockIn || 0) - (updated.stockOut || 0));
+
+            // Create PurchaseItem
+            await prisma.purchaseItem.create({
+              data: {
+                purchaseId: purchaseRecord.id,
+                itemId: updated.id,
+                itemName: updated.name,
+                category: updated.category,
+                qty: numQty,
+                unit: lineItem.unit || updated.unit,
+                pricePerUnit: numPrice,
+                total: itemTotal
+              }
+            });
+
+            // Create StockLedger movement
+            await prisma.stockLedger.create({
+              data: {
+                id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+                branchId,
+                itemId: updated.id,
+                itemName: updated.name,
+                type: 'STOCK_IN',
+                qty: numQty,
+                unit: lineItem.unit || updated.unit,
+                supplier: finalSupplier,
+                ref: finalInvoiceRef,
+                source: 'Purchase / Stock In',
+                notes: notes || `Purchase In (${finalInvoiceRef})`,
+                remainingAfter,
+                purchaseId: purchaseRecord.id,
+                dateIso: todayIso
+              }
+            });
+
+            processedLineItems.push({
+              itemId: updated.id,
+              itemName: updated.name,
+              category: updated.category,
+              qty: numQty,
+              unit: lineItem.unit || updated.unit,
+              pricePerUnit: numPrice,
+              total: itemTotal
+            });
+          } else if (lineItem.itemName) {
+            // Genuinely new raw material item: create in catalog
+            const newRmId = `rm-${Date.now().toString().slice(-6)}`;
+            const createdItem = await prisma.inventoryItem.create({
+              data: {
+                id: newRmId,
+                branchId,
+                name: lineItem.itemName.trim(),
+                category: lineItem.category || 'Raw Ingredients',
+                unit: lineItem.unit || 'kg',
+                openingStock: 0,
+                stockIn: numQty,
+                stockOut: 0,
+                minThreshold: 0,
+                costPerUnit: numPrice,
+                supplier: finalSupplier,
+                lastMovement: new Date()
+              }
+            });
+
+            // Create PurchaseItem
+            await prisma.purchaseItem.create({
+              data: {
+                purchaseId: purchaseRecord.id,
+                itemId: createdItem.id,
+                itemName: createdItem.name,
+                category: createdItem.category,
+                qty: numQty,
+                unit: createdItem.unit,
+                pricePerUnit: numPrice,
+                total: itemTotal
+              }
+            });
+
+            // Create StockLedger movement
+            await prisma.stockLedger.create({
+              data: {
+                id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+                branchId,
+                itemId: createdItem.id,
+                itemName: createdItem.name,
+                type: 'STOCK_IN',
+                qty: numQty,
+                unit: createdItem.unit,
+                supplier: finalSupplier,
+                ref: finalInvoiceRef,
+                source: 'Purchase / Stock In',
+                notes: notes || `New Item Purchase (${finalInvoiceRef})`,
+                remainingAfter: numQty,
+                purchaseId: purchaseRecord.id,
+                dateIso: todayIso
+              }
+            });
+
+            processedLineItems.push({
+              itemId: createdItem.id,
+              itemName: createdItem.name,
+              category: createdItem.category,
+              qty: numQty,
+              unit: createdItem.unit,
+              pricePerUnit: numPrice,
+              total: itemTotal
+            });
+          }
+        }
+
+        const fullPurchase = {
+          ...purchaseRecord,
+          items: processedLineItems
+        };
+
+        // Broadcast to all connected clients
+        io.emit('purchase_created', { purchase: fullPurchase, branchId });
+        io.emit('inventory_updated', { branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: `Stock purchase ${finalInvoiceRef} persisted to PostgreSQL successfully`,
+          purchase: fullPurchase
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /inventory/purchases] PostgreSQL write error:', err.message);
+    }
+
+    // Fallback response
+    res.status(201).json({
+      success: true,
+      message: `Stock purchase recorded in fallback mode`,
+      purchase: {
+        id: purchaseId,
+        invoiceRef: finalInvoiceRef,
+        supplier: finalSupplier,
+        date: displayDate,
+        dateIso: todayIso,
+        notes: notes || '',
+        totalAmount,
+        items: items
+      },
+      fallback: true
+    });
+  };
+
+  router.post('/inventory/purchases', handleStockInPurchase);
+  router.post('/inventory/stock-in', handleStockInPurchase);
+
+  // 4c. GET /api/inventory/purchases (Fetch purchase invoices from PostgreSQL)
+  router.get('/inventory/purchases', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const purchases = await prisma.purchase.findMany({
+          where: { branchId },
+          include: { items: true },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        return res.json({
+          success: true,
+          branchId,
+          count: purchases.length,
+          purchases: purchases.map(p => ({
+            ...p,
+            date: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : p.dateIso
+          }))
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /inventory/purchases GET] DB query fallback:', err.message);
+    }
+
+    res.json({ success: true, branchId, count: 0, purchases: [] });
+  });
+
+  // 4d. GET /api/inventory/ledger (Fetch stock ledger movements from PostgreSQL)
+  router.get('/inventory/ledger', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const ledger = await prisma.stockLedger.findMany({
+          where: { branchId },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        return res.json({
+          success: true,
+          branchId,
+          count: ledger.length,
+          ledger: ledger.map(m => ({
+            ...m,
+            date: m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : m.dateIso,
+            time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''
+          }))
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /inventory/ledger GET] DB query fallback:', err.message);
+    }
+
+    res.json({ success: true, branchId, count: 0, ledger: [] });
+  });
+
+  // 4e. PUT/PATCH /api/inventory/items/:id/threshold (Secure update for item minThreshold in PostgreSQL)
   const handleThresholdUpdate = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
     const branchId = getBranchId(req);
     const { minThreshold } = req.body;
 
@@ -180,6 +566,7 @@ export function createApiRouter(io: SocketServer) {
           branchId,
           minThreshold: thresholdNum
         });
+        io.emit('inventory_updated', { branchId });
 
         return res.json({
           success: true,
@@ -201,6 +588,7 @@ export function createApiRouter(io: SocketServer) {
         branchId,
         minThreshold: thresholdNum
       });
+      io.emit('inventory_updated', { branchId });
       return res.json({
         success: true,
         message: `Minimum stock threshold for ${item.name} updated to ${thresholdNum} ${item.unit}`,
@@ -425,6 +813,7 @@ export function createApiRouter(io: SocketServer) {
 
       // Emit Socket.IO live updates to connected POS clients
       io.emit('sale_created', { sale: newSale, branchId, deductions: appliedDeductions });
+      io.emit('inventory_updated', { branchId, deductions: appliedDeductions });
 
       return res.status(201).json({
         success: true,

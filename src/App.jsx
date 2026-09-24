@@ -92,6 +92,7 @@ export default function App() {
       const branchId = authState.selectedBranch?.id || 'branch-1';
       const liveStats = await fetchDashboardStats(salesTimeframe, branchId);
       const liveProducts = await fetchProducts();
+      await inventoryStore.hydrateFromBackend(branchId);
       if (liveStats) setStats(liveStats);
       if (liveProducts) setProductsData(liveProducts);
     };
@@ -111,9 +112,14 @@ export default function App() {
       loadInitialData();
     });
 
+    socket.on('inventory_updated', () => {
+      loadInitialData();
+    });
+
     return () => {
       socket.off('sale_created');
       socket.off('stock_updated');
+      socket.off('inventory_updated');
     };
   }, [salesTimeframe, authState.isAuthenticated, authState.selectedBranch?.id]);
 

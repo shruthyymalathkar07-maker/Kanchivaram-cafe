@@ -112,6 +112,64 @@ export async function fetchInventoryMaster(branchId = 'branch-1') {
   }
 }
 
+export async function fetchInventoryPurchases(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/purchases`, {
+      headers: { 'x-branch-id': branchId }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch purchases error:', err);
+    return null;
+  }
+}
+
+export async function fetchStockLedger(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/ledger`, {
+      headers: { 'x-branch-id': branchId }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch ledger error:', err);
+    return null;
+  }
+}
+
+export async function createPurchaseStockIn(purchasePayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/purchases`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(purchasePayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create purchase stock in error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function createInventoryItem(itemPayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(itemPayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create inventory item error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 export async function updateItemThreshold(itemId, minThreshold, branchId = 'branch-1') {
   try {
     const res = await fetch(`${API_BASE_URL}/inventory/items/${itemId}/threshold`, {
@@ -128,4 +186,5 @@ export async function updateItemThreshold(itemId, minThreshold, branchId = 'bran
     return { success: false, message: err.message };
   }
 }
+
 

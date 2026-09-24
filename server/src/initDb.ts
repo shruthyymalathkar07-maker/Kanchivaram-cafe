@@ -214,7 +214,7 @@ export async function ensureDatabaseInitialized() {
             productName: bom.productName,
             status: bom.status,
             servingQty: bom.servingQty,
-            servingUom: bom.uom || 'units',
+            servingUom: bom.servingUom || 'units',
             finalProcess: bom.finalProcess || ''
           },
           create: {
@@ -223,7 +223,7 @@ export async function ensureDatabaseInitialized() {
             productName: bom.productName,
             status: bom.status,
             servingQty: bom.servingQty,
-            servingUom: bom.uom || 'units',
+            servingUom: bom.servingUom || 'units',
             finalProcess: bom.finalProcess || ''
           }
         });
@@ -232,17 +232,17 @@ export async function ensureDatabaseInitialized() {
           where: { recipeId: recipeRecord.id }
         });
 
-        if (bom.items && bom.items.length > 0) {
-          for (let step = 0; step < bom.items.length; step++) {
-            const item = bom.items[step];
+        if (bom.processes && bom.processes.length > 0) {
+          for (let step = 0; step < bom.processes.length; step++) {
+            const item = bom.processes[step];
             await prisma.recipeItem.create({
               data: {
                 id: `ri-${recipeRecord.id}-${step + 1}`,
                 recipeId: recipeRecord.id,
                 stepNumber: step + 1,
                 rawMaterialName: item.rawMaterialName,
-                inventoryItemId: item.inventoryItemId,
-                quantity: item.quantity,
+                inventoryItemId: item.rawMaterialId,
+                quantity: item.qty,
                 uom: item.uom,
                 process: item.process
               }

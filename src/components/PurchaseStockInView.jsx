@@ -93,6 +93,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
   useEffect(() => {
     if (selectedBranch?.id) {
       inventoryStore.setBranch(selectedBranch.id);
+      inventoryStore.hydrateFromBackend(selectedBranch.id);
       setStoreState(inventoryStore.getState());
     }
   }, [selectedBranch?.id]);
@@ -106,7 +107,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
   const openAddModal = () => {
     const autoRef = `PO #SUP-${Math.floor(8800 + Math.random() * 200)}`;
-    const firstItem = storeState.items.length > 0 ? storeState.items[0] : STANDARD_INVENTORY_ITEMS[0];
+    const firstItem = storeState.items.length > 0 ? storeState.items[0] : null;
     setFormData({
       invoiceRef: autoRef,
       supplier: SUPPLIERS[0],
@@ -120,7 +121,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
           category: firstItem?.category || 'Raw Ingredients',
           qty: 10,
           unit: firstItem?.unit || 'kg',
-          pricePerUnit: firstItem?.costPerUnit || firstItem?.cost || 100
+          pricePerUnit: firstItem?.costPerUnit || '',
+          isCustom: false
         }
       ]
     });
@@ -142,15 +144,31 @@ export default function PurchaseStockInView({ selectedBranch }) {
         category: i.category || 'Raw Ingredients',
         qty: i.qty,
         unit: i.unit,
-        pricePerUnit: i.pricePerUnit
+        pricePerUnit: i.pricePerUnit,
+        isCustom: false
       }))
     });
     setIsAddModalOpen(true);
   };
 
   const handleItemSelect = (index, selectedIdentifier) => {
-    const selectedItem = storeState.items.find(i => i.id === selectedIdentifier || i.name === selectedIdentifier)
-      || STANDARD_INVENTORY_ITEMS.find(i => i.id === selectedIdentifier || i.name === selectedIdentifier);
+    if (selectedIdentifier === '__CUSTOM__') {
+      setFormData(prev => {
+        const updatedItems = [...prev.items];
+        updatedItems[index] = {
+          ...updatedItems[index],
+          itemId: '',
+          itemName: '',
+          isCustom: true
+        };
+        return { ...prev, items: updatedItems };
+      });
+      return;
+    }
+
+    const selectedItem = storeState.items.find(i => 
+      i.id === selectedIdentifier || i.name.toLowerCase() === selectedIdentifier.toLowerCase()
+    );
 
     setFormData(prev => {
       const updatedItems = [...prev.items];
@@ -159,15 +177,17 @@ export default function PurchaseStockInView({ selectedBranch }) {
           ...updatedItems[index],
           itemId: selectedItem.id,
           itemName: selectedItem.name,
-          category: selectedItem.category,
-          unit: selectedItem.unit,
-          pricePerUnit: selectedItem.costPerUnit || selectedItem.cost || updatedItems[index].pricePerUnit || ''
+          category: selectedItem.category || 'Raw Ingredients',
+          unit: selectedItem.unit || 'units',
+          pricePerUnit: selectedItem.costPerUnit || updatedItems[index].pricePerUnit || '',
+          isCustom: false
         };
       } else {
         updatedItems[index] = {
           ...updatedItems[index],
           itemId: '',
-          itemName: selectedIdentifier
+          itemName: selectedIdentifier,
+          isCustom: true
         };
       }
       return { ...prev, items: updatedItems };
@@ -183,9 +203,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
   };
 
   const addLineItem = () => {
-    const combinedCatalog = [...storeState.items, ...STANDARD_INVENTORY_ITEMS.filter(std => !storeState.items.some(i => i.name.toLowerCase() === std.name.toLowerCase()))];
     const currentItemNames = new Set(formData.items.map(i => i.itemName).filter(Boolean));
-    const nextCatalogItem = combinedCatalog.find(i => !currentItemNames.has(i.name)) || combinedCatalog[0];
+    const nextCatalogItem = storeState.items.find(i => !currentItemNames.has(i.name)) || storeState.items[0];
 
     setFormData(prev => ({
       ...prev,
@@ -197,7 +216,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
           category: nextCatalogItem ? nextCatalogItem.category : 'Raw Ingredients',
           qty: '',
           unit: nextCatalogItem ? nextCatalogItem.unit : 'kg',
-          pricePerUnit: nextCatalogItem ? (nextCatalogItem.costPerUnit || nextCatalogItem.cost || '') : ''
+          pricePerUnit: nextCatalogItem ? (nextCatalogItem.costPerUnit || '') : '',
+          isCustom: false
         }
       ]
     }));
@@ -222,11 +242,11 @@ export default function PurchaseStockInView({ selectedBranch }) {
     }, 0);
   };
 
-  const handleSavePurchase = (e) => {
+  const handleSavePurchase = async (e) => {
     e.preventDefault();
     
     // Validate line items
-    const validItems = formData.items.filter(i => i.itemName && parseFloat(i.qty) > 0);
+    const validItems = formData.items.filter(i => i.itemName && i.itemName.trim() && parseFloat(i.qty) > 0);
     if (validItems.length === 0) {
       alert("Please enter a valid item name and quantity greater than 0.");
       return;
@@ -242,11 +262,13 @@ export default function PurchaseStockInView({ selectedBranch }) {
       items: validItems
     };
 
+    const branchId = selectedBranch?.id || 'branch-1';
+
     if (editingPurchase) {
-      inventoryStore.updatePurchase(editingPurchase.id, payload);
+      inventoryStore.updatePurchase(editingPurchase.id, payload, branchId);
       showToast(`Purchase ${editingPurchase.invoiceRef} updated & inventory re-synchronized!`);
     } else {
-      inventoryStore.recordPurchase(payload);
+      inventoryStore.recordPurchase(payload, branchId);
       showToast(`Stock purchase ${payload.invoiceRef} recorded & stock updated!`);
     }
 
@@ -926,25 +948,42 @@ export default function PurchaseStockInView({ selectedBranch }) {
                           
                           {/* Item Selector / Custom Name */}
                           <div className="sm:col-span-4">
-                            <label className="block text-[10px] font-bold text-[#547363] mb-0.5">Item Name</label>
-                            <select
-                              value={line.itemName || line.itemId}
-                              onChange={(e) => handleItemSelect(idx, e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e]"
-                            >
-                              {storeState.items.length > 0 && (
-                                <optgroup label="Active Inventory Items">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <label className="text-[10px] font-bold text-[#547363]">Item Name</label>
+                              {line.isCustom ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleItemSelect(idx, storeState.items[0]?.name || '')}
+                                  className="text-[9px] text-[#0f3823] font-bold underline cursor-pointer"
+                                >
+                                  Pick from Catalog
+                                </button>
+                              ) : null}
+                            </div>
+                            {line.isCustom ? (
+                              <input
+                                type="text"
+                                required
+                                value={line.itemName}
+                                onChange={(e) => handleLineItemChange(idx, 'itemName', e.target.value)}
+                                placeholder="Enter custom item name"
+                                className="w-full px-2.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e] focus:outline-none focus:ring-1 focus:ring-[#0f3823]"
+                              />
+                            ) : (
+                              <select
+                                value={line.itemName || line.itemId}
+                                onChange={(e) => handleItemSelect(idx, e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e] focus:outline-none focus:ring-1 focus:ring-[#0f3823]"
+                              >
+                                <option value="">-- Select Raw Material (A-Z) --</option>
+                                <option value="__CUSTOM__">✨ + Add Custom Raw Material...</option>
+                                <optgroup label={`Master Catalog (${storeState.items.length} Items, Alphabetical A-Z)`}>
                                   {storeState.items.map(i => (
                                     <option key={i.id} value={i.name}>{i.name} ({i.unit})</option>
                                   ))}
                                 </optgroup>
-                              )}
-                              <optgroup label="Standard Café Catalog">
-                                {STANDARD_INVENTORY_ITEMS.map(i => (
-                                  <option key={i.id} value={i.name}>{i.name} ({i.unit})</option>
-                                ))}
-                              </optgroup>
-                            </select>
+                              </select>
+                            )}
                           </div>
 
                           {/* Category */}

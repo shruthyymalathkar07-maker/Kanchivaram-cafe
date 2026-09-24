@@ -1,24 +1,35 @@
 // Centralized Single Source of Truth Real-Time Inventory Store for Kanchivaram Café
 import { CLIENT_RAW_MATERIALS_MASTER, CLIENT_BOM_MASTER } from '../data/masterData';
+import { 
+  fetchInventoryMaster, 
+  fetchInventoryPurchases, 
+  fetchStockLedger, 
+  createPurchaseStockIn, 
+  updateItemThreshold as apiUpdateItemThreshold,
+  socket 
+} from './api';
 
 const getTodayIso = () => new Date().toISOString().split('T')[0];
 const getDisplayDate = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 const getDisplayTime = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-const createInitialItems = () => CLIENT_RAW_MATERIALS_MASTER.map(rm => ({
-  id: rm.id,
-  name: rm.name,
-  category: rm.category || 'Unspecified',
-  rawCategory: rm.category,
-  unit: rm.unit || 'units',
-  openingStock: 0,
-  stockIn: 0,
-  stockOut: 0,
-  minThreshold: 0,
-  costPerUnit: 0,
-  supplier: 'Unassigned',
-  lastMovement: '-'
-}));
+// Always sort master items alphabetically in ascending order (A-Z)
+const createInitialItems = () => [...CLIENT_RAW_MATERIALS_MASTER]
+  .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  .map(rm => ({
+    id: rm.id,
+    name: rm.name,
+    category: rm.category || 'Unspecified',
+    rawCategory: rm.category,
+    unit: rm.unit || 'units',
+    openingStock: 0,
+    stockIn: 0,
+    stockOut: 0,
+    minThreshold: 0,
+    costPerUnit: 0,
+    supplier: 'Unassigned',
+    lastMovement: '-'
+  }));
 
 class InventoryStore {
   constructor() {
@@ -40,6 +51,33 @@ class InventoryStore {
     };
     this.currentBranchId = 'branch-1';
     this.listeners = new Set();
+    this.isHydrating = false;
+
+    // Listen to real-time socket events
+    if (socket) {
+      socket.on('inventory_updated', (data) => {
+        const targetBranch = data?.branchId || this.currentBranchId;
+        this.hydrateFromBackend(targetBranch);
+      });
+
+      socket.on('purchase_created', (data) => {
+        const targetBranch = data?.branchId || this.currentBranchId;
+        this.hydrateFromBackend(targetBranch);
+      });
+
+      socket.on('inventory_threshold_updated', (data) => {
+        if (data?.id) {
+          const b = this.branches[data.branchId || this.currentBranchId];
+          if (b) {
+            const item = b.items.find(i => i.id === data.id);
+            if (item) {
+              item.minThreshold = Number(data.minThreshold || 0);
+              this.notify();
+            }
+          }
+        }
+      });
+    }
   }
 
   setBranch(branchId) {
@@ -54,7 +92,91 @@ class InventoryStore {
           sales: []
         };
       }
+      this.hydrateFromBackend(branchId);
       this.notify();
+    }
+  }
+
+  // Hydrate inventory state from PostgreSQL backend API
+  async hydrateFromBackend(branchId = this.currentBranchId) {
+    try {
+      if (!this.branches[branchId]) {
+        this.branches[branchId] = {
+          items: createInitialItems(),
+          ledger: [],
+          purchases: [],
+          customers: [],
+          sales: []
+        };
+      }
+
+      const [masterRes, purchasesRes, ledgerRes] = await Promise.all([
+        fetchInventoryMaster(branchId),
+        fetchInventoryPurchases(branchId),
+        fetchStockLedger(branchId)
+      ]);
+
+      if (masterRes && masterRes.items && Array.isArray(masterRes.items)) {
+        const currentItems = this.branches[branchId].items;
+        const currentItemMap = new Map(currentItems.map(i => [i.id, i]));
+
+        // Merge backend items into client catalog
+        const updatedList = masterRes.items.map(dbItem => {
+          const existing = currentItemMap.get(dbItem.id) || {};
+          return {
+            ...existing,
+            id: dbItem.id,
+            name: dbItem.name,
+            category: dbItem.category || existing.category || 'Unspecified',
+            rawCategory: dbItem.category || existing.rawCategory,
+            unit: dbItem.unit || existing.unit || 'units',
+            openingStock: Number(dbItem.openingStock || 0),
+            stockIn: Number(dbItem.stockIn || 0),
+            stockOut: Number(dbItem.stockOut || 0),
+            minThreshold: Number(dbItem.minThreshold || 0),
+            costPerUnit: Number(dbItem.costPerUnit || 0),
+            supplier: dbItem.supplier || existing.supplier || 'Unassigned',
+            lastMovement: dbItem.lastMovementDisplay || (dbItem.lastMovement ? new Date(dbItem.lastMovement).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (existing.lastMovement || '-'))
+          };
+        });
+
+        // Ensure all 117 standard items exist even if database only had a subset
+        const dbIdSet = new Set(masterRes.items.map(i => i.id));
+        CLIENT_RAW_MATERIALS_MASTER.forEach(std => {
+          if (!dbIdSet.has(std.id) && !updatedList.some(i => i.name.toLowerCase() === std.name.toLowerCase())) {
+            updatedList.push({
+              id: std.id,
+              name: std.name,
+              category: std.category || 'Unspecified',
+              rawCategory: std.category,
+              unit: std.unit || 'units',
+              openingStock: 0,
+              stockIn: 0,
+              stockOut: 0,
+              minThreshold: 0,
+              costPerUnit: 0,
+              supplier: 'Unassigned',
+              lastMovement: '-'
+            });
+          }
+        });
+
+        // Sort ascending A-Z
+        updatedList.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        this.branches[branchId].items = updatedList;
+      }
+
+      if (purchasesRes && purchasesRes.purchases && Array.isArray(purchasesRes.purchases)) {
+        this.branches[branchId].purchases = purchasesRes.purchases;
+      }
+
+      if (ledgerRes && ledgerRes.ledger && Array.isArray(ledgerRes.ledger)) {
+        this.branches[branchId].ledger = ledgerRes.ledger;
+      }
+
+      this.notify();
+    } catch (err) {
+      console.warn(`[InventoryStore] Backend hydration notice for ${branchId}:`, err);
     }
   }
 
@@ -139,12 +261,12 @@ class InventoryStore {
 
   // Get current calculated remaining stock of an item
   getItemRemainingStock(item) {
-    return Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0));
+    return Math.max(0, (Number(item.openingStock) || 0) + (Number(item.stockIn) || 0) - (Number(item.stockOut) || 0));
   }
 
   getItemStatus(item) {
     const remaining = this.getItemRemainingStock(item);
-    const threshold = item.minThreshold || 0;
+    const threshold = Number(item.minThreshold) || 0;
     if (threshold <= 0) return 'HEALTHY';
     if (remaining <= (threshold / 2)) return 'CRITICAL';
     if (remaining <= threshold) return 'LOW_STOCK';
@@ -156,16 +278,18 @@ class InventoryStore {
     const todayIso = getTodayIso();
     const displayDate = getDisplayDate();
 
-    // Compile items with calculated remaining stock & status
-    const compiledItems = this.items.map(item => {
-      const remaining = this.getItemRemainingStock(item);
-      const status = this.getItemStatus(item);
-      return {
-        ...item,
-        remainingStock: remaining,
-        status
-      };
-    });
+    // Compile items with calculated remaining stock & status, sorted A-Z
+    const compiledItems = [...this.items]
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+      .map(item => {
+        const remaining = this.getItemRemainingStock(item);
+        const status = this.getItemStatus(item);
+        return {
+          ...item,
+          remainingStock: remaining,
+          status
+        };
+      });
 
     // Calculate daily metrics from ledger for selected/today date
     let dailyStockIn = 0;
@@ -182,9 +306,9 @@ class InventoryStore {
     const totalRemainingStock = compiledItems.reduce((acc, i) => acc + i.remainingStock, 0);
 
     // Purchase calculations
-    const totalPurchasesValue = this.purchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+    const totalPurchasesValue = this.purchases.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
     const todayPurchases = this.purchases.filter(p => p.dateIso === todayIso);
-    const todayStockInUnits = this.purchases.length === 0 ? 0 : todayPurchases.reduce((sum, p) => sum + p.items.reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
+    const todayStockInUnits = this.purchases.length === 0 ? 0 : todayPurchases.reduce((sum, p) => sum + (p.items || []).reduce((s, i) => s + (Number(i.qty) || 0), 0), 0);
 
     // Filter low stock & critical items
     const lowStockItems = compiledItems.filter(i => i.status !== 'HEALTHY');
@@ -192,8 +316,8 @@ class InventoryStore {
 
     return {
       items: compiledItems,
-      ledger: [...this.ledger].sort((a, b) => b.id.localeCompare(a.id)),
-      purchases: [...this.purchases].sort((a, b) => b.id.localeCompare(a.id)),
+      ledger: [...this.ledger].sort((a, b) => (b.createdAt || b.id).localeCompare(a.createdAt || a.id)),
+      purchases: [...this.purchases].sort((a, b) => (b.createdAt || b.id).localeCompare(a.createdAt || a.id)),
       customers: [...this.customers],
       sales: [...this.sales],
       summary: {
@@ -213,22 +337,33 @@ class InventoryStore {
   }
 
   // UPDATE MINIMUM STOCK THRESHOLD FOR AN ITEM
-  updateItemThreshold(itemId, newThreshold) {
+  async updateItemThreshold(itemId, newThreshold, branchId = this.currentBranchId) {
     const numThreshold = Math.max(0, parseFloat(newThreshold) || 0);
-    const item = this.items.find(i => i.id === itemId);
-    if (item) {
-      item.minThreshold = numThreshold;
-      this.notify();
-      return item;
+    const targetBranch = branchId || this.currentBranchId;
+    const b = this.branches[targetBranch];
+    
+    if (b) {
+      const item = b.items.find(i => i.id === itemId);
+      if (item) {
+        item.minThreshold = numThreshold;
+        this.notify();
+      }
     }
-    return null;
+
+    // Persist to PostgreSQL backend via API
+    try {
+      await apiUpdateItemThreshold(itemId, numThreshold, targetBranch);
+    } catch (err) {
+      console.warn('[InventoryStore] Error persisting threshold:', err);
+    }
   }
 
   // RECORD MULTI-ITEM OR SINGLE PURCHASE INVOICE
-  recordPurchase(purchasePayload) {
+  async recordPurchase(purchasePayload, branchId = this.currentBranchId) {
     const { invoiceRef, supplier, date, notes, items } = purchasePayload;
     if (!items || items.length === 0) return;
 
+    const targetBranch = branchId || this.currentBranchId;
     const displayDate = date || getDisplayDate();
     const todayIso = getTodayIso();
     const displayTime = getDisplayTime();
@@ -250,15 +385,15 @@ class InventoryStore {
       );
 
       if (itemObj) {
-        itemObj.stockIn = (itemObj.stockIn || 0) + numQty;
+        itemObj.stockIn = (Number(itemObj.stockIn) || 0) + numQty;
         itemObj.lastMovement = displayDate;
         if (supplier) itemObj.supplier = supplier;
         if (pricePerUnit > 0) itemObj.costPerUnit = pricePerUnit;
       } else if (itemInput.itemName) {
-        // Create new inventory item dynamically if it doesn't exist yet
+        // Create new inventory item dynamically in local catalog
         itemObj = {
-          id: `item-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-          name: itemInput.itemName,
+          id: `rm-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+          name: itemInput.itemName.trim(),
           category: itemInput.category || 'General Ingredients',
           unit: itemInput.unit || 'units',
           openingStock: 0,
@@ -270,6 +405,7 @@ class InventoryStore {
           lastMovement: displayDate
         };
         this.items.push(itemObj);
+        this.items.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
       }
 
       if (itemObj) {
@@ -289,7 +425,7 @@ class InventoryStore {
           supplier: supplier || itemObj.supplier,
           ref: invoiceRef || `PO #${purchaseId}`,
           source: 'Purchase / Stock In',
-          notes: notes || `Purchase In (${invoiceRef})`,
+          notes: notes || `Purchase In (${invoiceRef || purchaseId})`,
           remainingAfter,
           purchaseId
         });
@@ -320,7 +456,45 @@ class InventoryStore {
 
     this.purchases.unshift(newPurchase);
     this.notify();
+
+    // Persist to PostgreSQL backend asynchronously
+    try {
+      const serverPayload = {
+        invoiceRef: newPurchase.invoiceRef,
+        supplier: newPurchase.supplier,
+        date: displayDate,
+        notes: newPurchase.notes,
+        items: items
+      };
+      await createPurchaseStockIn(serverPayload, targetBranch);
+      // Re-hydrate to ensure perfect alignment with server timestamps & IDs
+      await this.hydrateFromBackend(targetBranch);
+    } catch (err) {
+      console.warn('[InventoryStore] Error persisting purchase to PostgreSQL:', err);
+    }
+
     return newPurchase;
+  }
+
+  // RECORD SINGLE OR QUICK STOCK IN (Maps directly to recordPurchase)
+  async recordStockIn(stockInPayload, branchId = this.currentBranchId) {
+    const formattedPurchasePayload = {
+      invoiceRef: stockInPayload.invoiceRef || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+      supplier: stockInPayload.supplier || 'Local Vendor',
+      date: stockInPayload.date || getDisplayDate(),
+      notes: stockInPayload.notes || 'Incoming stock',
+      items: [
+        {
+          itemId: stockInPayload.itemId,
+          itemName: stockInPayload.itemName,
+          category: stockInPayload.category || 'Raw Ingredients',
+          qty: stockInPayload.qty,
+          unit: stockInPayload.unit || 'kg',
+          pricePerUnit: stockInPayload.cost || stockInPayload.pricePerUnit || 0
+        }
+      ]
+    };
+    return this.recordPurchase(formattedPurchasePayload, branchId);
   }
 
   // DELETE PURCHASE AND REVERSE STOCK
@@ -334,7 +508,7 @@ class InventoryStore {
     purchase.items.forEach(pItem => {
       const matched = this.items.find(i => i.id === pItem.itemId || i.name.toLowerCase() === pItem.itemName.toLowerCase());
       if (matched) {
-        matched.stockIn = Math.max(0, (matched.stockIn || 0) - (pItem.qty || 0));
+        matched.stockIn = Math.max(0, (Number(matched.stockIn) || 0) - (Number(pItem.qty) || 0));
       }
     });
 
@@ -348,9 +522,9 @@ class InventoryStore {
   }
 
   // UPDATE PURCHASE WITH SAFE STOCK ADJUSTMENT
-  updatePurchase(purchaseId, updatedPayload) {
+  updatePurchase(purchaseId, updatedPayload, branchId = this.currentBranchId) {
     this.deletePurchase(purchaseId);
-    return this.recordPurchase(updatedPayload);
+    return this.recordPurchase(updatedPayload, branchId);
   }
 
   // RECORD STOCK OUT / POS SALES / CONSUMPTION

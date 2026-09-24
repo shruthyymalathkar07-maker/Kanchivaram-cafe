@@ -67,9 +67,11 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const [outNotesInput, setOutNotesInput] = useState('');
 
   // Sync active branch with inventoryStore & update local state
+  // Sync active branch with inventoryStore & update local state
   useEffect(() => {
     if (selectedBranch?.id) {
       inventoryStore.setBranch(selectedBranch.id);
+      inventoryStore.hydrateFromBackend(selectedBranch.id);
       setInventoryState(inventoryStore.getState());
     }
   }, [selectedBranch?.id]);
@@ -113,7 +115,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     displayDate: realSummary.displayDate
   } : realSummary;
 
-  // Filtered inventory items
+  // Filtered inventory items (alphabetically sorted)
   const filteredItems = activeItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           item.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -134,10 +136,11 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const handleRetry = () => {
     setIsManualLoading(true);
     setIsManualError(false);
-    setTimeout(() => {
+    const branchId = selectedBranch?.id || 'branch-1';
+    inventoryStore.hydrateFromBackend(branchId).finally(() => {
       setIsManualLoading(false);
       setSimulatedState('AUTO');
-    }, 1000);
+    });
   };
 
   // Handle Save Purchase / Stock In
@@ -149,6 +152,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     }
 
     const selectedItemObj = realItems.find(i => i.id === selectedItemId);
+    const branchId = selectedBranch?.id || 'branch-1';
 
     inventoryStore.recordStockIn({
       itemId: selectedItemId || null,
@@ -160,7 +164,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
       invoiceRef: invoiceRefInput || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
       cost: priceInput,
       notes: notesInput
-    });
+    }, branchId);
 
     // Reset Form & Switch state to AUTO so user sees their new stock item live
     setSelectedItemId('');
@@ -227,12 +231,8 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     setIsSavingThreshold(true);
 
     try {
-      // 1. Update in-memory single-source-of-truth store immediately for snappy UI
-      inventoryStore.updateItemThreshold(thresholdItem.id, numVal);
-
-      // 2. Persist to PostgreSQL backend via API
       const branchId = selectedBranch?.id || 'branch-1';
-      await updateItemThreshold(thresholdItem.id, numVal, branchId);
+      await inventoryStore.updateItemThreshold(thresholdItem.id, numVal, branchId);
     } catch (err) {
       console.warn('Could not persist threshold to backend:', err);
     } finally {
