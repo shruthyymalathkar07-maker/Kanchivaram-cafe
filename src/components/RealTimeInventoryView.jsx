@@ -19,9 +19,12 @@ import {
   Coffee,
   ShoppingBag,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Edit2
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
+import { updateItemThreshold } from '../services/api';
+
 
 export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -39,6 +42,12 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   // Modals state
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
+  const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
+
+  // Form states for Threshold Edit
+  const [thresholdItem, setThresholdItem] = useState(null);
+  const [thresholdInput, setThresholdInput] = useState('');
+  const [isSavingThreshold, setIsSavingThreshold] = useState(false);
 
   // Form states for Purchase / Stock In
   const [selectedItemId, setSelectedItemId] = useState('');
@@ -195,6 +204,42 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     setOutQtyInput('');
     setOutNotesInput('');
     setIsStockOutModalOpen(false);
+  };
+
+  // Open Threshold Edit Modal
+  const handleOpenThresholdModal = (item) => {
+    setThresholdItem(item);
+    setThresholdInput(item.minThreshold !== undefined ? String(item.minThreshold) : '0');
+    setIsThresholdModalOpen(true);
+  };
+
+  // Handle Save Threshold to PostgreSQL & InventoryStore
+  const handleSaveThreshold = async (e) => {
+    e.preventDefault();
+    if (!thresholdItem) return;
+
+    const numVal = parseFloat(thresholdInput);
+    if (isNaN(numVal) || numVal < 0) {
+      alert("Please enter a valid non-negative number for the minimum threshold.");
+      return;
+    }
+
+    setIsSavingThreshold(true);
+
+    try {
+      // 1. Update in-memory single-source-of-truth store immediately for snappy UI
+      inventoryStore.updateItemThreshold(thresholdItem.id, numVal);
+
+      // 2. Persist to PostgreSQL backend via API
+      const branchId = selectedBranch?.id || 'branch-1';
+      await updateItemThreshold(thresholdItem.id, numVal, branchId);
+    } catch (err) {
+      console.warn('Could not persist threshold to backend:', err);
+    } finally {
+      setIsSavingThreshold(false);
+      setIsThresholdModalOpen(false);
+      setThresholdItem(null);
+    }
   };
 
   return (
@@ -653,7 +698,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         </td>
 
                         <td className="py-2.5 px-3 text-right font-mono text-[#557361] font-bold">
-                          {item.minThreshold}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenThresholdModal(item)}
+                            className="inline-flex items-center gap-1 hover:text-[#11291f] hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group"
+                            title="Click to edit minimum stock threshold"
+                          >
+                            <span>{item.minThreshold}</span>
+                            <Edit2 className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                          </button>
                         </td>
 
                         {/* Calculated Status Badge */}
@@ -809,7 +862,14 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                       </div>
                       <div className="text-right pt-1 border-t border-[#cabb9e]/40">
                         <span className="text-[9px] uppercase font-bold text-[#547363] block">Min Threshold</span>
-                        <span className="font-mono font-medium text-[#547363]">{item.minThreshold} {item.unit}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenThresholdModal(item)}
+                          className="inline-flex items-center gap-1 font-mono font-medium text-[#547363] hover:text-[#11291f] cursor-pointer"
+                        >
+                          <span>{item.minThreshold} {item.unit}</span>
+                          <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1308,6 +1368,107 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
         </div>
       )}
 
+      {/* ========================================================================= */}
+      {/* 7. MODAL: EDIT MINIMUM STOCK THRESHOLD                                   */}
+      {/* ========================================================================= */}
+      {isThresholdModalOpen && thresholdItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 z-50">
+          <div className="bg-[#fdfbf7] w-full max-w-md rounded-2xl border-2 border-[#cabb9e] shadow-2xl p-4 sm:p-5 space-y-4 animate-fadeIn">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-[#ebdcc8]">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${isBrownBranch ? 'bg-[#542A16] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'}`}>
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-serif font-black text-[#11291f]">Set Minimum Stock Threshold</h3>
+                  <p className="text-xs font-bold text-[#547363]">Alert & Reorder Limit Configuration</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsThresholdModalOpen(false);
+                  setThresholdItem(null);
+                }}
+                className="p-1 rounded-lg text-[#547363] hover:text-[#11291f] hover:bg-[#ebdcc8] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveThreshold} className="space-y-3.5">
+              <div className="bg-[#ebdcc8]/40 p-3 rounded-xl border border-[#cabb9e]/60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-[#547363] uppercase">Item Name</span>
+                  <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[10px] font-extrabold rounded">
+                    {thresholdItem.category}
+                  </span>
+                </div>
+                <p className="text-sm font-black text-[#11291f]">{thresholdItem.name}</p>
+                <div className="flex items-center justify-between pt-1 border-t border-[#cabb9e]/30 text-xs">
+                  <span className="text-[#547363] font-bold">Current Stock:</span>
+                  <span className="font-mono font-black text-[#0f3823]">{thresholdItem.remainingStock} {thresholdItem.unit}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-[#11291f] mb-1">
+                  Minimum Alert Threshold ({thresholdItem.unit})
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    required
+                    autoFocus
+                    value={thresholdInput}
+                    onChange={(e) => setThresholdInput(e.target.value)}
+                    placeholder="e.g. 5"
+                    className={`w-full px-3 py-2 bg-white text-[#11291f] font-mono font-black text-sm rounded-xl border-2 ${
+                      isBrownBranch ? 'focus:border-[#7A4325]' : 'focus:border-[#0f3823]'
+                    } border-[#cabb9e] focus:outline-none`}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#547363]">
+                    {thresholdItem.unit}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#547363] mt-1 font-medium">
+                  • Stock &le; threshold triggers <span className="font-bold text-amber-700">Low Limit</span> alert.<br />
+                  • Stock &le; (threshold / 2) triggers <span className="font-bold text-red-700">Critical</span> alert.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcc8]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsThresholdModalOpen(false);
+                    setThresholdItem(null);
+                  }}
+                  className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#decfa7] text-[#11291f] font-bold text-xs rounded-xl border border-[#cabb9e] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingThreshold}
+                  className={`px-5 py-2 ${
+                    isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2A170C]' : 'bg-[#0f3823] hover:bg-[#0a2618]'
+                  } text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50`}
+                >
+                  <CheckCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
+                  <span>{isSavingThreshold ? 'Saving...' : 'Save Threshold'}</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

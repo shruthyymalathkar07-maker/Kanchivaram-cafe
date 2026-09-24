@@ -212,6 +212,18 @@ class InventoryStore {
     };
   }
 
+  // UPDATE MINIMUM STOCK THRESHOLD FOR AN ITEM
+  updateItemThreshold(itemId, newThreshold) {
+    const numThreshold = Math.max(0, parseFloat(newThreshold) || 0);
+    const item = this.items.find(i => i.id === itemId);
+    if (item) {
+      item.minThreshold = numThreshold;
+      this.notify();
+      return item;
+    }
+    return null;
+  }
+
   // RECORD MULTI-ITEM OR SINGLE PURCHASE INVOICE
   recordPurchase(purchasePayload) {
     const { invoiceRef, supplier, date, notes, items } = purchasePayload;

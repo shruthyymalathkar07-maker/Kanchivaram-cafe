@@ -99,3 +99,33 @@ export async function sendChatbotQuery(queryText) {
     };
   }
 }
+
+export async function fetchInventoryMaster(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/master`, {
+      headers: { 'x-branch-id': branchId }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch inventory master error:', err);
+    return null;
+  }
+}
+
+export async function updateItemThreshold(itemId, minThreshold, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/items/${itemId}/threshold`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify({ minThreshold: Number(minThreshold) })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update item threshold error:', err);
+    return { success: false, message: err.message };
+  }
+}
+

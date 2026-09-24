@@ -148,6 +148,76 @@ export function createApiRouter(io: SocketServer) {
     });
   });
 
+  // 4b. PUT/PATCH /api/inventory/items/:id/threshold (Secure update for item minThreshold in PostgreSQL)
+  const handleThresholdUpdate = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const branchId = getBranchId(req);
+    const { minThreshold } = req.body;
+
+    if (minThreshold === undefined || isNaN(Number(minThreshold)) || Number(minThreshold) < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid non-negative number is required for minThreshold'
+      });
+    }
+
+    const thresholdNum = parseFloat(Number(minThreshold).toFixed(2));
+
+    try {
+      if (prisma) {
+        // Update in PostgreSQL
+        const updatedItem = await prisma.inventoryItem.update({
+          where: { id },
+          data: {
+            minThreshold: thresholdNum,
+            updatedAt: new Date()
+          }
+        });
+
+        // Broadcast threshold change to connected clients
+        io.emit('inventory_threshold_updated', {
+          id,
+          branchId,
+          minThreshold: thresholdNum
+        });
+
+        return res.json({
+          success: true,
+          message: `Minimum stock threshold for ${updatedItem.name} updated to ${thresholdNum} ${updatedItem.unit}`,
+          item: updatedItem
+        });
+      }
+    } catch (err: any) {
+      console.warn(`[API threshold update] PostgreSQL write fallback for ${id}:`, err.message);
+    }
+
+    // Fallback in-memory update
+    const branchData = branchDb.getBranchData(branchId);
+    const item = branchData.inventoryItems.find(i => i.id === id);
+    if (item) {
+      item.minThreshold = thresholdNum;
+      io.emit('inventory_threshold_updated', {
+        id,
+        branchId,
+        minThreshold: thresholdNum
+      });
+      return res.json({
+        success: true,
+        message: `Minimum stock threshold for ${item.name} updated to ${thresholdNum} ${item.unit}`,
+        item,
+        fallback: true
+      });
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: `Inventory item with ID ${id} not found`
+    });
+  };
+
+  router.put('/inventory/items/:id/threshold', handleThresholdUpdate);
+  router.patch('/inventory/items/:id/threshold', handleThresholdUpdate);
+
   // 5. GET /api/recipes (Returns BOM / Recipes Master: 2 Complete, 7 Awaiting Details from PostgreSQL)
   router.get('/recipes', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
