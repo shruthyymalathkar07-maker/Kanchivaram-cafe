@@ -482,7 +482,17 @@ class InventoryStore {
         notes: newPurchase.notes,
         items: items
       };
-      await createPurchaseStockIn(serverPayload, targetBranch);
+      const res = await createPurchaseStockIn(serverPayload, targetBranch);
+      if (res && res.success && res.purchase) {
+        const idx = this.purchases.findIndex(p => p.id === purchaseId || p.invoiceRef === newPurchase.invoiceRef);
+        if (idx !== -1) {
+          this.purchases[idx] = {
+            ...res.purchase,
+            date: res.purchase.createdAt ? new Date(res.purchase.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : displayDate,
+            items: res.purchase.items || processedItems
+          };
+        }
+      }
       // Re-hydrate to ensure perfect alignment with server timestamps & IDs
       await this.hydrateFromBackend(targetBranch);
     } catch (err) {

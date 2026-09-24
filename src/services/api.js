@@ -114,7 +114,7 @@ export async function fetchInventoryMaster(branchId = 'branch-1') {
 
 export async function fetchInventoryPurchases(branchId = 'branch-1') {
   try {
-    const res = await fetch(`${API_BASE_URL}/inventory/purchases`, {
+    const res = await fetch(`${API_BASE_URL}/inventory/purchases?branchId=${encodeURIComponent(branchId)}`, {
       headers: { 'x-branch-id': branchId }
     });
     return await res.json();
@@ -126,7 +126,7 @@ export async function fetchInventoryPurchases(branchId = 'branch-1') {
 
 export async function fetchStockLedger(branchId = 'branch-1') {
   try {
-    const res = await fetch(`${API_BASE_URL}/inventory/ledger`, {
+    const res = await fetch(`${API_BASE_URL}/inventory/ledger?branchId=${encodeURIComponent(branchId)}`, {
       headers: { 'x-branch-id': branchId }
     });
     return await res.json();
@@ -138,13 +138,13 @@ export async function fetchStockLedger(branchId = 'branch-1') {
 
 export async function createPurchaseStockIn(purchasePayload, branchId = 'branch-1') {
   try {
-    const res = await fetch(`${API_BASE_URL}/inventory/purchases`, {
+    const res = await fetch(`${API_BASE_URL}/inventory/purchases?branchId=${encodeURIComponent(branchId)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-branch-id': branchId
       },
-      body: JSON.stringify(purchasePayload)
+      body: JSON.stringify({ ...purchasePayload, branchId })
     });
     return await res.json();
   } catch (err) {

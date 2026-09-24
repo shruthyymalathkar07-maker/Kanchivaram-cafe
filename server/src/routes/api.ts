@@ -468,10 +468,18 @@ export function createApiRouter(io: SocketServer) {
         });
       }
     } catch (err: any) {
-      console.warn('[API /inventory/purchases GET] DB query fallback:', err.message);
+      console.error('[API /inventory/purchases GET] Database error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve purchases from PostgreSQL database',
+        error: err.message
+      });
     }
 
-    res.json({ success: true, branchId, count: 0, purchases: [] });
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
   });
 
   // 4d. GET /api/inventory/ledger (Fetch stock ledger movements from PostgreSQL)
@@ -496,10 +504,18 @@ export function createApiRouter(io: SocketServer) {
         });
       }
     } catch (err: any) {
-      console.warn('[API /inventory/ledger GET] DB query fallback:', err.message);
+      console.error('[API /inventory/ledger GET] Database error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve stock ledger from PostgreSQL database',
+        error: err.message
+      });
     }
 
-    res.json({ success: true, branchId, count: 0, ledger: [] });
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
   });
 
   // 4e. PUT/PATCH /api/inventory/items/:id/threshold (Secure update for item minThreshold in PostgreSQL)
