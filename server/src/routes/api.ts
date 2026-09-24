@@ -898,6 +898,29 @@ export function createApiRouter(io: SocketServer) {
         }
       }
 
+      // Prepare validated sale items (prevent foreign key violation on non-existent product IDs)
+      const validDbProducts = await prisma.product.findMany({ select: { id: true, name: true } });
+      const validProdIdSet = new Set(validDbProducts.map(p => p.id));
+      const prodNameToIdMap = new Map(validDbProducts.map(p => [p.name.toLowerCase().trim(), p.id]));
+
+      const validatedSaleItems = newSale.items.map(item => {
+        let matchedId = null;
+        if (item.productId && validProdIdSet.has(item.productId)) {
+          matchedId = item.productId;
+        } else if (item.productName && prodNameToIdMap.has(item.productName.toLowerCase().trim())) {
+          matchedId = prodNameToIdMap.get(item.productName.toLowerCase().trim());
+        }
+        return {
+          productId: matchedId,
+          name: item.productName,
+          quantity: item.quantity,
+          price: item.unitPrice,
+          total: item.subtotal,
+          unit: item.unit || 'units',
+          categoryName: item.categoryName || 'General'
+        };
+      });
+
       // Persist Sale and SaleItems to PostgreSQL
       await prisma.sale.create({
         data: {
@@ -918,15 +941,7 @@ export function createApiRouter(io: SocketServer) {
           cashierName: newSale.cashierName,
           dateIso: todayIso,
           items: {
-            create: newSale.items.map(item => ({
-              productId: item.productId,
-              name: item.productName,
-              quantity: item.quantity,
-              price: item.unitPrice,
-              total: item.subtotal,
-              unit: item.unit,
-              categoryName: item.categoryName
-            }))
+            create: validatedSaleItems
           }
         }
       });
