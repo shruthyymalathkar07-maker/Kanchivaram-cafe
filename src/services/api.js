@@ -8,8 +8,8 @@ const isLocalhost = typeof window !== 'undefined' && (
   window.location.hostname === ''
 );
 
-const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || (isLocalhost ? 'http://localhost:5000' : '');
-const API_BASE_URL = BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api` : '/api';
+const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || (isLocalhost ? 'http://localhost:5000' : 'https://kanchivaram-cafe.onrender.com');
+const API_BASE_URL = BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api` : 'https://kanchivaram-cafe.onrender.com/api';
 
 // Socket.IO singleton instance
 export const socket = io(BACKEND_ORIGIN || undefined, {
