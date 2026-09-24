@@ -611,21 +611,21 @@ export default function PurchaseStockInView({ selectedBranch }) {
         <div className="p-3 w-full">
           {/* DESKTOP TABLE: STRICTLY FROZEN & UNCHANGED (md:block) */}
           <div className="hidden md:block bg-[#fdfbf7] rounded-xl border border-[#cabb9e] overflow-hidden shadow-xs w-full overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
-                <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-extrabold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
-                  <th className="py-3 px-4 col-span-2 whitespace-nowrap">DATE & INVOICE REF</th>
-                  <th className="py-3 px-4 col-span-2 whitespace-nowrap">SUPPLIER</th>
-                  <th className="py-3 px-4 col-span-3 whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
-                  <th className="py-3 px-4 col-span-2 text-right whitespace-nowrap">TOTAL INVOICE VALUE</th>
-                  <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">STOCK SYNC STATUS</th>
-                  <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
+                <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-extrabold uppercase tracking-wider`}>
+                  <th className="py-3 px-4 w-[16%] whitespace-nowrap">DATE & INVOICE REF</th>
+                  <th className="py-3 px-4 w-[18%] whitespace-nowrap">SUPPLIER</th>
+                  <th className="py-3 px-4 w-[36%] whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
+                  <th className="py-3 px-4 w-[14%] text-right whitespace-nowrap">TOTAL INVOICE VALUE</th>
+                  <th className="py-3 px-4 w-[10%] text-center whitespace-nowrap">STOCK SYNC STATUS</th>
+                  <th className="py-3 px-4 w-[6%] text-center whitespace-nowrap">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className={`text-xs ${filteredPurchases.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
                 {filteredPurchases.length === 0 ? (
-                  <tr className="w-full">
-                    <td colSpan="6" className="py-8 px-4 text-center bg-[#fdfbf7] w-full block">
+                  <tr>
+                    <td colSpan="6" className="py-8 px-4 text-center bg-[#fdfbf7]">
                       {/* Center Stock Box & Clipboard Illustration Asset (100% Transparent PNG) */}
                       <div className="relative w-full max-w-sm sm:max-w-md h-auto flex items-center justify-center mb-3 transition-transform hover:scale-102 mx-auto">
                         <img
@@ -647,51 +647,51 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   </tr>
                 ) : (
                   filteredPurchases.map((purchase) => (
-                    <tr key={purchase.id} className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center">
+                    <tr key={purchase.id} className="hover:bg-[#fbf8f3] transition-colors">
                       {/* Date & Invoice */}
-                      <td className="py-3 px-4 col-span-2 align-top">
-                        <div className="font-extrabold text-[#11291f] font-mono">{purchase.invoiceRef}</div>
-                        <div className="text-[11px] text-[#547363] font-medium flex items-center gap-1 mt-0.5">
-                          <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
+                      <td className="py-3 px-4 align-top w-[16%]">
+                        <div className="font-extrabold text-[#11291f] font-mono text-xs break-words">{purchase.invoiceRef}</div>
+                        <div className="text-[11px] text-[#547363] font-medium flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                          <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span>{purchase.date}</span>
                         </div>
                         {purchase.notes && (
-                          <div className="text-[10px] text-[#786c58] italic mt-1 bg-[#f8f6f0] p-1 rounded border border-[#e5d8c8]">
+                          <div className="text-[10px] text-[#786c58] italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words">
                             "{purchase.notes}"
                           </div>
                         )}
                       </td>
                       {/* Supplier */}
-                      <td className="py-3 px-4 col-span-2 align-top">
-                        <div className="font-bold text-[#11291f] flex items-center gap-1.5">
-                          <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                          <span>{purchase.supplier}</span>
+                      <td className="py-3 px-4 align-top w-[18%]">
+                        <div className="font-bold text-[#11291f] flex items-start gap-1.5">
+                          <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0 mt-0.5`} />
+                          <span className="break-words leading-tight">{purchase.supplier}</span>
                         </div>
-                        <div className="text-[10px] text-[#547363] font-semibold mt-0.5">
+                        <div className="text-[10px] text-[#547363] font-semibold mt-1">
                           Category: <span className="font-bold text-[#11291f]">{purchase.category || 'Raw Ingredients'}</span>
                         </div>
                       </td>
                       {/* Purchased Items List */}
-                      <td className="py-3 px-4 col-span-3 align-top">
-                        <div className="space-y-1.5">
+                      <td className="py-3 px-4 align-top w-[36%]">
+                        <div className="space-y-1.5 w-full">
                           {purchase.items.map((item, idx) => (
                             <div 
                               key={idx} 
-                              className="bg-[#fbf8f3] p-1.5 rounded-lg border border-[#e5d8c8] flex items-center justify-between gap-3"
+                              className="bg-[#fbf8f3] p-1.5 rounded-lg border border-[#e5d8c8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5"
                             >
-                              <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="flex items-center flex-wrap gap-1.5 min-w-0">
                                 <Package className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                                <span className="font-extrabold text-[#11291f] truncate">{item.itemName}</span>
-                                <span className="px-1.5 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[9px] font-bold rounded">
+                                <span className="font-extrabold text-[#11291f] break-words">{item.itemName}</span>
+                                <span className="px-1.5 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[9px] font-bold rounded shrink-0">
                                   {item.category}
                                 </span>
                               </div>
-                              <div className="text-right shrink-0">
-                                <span className={`font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-mono text-xs`}>
+                              <div className="flex items-center flex-wrap gap-1 sm:text-right shrink-0">
+                                <span className={`font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-mono text-xs whitespace-nowrap`}>
                                   +{item.qty} {item.unit}
                                 </span>
-                                <span className="text-[10px] text-[#547363] ml-2 font-mono">
-                                  @ ₹{item.pricePerUnit}/{item.unit} = ₹{item.total.toLocaleString('en-IN')}
+                                <span className="text-[10px] text-[#547363] font-mono whitespace-nowrap">
+                                  (@ ₹{item.pricePerUnit}/{item.unit} = ₹{(item.total || 0).toLocaleString('en-IN')})
                                 </span>
                               </div>
                             </div>
@@ -699,35 +699,35 @@ export default function PurchaseStockInView({ selectedBranch }) {
                         </div>
                       </td>
                       {/* Total Invoice Amount */}
-                      <td className="py-3 px-4 col-span-2 align-top text-right">
-                        <div className="font-black font-mono text-sm text-[#11291f]">
+                      <td className="py-3 px-4 align-top text-right w-[14%]">
+                        <div className="font-black font-mono text-sm text-[#11291f] whitespace-nowrap">
                           ₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}
                         </div>
-                        <div className="text-[10px] text-[#456351] font-bold mt-0.5">
+                        <div className="text-[10px] text-[#456351] font-bold mt-0.5 whitespace-nowrap">
                           {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''} total
                         </div>
                       </td>
                       {/* Stock Sync Status */}
-                      <td className="py-3 px-4 col-span-2 align-top text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-extrabold rounded-full border border-emerald-300">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <td className="py-3 px-4 align-top text-center w-[10%]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[10px] font-extrabold rounded-full border border-emerald-300 whitespace-nowrap">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span>Synced</span>
                         </span>
                       </td>
                       {/* Actions */}
-                      <td className="py-3 px-4 col-span-1 align-top text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <td className="py-3 px-4 align-top text-center w-[6%]">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => openEditModal(purchase)}
                             title="Edit Purchase & Adjust Stock"
-                            className="p-1.5 text-[#11291f] hover:bg-[#ebdcc8] rounded-lg transition-colors border border-transparent hover:border-[#cabb9e]"
+                            className="p-1.5 text-[#11291f] hover:bg-[#ebdcc8] rounded-lg transition-colors border border-transparent hover:border-[#cabb9e] cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setDeletingPurchaseId(purchase.id)}
                             title="Delete Record & Reverse Stock"
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -934,7 +934,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                     className={`flex items-center gap-1 px-3 py-1 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F]' : 'bg-[#0f3823] hover:bg-[#0a2618]'} text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-xs`}
                   >
                     <Plus className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-                    <span>+ Add Another Item</span>
+                    <span>Add Another Item</span>
                   </button>
                 </div>
 
