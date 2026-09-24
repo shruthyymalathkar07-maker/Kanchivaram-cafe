@@ -187,4 +187,51 @@ export async function updateItemThreshold(itemId, minThreshold, branchId = 'bran
   }
 }
 
+export async function fetchCustomers(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/customers`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch customers error:', err);
+    return { success: false, customers: [] };
+  }
+}
+
+export async function createCustomer(customerPayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/customers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(customerPayload)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create customer error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+export async function deleteCustomer(customerId, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/customers/${customerId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Delete customer error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+
 

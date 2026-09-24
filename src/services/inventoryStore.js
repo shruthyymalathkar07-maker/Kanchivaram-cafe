@@ -6,6 +6,7 @@ import {
   fetchStockLedger, 
   createPurchaseStockIn, 
   updateItemThreshold as apiUpdateItemThreshold,
+  fetchCustomers,
   socket 
 } from './api';
 
@@ -65,6 +66,16 @@ class InventoryStore {
         this.hydrateFromBackend(targetBranch);
       });
 
+      socket.on('customer_updated', (data) => {
+        const targetBranch = data?.branchId || this.currentBranchId;
+        this.hydrateFromBackend(targetBranch);
+      });
+
+      socket.on('sale_created', (data) => {
+        const targetBranch = data?.branchId || this.currentBranchId;
+        this.hydrateFromBackend(targetBranch);
+      });
+
       socket.on('inventory_threshold_updated', (data) => {
         if (data?.id) {
           const b = this.branches[data.branchId || this.currentBranchId];
@@ -110,10 +121,11 @@ class InventoryStore {
         };
       }
 
-      const [masterRes, purchasesRes, ledgerRes] = await Promise.all([
+      const [masterRes, purchasesRes, ledgerRes, customersRes] = await Promise.all([
         fetchInventoryMaster(branchId),
         fetchInventoryPurchases(branchId),
-        fetchStockLedger(branchId)
+        fetchStockLedger(branchId),
+        fetchCustomers(branchId)
       ]);
 
       if (masterRes && masterRes.items && Array.isArray(masterRes.items)) {
@@ -172,6 +184,10 @@ class InventoryStore {
 
       if (ledgerRes && ledgerRes.ledger && Array.isArray(ledgerRes.ledger)) {
         this.branches[branchId].ledger = ledgerRes.ledger;
+      }
+
+      if (customersRes && customersRes.customers && Array.isArray(customersRes.customers)) {
+        this.branches[branchId].customers = customersRes.customers;
       }
 
       this.notify();

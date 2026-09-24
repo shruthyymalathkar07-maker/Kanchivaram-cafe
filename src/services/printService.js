@@ -54,6 +54,8 @@ export class PrintService {
           <div class="flex"><span>Date:</span> <span>${new Date(sale.createdAt || Date.now()).toLocaleDateString()}</span></div>
           <div class="flex"><span>Time:</span> <span>${new Date(sale.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
           <div class="flex"><span>Cashier:</span> <span>${sale.cashierName || 'Shruthy'}</span></div>
+          ${sale.customerName && sale.customerName !== 'Walk-in Customer' ? `<div class="flex"><span>Customer:</span> <span class="bold">${sale.customerName}</span></div>` : ''}
+          ${sale.customerPhone ? `<div class="flex"><span>Mobile:</span> <span class="bold">${sale.customerPhone}</span></div>` : ''}
           <div class="flex"><span>Receipt Type:</span> <span class="bold">PAPER THERMAL</span></div>
         </div>
 

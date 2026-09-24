@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
+import { createCustomer, deleteCustomer } from '../services/api';
 
 export default function CustomersView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -62,13 +63,15 @@ export default function CustomersView({ selectedBranch }) {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddCustomer = (e) => {
+  const handleAddCustomer = async (e) => {
     e.preventDefault();
     if (!newName.trim() || !newPhone.trim()) return;
 
     const formattedPhone = newPhone.trim().startsWith('+91') ? newPhone.trim() : `+91 ${newPhone.trim()}`;
+    const branchId = selectedBranch?.id || 'branch-1';
     const newCust = {
       id: `c-${Date.now()}`,
+      branchId,
       name: newName.trim(),
       phone: formattedPhone,
       email: newEmail.trim() || 'Not specified',
@@ -83,18 +86,40 @@ export default function CustomersView({ selectedBranch }) {
     inventoryStore.customers.unshift(newCust);
     inventoryStore.notify();
 
+    const nameToSave = newName.trim();
+    const phoneToSave = formattedPhone;
+    const emailToSave = newEmail.trim() || 'Not specified';
+
     setNewName('');
     setNewPhone('');
     setNewEmail('');
     setIsAddModalOpen(false);
+
+    try {
+      await createCustomer({
+        name: nameToSave,
+        phone: phoneToSave,
+        email: emailToSave
+      }, branchId);
+      inventoryStore.hydrateFromBackend(branchId);
+    } catch (err) {
+      console.warn('[CustomersView] Error saving customer:', err);
+    }
   };
 
-  const handleDeleteCustomer = (id, e) => {
+  const handleDeleteCustomer = async (id, e) => {
     if (e) e.stopPropagation();
+    const branchId = selectedBranch?.id || 'branch-1';
     inventoryStore.customers = inventoryStore.customers.filter(c => c.id !== id);
     inventoryStore.notify();
     if (selectedCustomerForHistory?.id === id) {
       setSelectedCustomerForHistory(null);
+    }
+
+    try {
+      await deleteCustomer(id, branchId);
+    } catch (err) {
+      console.warn('[CustomersView] Error deleting customer:', err);
     }
   };
 

@@ -829,12 +829,82 @@ export function createApiRouter(io: SocketServer) {
         }
       }
 
+      // Automatically Upsert Customer in PostgreSQL if customerPhone is present
+      let linkedCustomerId: string | null = null;
+      if (customerPhone && customerPhone.trim().length >= 7) {
+        try {
+          const rawPhone = customerPhone.trim();
+          const formattedPhone = rawPhone.startsWith('+91') ? rawPhone : `+91 ${rawPhone.replace(/^\+91\s*/, '')}`;
+          const cleanDigits = rawPhone.replace(/\D/g, '').slice(-10);
+
+          // Find customer by branchId and phone match
+          const existingCustomers = await prisma.customer.findMany({
+            where: { branchId }
+          });
+          const customerMatch = existingCustomers.find(c => {
+            const cDigits = c.phone ? c.phone.replace(/\D/g, '').slice(-10) : '';
+            return cDigits === cleanDigits || c.phone === formattedPhone || c.phone === rawPhone;
+          });
+
+          const displayDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+          const displayTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const lastVisitFormatted = `${displayDate}, ${displayTime}`;
+          const saleAmount = newSale.grandTotal || 0;
+
+          if (customerMatch) {
+            const newVisits = (customerMatch.visits || 0) + 1;
+            const newTotalSpent = (customerMatch.totalSpent || 0) + saleAmount;
+            const newTier = (newTotalSpent >= 10000 || newVisits >= 20) ? 'VIP Gold' : (newTotalSpent >= 3000 || newVisits >= 8) ? 'Frequent' : 'Regular';
+            const updatedName = (customerName && customerName.trim() && !customerName.includes('Customer') && customerName !== 'Walk-in Customer')
+              ? customerName.trim()
+              : customerMatch.name;
+
+            const updatedCustomer = await prisma.customer.update({
+              where: { id: customerMatch.id },
+              data: {
+                name: updatedName,
+                visits: newVisits,
+                totalSpent: newTotalSpent,
+                tier: newTier,
+                lastVisit: lastVisitFormatted
+              }
+            });
+            linkedCustomerId = updatedCustomer.id;
+          } else {
+            const newCustName = (customerName && customerName.trim() && customerName !== 'Walk-in Customer')
+              ? customerName.trim()
+              : `Customer (${cleanDigits.slice(-4)})`;
+            const initialTier = (saleAmount >= 10000) ? 'VIP Gold' : (saleAmount >= 3000) ? 'Frequent' : 'Regular';
+            const initialFavItem = newSale.items[0]?.productName || 'Kanchivaram Filter Coffee';
+
+            const createdCustomer = await prisma.customer.create({
+              data: {
+                id: `c-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                branchId,
+                name: newCustName,
+                phone: formattedPhone,
+                email: 'Not specified',
+                visits: 1,
+                totalSpent: saleAmount,
+                tier: initialTier,
+                favoriteItem: initialFavItem,
+                lastVisit: lastVisitFormatted
+              }
+            });
+            linkedCustomerId = createdCustomer.id;
+          }
+        } catch (cErr: any) {
+          console.warn('[Sale -> Customer Upsert Notice]:', cErr.message);
+        }
+      }
+
       // Persist Sale and SaleItems to PostgreSQL
       await prisma.sale.create({
         data: {
           id: saleId,
           branchId,
           billNumber,
+          customerId: linkedCustomerId,
           customerPhone,
           customerName,
           channel: newSale.channel,
@@ -864,6 +934,7 @@ export function createApiRouter(io: SocketServer) {
       // Emit Socket.IO live updates to connected POS clients
       io.emit('sale_created', { sale: newSale, branchId, deductions: appliedDeductions });
       io.emit('inventory_updated', { branchId, deductions: appliedDeductions });
+      io.emit('customer_updated', { branchId });
 
       return res.status(201).json({
         success: true,
@@ -957,7 +1028,226 @@ export function createApiRouter(io: SocketServer) {
     }
   });
 
-  // 8. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
+  // 8. GET /api/customers (Fetch Customers & purchase history for branch from PostgreSQL)
+  router.get('/customers', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const dbCustomers = await prisma.customer.findMany({
+          where: { branchId },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        const allSales = await prisma.sale.findMany({
+          where: { branchId, isCancelled: false },
+          include: { items: true },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        const formattedCustomers = dbCustomers.map(cust => {
+          const custCleanDigits = cust.phone ? cust.phone.replace(/\D/g, '').slice(-10) : '';
+          
+          // Match sales by customerId or matching phone number
+          const linkedSales = allSales.filter(s => 
+            (s.customerId && s.customerId === cust.id) || 
+            (s.customerPhone && custCleanDigits && s.customerPhone.replace(/\D/g, '').slice(-10) === custCleanDigits)
+          );
+
+          // Compute accurate metrics from sales
+          const totalSpent = linkedSales.length > 0
+            ? linkedSales.reduce((sum, s) => sum + (s.grandTotal || 0), 0)
+            : (cust.totalSpent || 0);
+
+          const visits = linkedSales.length > 0 ? linkedSales.length : (cust.visits || 0);
+
+          // Compute favorite item
+          const itemCounts: Record<string, number> = {};
+          linkedSales.forEach(s => {
+            (s.items || []).forEach(it => {
+              itemCounts[it.name] = (itemCounts[it.name] || 0) + (it.quantity || 1);
+            });
+          });
+          let favoriteItem = cust.favoriteItem || 'Filter Coffee';
+          let maxCount = 0;
+          Object.entries(itemCounts).forEach(([name, count]) => {
+            if (count > maxCount) {
+              maxCount = count;
+              favoriteItem = name;
+            }
+          });
+
+          // Last visit
+          let lastVisit = cust.lastVisit;
+          if (linkedSales.length > 0 && linkedSales[0].createdAt) {
+            const d = new Date(linkedSales[0].createdAt);
+            lastVisit = `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+          }
+
+          const tier = (totalSpent >= 10000 || visits >= 20) ? 'VIP Gold' : (totalSpent >= 3000 || visits >= 8) ? 'Frequent' : 'Regular';
+
+          const purchaseHistory = linkedSales.map(s => {
+            const sDate = s.createdAt ? new Date(s.createdAt) : new Date();
+            return {
+              id: s.id,
+              billNumber: s.billNumber,
+              date: sDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+              time: sDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+              dateIso: s.dateIso,
+              createdAt: s.createdAt,
+              grandTotal: s.grandTotal,
+              subtotal: s.subtotal,
+              tax: s.tax,
+              discount: s.discount || 0,
+              paymentMethod: s.paymentMethod || 'CASH',
+              receiptType: s.receiptType || 'PAPER',
+              channel: s.channel || 'POS',
+              cashierName: s.cashierName || 'Shruthy',
+              items: (s.items || []).map(i => ({
+                id: i.productId || i.id,
+                name: i.name,
+                qty: i.quantity,
+                price: i.price,
+                total: i.total,
+                unit: i.unit,
+                categoryName: i.categoryName
+              }))
+            };
+          });
+
+          return {
+            id: cust.id,
+            branchId: cust.branchId,
+            name: cust.name,
+            phone: cust.phone,
+            email: cust.email || 'Not specified',
+            visits,
+            totalSpent,
+            tier,
+            favoriteItem,
+            lastVisit: lastVisit || 'No purchases yet',
+            purchaseHistory
+          };
+        });
+
+        return res.json({
+          success: true,
+          branchId,
+          count: formattedCustomers.length,
+          customers: formattedCustomers
+        });
+      }
+    } catch (err: any) {
+      console.warn('[API /customers GET] Fallback:', err.message);
+    }
+
+    res.json({ success: true, branchId, count: 0, customers: [] });
+  });
+
+  // 9. POST /api/customers (Manual customer creation from UI)
+  router.post('/customers', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { name, phone, email } = req.body;
+
+    if (!name || !name.trim() || !phone || !phone.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer name and phone number are required.'
+      });
+    }
+
+    const rawPhone = phone.trim();
+    const formattedPhone = rawPhone.startsWith('+91') ? rawPhone : `+91 ${rawPhone.replace(/^\+91\s*/, '')}`;
+    const cleanDigits = rawPhone.replace(/\D/g, '').slice(-10);
+
+    try {
+      if (prisma) {
+        // Check if customer with this phone already exists in this branch
+        const existingList = await prisma.customer.findMany({
+          where: { branchId }
+        });
+        const existing = existingList.find(c => {
+          const cDigits = c.phone.replace(/\D/g, '').slice(-10);
+          return cDigits === cleanDigits || c.phone === formattedPhone || c.phone === rawPhone;
+        });
+
+        if (existing) {
+          // Update existing details if provided
+          const updated = await prisma.customer.update({
+            where: { id: existing.id },
+            data: {
+              name: name.trim(),
+              email: email?.trim() || existing.email
+            }
+          });
+          io.emit('customer_updated', { customer: updated, branchId });
+          return res.json({
+            success: true,
+            message: `Customer ${existing.phone} updated successfully`,
+            customer: {
+              ...updated,
+              purchaseHistory: []
+            }
+          });
+        }
+
+        const newCustomer = await prisma.customer.create({
+          data: {
+            id: `c-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+            branchId,
+            name: name.trim(),
+            phone: formattedPhone,
+            email: email?.trim() || 'Not specified',
+            visits: 0,
+            totalSpent: 0,
+            tier: 'Regular',
+            favoriteItem: 'None',
+            lastVisit: 'No purchases yet'
+          }
+        });
+
+        io.emit('customer_updated', { customer: newCustomer, branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: 'Customer created successfully in PostgreSQL',
+          customer: {
+            ...newCustomer,
+            purchaseHistory: []
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /customers POST] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create customer in PostgreSQL',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10. DELETE /api/customers/:id
+  router.delete('/customers/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        await prisma.customer.delete({ where: { id } }).catch(() => {});
+        io.emit('customer_updated', { id, branchId, deleted: true });
+        return res.json({ success: true, message: `Customer ${id} deleted successfully` });
+      }
+    } catch (err: any) {
+      console.warn('[API /customers DELETE] Error:', err.message);
+    }
+    return res.json({ success: true, message: `Customer ${id} deleted` });
+  });
+
+  // 11. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     const period = (req.query.period as string) || 'today';
