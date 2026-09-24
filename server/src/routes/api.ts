@@ -454,24 +454,17 @@ export function createApiRouter(io: SocketServer) {
         });
       }
     } catch (err: any) {
-      console.warn('[API /inventory/purchases] PostgreSQL write error:', err.message);
+      console.error('[API /inventory/purchases] PostgreSQL write error:', err.message, err.stack);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+        details: err.stack
+      });
     }
 
-    // Fallback response
-    res.status(201).json({
-      success: true,
-      message: `Stock purchase recorded in fallback mode`,
-      purchase: {
-        id: purchaseId,
-        invoiceRef: finalInvoiceRef,
-        supplier: finalSupplier,
-        date: displayDate,
-        dateIso: todayIso,
-        notes: notes || '',
-        totalAmount,
-        items: items
-      },
-      fallback: true
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection is unavailable'
     });
   };
 
