@@ -289,12 +289,13 @@ export function createApiRouter(io: SocketServer) {
             branchId,
             invoiceRef: finalInvoiceRef,
             supplier: finalSupplier,
+            supplierName: finalSupplier,
             category: items[0]?.category || 'Raw Ingredients',
             notes: notes || 'Incoming stock purchase',
             totalAmount,
             recordedBy: 'Shruthy A',
             dateIso: todayIso
-          }
+          } as any
         });
 
         // 2. Process each item: Upsert InventoryItem, Create PurchaseItem, Create StockLedger
