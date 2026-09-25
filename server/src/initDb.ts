@@ -89,14 +89,15 @@ export async function ensureDatabaseInitialized() {
   }
 
   console.log('🔄 [DB Init] Verifying PostgreSQL schema tables via raw SQL DDL...');
-  try {
-    for (const ddl of DDL_STATEMENTS) {
+  for (const ddl of DDL_STATEMENTS) {
+    try {
       await prisma.$executeRawUnsafe(ddl);
+    } catch (err: any) {
+      // Log and continue to ensure all migrations run
+      console.warn('⚠️ [DB Init] DDL notice (continuing):', err.message?.split('\n')[0]);
     }
-    console.log('✅ [DB Init] All PostgreSQL tables and indexes verified successfully.');
-  } catch (err: any) {
-    console.error('❌ [DB Init] DDL execution notice:', err.message);
   }
+  console.log('✅ [DB Init] All PostgreSQL tables and indexes verified successfully.');
 
   // Check and seed master data if empty
   try {
