@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'threshold-expense-staff-v1.0.6',
+      commit: 'bom-resolution-v1.0.7',
       deployedAt: new Date().toISOString(),
-      version: '1.0.6-threshold-expense-staff-aligned',
+      version: '1.0.7-bom-resolution-perfected',
       database: 'Neon PostgreSQL'
     });
   });
@@ -845,29 +845,42 @@ export function createApiRouter(io: SocketServer) {
           for (const proc of matchedBOM.items) {
             const totalRawQty = proc.quantity * saleItem.quantity;
             
+            // Resolve inventory item by ID or by name
+            let targetItem = null;
             if (proc.inventoryItemId) {
-              await prisma.inventoryItem.update({
-                where: { id: proc.inventoryItemId },
+              targetItem = await prisma.inventoryItem.findUnique({ where: { id: proc.inventoryItemId } });
+            }
+            if (!targetItem && proc.rawMaterialName) {
+              targetItem = await prisma.inventoryItem.findFirst({
+                where: { name: { equals: proc.rawMaterialName, mode: 'insensitive' } }
+              });
+            }
+
+            if (targetItem) {
+              const updatedItem = await prisma.inventoryItem.update({
+                where: { id: targetItem.id },
                 data: {
                   stockOut: { increment: totalRawQty },
                   lastMovement: new Date()
                 }
               });
 
+              const remainingAfter = Math.max(0, (updatedItem.openingStock || 0) + (updatedItem.stockIn || 0) - (updatedItem.stockOut || 0));
+
               await prisma.stockLedger.create({
                 data: {
                   id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
                   branchId,
-                  itemId: proc.inventoryItemId,
-                  itemName: proc.rawMaterialName,
+                  itemId: targetItem.id,
+                  itemName: targetItem.name,
                   type: 'STOCK_OUT',
                   qty: totalRawQty,
-                  unit: proc.uom,
+                  unit: targetItem.unit || proc.uom,
                   supplier: '-',
                   ref: billNumber,
                   source: 'POS / Recipe BOM',
                   notes: `BOM Consumption: ${saleItem.quantity} x ${saleItem.productName} (${proc.process})`,
-                  remainingAfter: 0,
+                  remainingAfter,
                   dateIso: todayIso
                 }
               });
