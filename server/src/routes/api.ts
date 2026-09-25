@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'purchase-23502-v1.0.4',
+      commit: 'purchase-complete-v1.0.5',
       deployedAt: new Date().toISOString(),
-      version: '1.0.4-purchase-23502-fixed',
+      version: '1.0.5-purchase-complete',
       database: 'Neon PostgreSQL'
     });
   });
@@ -529,6 +529,67 @@ export function createApiRouter(io: SocketServer) {
       return res.status(500).json({
         success: false,
         message: 'Failed to retrieve purchases from PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 4c-1. DELETE /api/inventory/purchases/:id (Delete purchase and rollback stock in PostgreSQL)
+  router.delete('/inventory/purchases/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const purchase = await prisma.purchase.findUnique({
+          where: { id },
+          include: { items: true }
+        });
+        if (!purchase) {
+          return res.status(404).json({ success: false, message: 'Purchase not found' });
+        }
+
+        // Revert stock for each purchase item
+        for (const item of purchase.items) {
+          if (item.itemId) {
+            await prisma.inventoryItem.updateMany({
+              where: { id: item.itemId },
+              data: {
+                stockIn: { decrement: item.qty }
+              }
+            });
+          }
+        }
+
+        // Delete related stock ledgers
+        await prisma.stockLedger.deleteMany({
+          where: { purchaseId: id }
+        });
+
+        // Delete purchase items and purchase
+        await prisma.purchaseItem.deleteMany({
+          where: { purchaseId: id }
+        });
+        await prisma.purchase.delete({
+          where: { id }
+        });
+
+        io.emit('inventory_updated', { branchId });
+
+        return res.json({
+          success: true,
+          message: `Purchase ${id} deleted and stock reverted successfully`
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /inventory/purchases DELETE] Database error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete purchase',
         error: err.message
       });
     }
