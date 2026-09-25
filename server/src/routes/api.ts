@@ -14,6 +14,17 @@ import { Server as SocketServer } from 'socket.io';
 export function createApiRouter(io: SocketServer) {
   const router = Router();
 
+  // Version and deploy commit tracker
+  router.get('/version', (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      commit: '88204b2',
+      deployedAt: '2026-09-25T09:30:00Z',
+      version: '1.0.1-purchase-fix',
+      database: 'Neon PostgreSQL'
+    });
+  });
+
   // Helper to extract branch from request header or query
   const getBranchId = (req: Request): string => {
     const raw = ((req.headers['x-branch-id'] as string) || (req.query.branchId as string) || 'branch-1').trim().toLowerCase();
