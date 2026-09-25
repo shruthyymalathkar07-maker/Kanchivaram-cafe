@@ -11,6 +11,7 @@ const DDL_STATEMENTS: string[] = [
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Branch_code_key\" ON \"public\".\"Branch\"(\"code\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"StoreSetting\" (\n    \"branchId\" TEXT NOT NULL,\n    \"storeName\" TEXT NOT NULL DEFAULT 'Kanchivaram Café',\n    \"branchName\" TEXT NOT NULL,\n    \"gstin\" TEXT NOT NULL DEFAULT '33AAACK1234F1Z9',\n    \"fssaiNo\" TEXT NOT NULL DEFAULT '12421008000142',\n    \"contactPhone\" TEXT NOT NULL DEFAULT '+91 98765 43210',\n    \"contactEmail\" TEXT NOT NULL DEFAULT 'contact@kanchivaram.cafe',\n    \"cgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"sgstPercent\" DOUBLE PRECISION NOT NULL DEFAULT 2.5,\n    \"autoPrintReceipt\" BOOLEAN NOT NULL DEFAULT true,\n    \"defaultPaymentMode\" TEXT NOT NULL DEFAULT 'CASH',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StoreSetting_pkey\" PRIMARY KEY (\"branchId\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"StoreSetting_branchId_key\" ON \"public\".\"StoreSetting\"(\"branchId\");",
+  "ALTER TABLE \"public\".\"StoreSetting\" DROP COLUMN IF EXISTS \"id\" CASCADE;",
   "CREATE TABLE IF NOT EXISTS \"public\".\"ProductCategory\" (\n    \"id\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"slug\" TEXT NOT NULL,\n    \"icon\" TEXT NOT NULL DEFAULT '✨',\n    \"displayOrder\" INTEGER NOT NULL DEFAULT 0,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"ProductCategory_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_name_key\" ON \"public\".\"ProductCategory\"(\"name\");",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"ProductCategory_slug_key\" ON \"public\".\"ProductCategory\"(\"slug\");",
@@ -217,9 +218,36 @@ export async function ensureDatabaseInitialized() {
               EXCEPTION WHEN OTHERS THEN NULL;
               END;
           END LOOP;
+
+          -- Dynamic schema cleanup for legacy NOT NULL columns on StoreSetting
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'StoreSetting' 
+                AND column_name NOT IN ('branchId', 'storeName', 'branchName')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."StoreSetting" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'StoreSetting' 
+                AND column_name NOT IN ('branchId', 'storeName', 'branchName', 'gstin', 'fssaiNo', 'contactPhone', 'contactEmail', 'cgstPercent', 'sgstPercent', 'autoPrintReceipt', 'defaultPaymentMode', 'createdAt', 'updatedAt')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."StoreSetting" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
       END $$;
     `);
-    console.log('✅ [DB Init] Dynamic legacy NOT NULL columns safely dropped & aligned across Purchase, Expense, and Staff.');
+    console.log('✅ [DB Init] Dynamic legacy NOT NULL columns safely dropped & aligned across StoreSetting, Purchase, Expense, and Staff.');
   } catch (cleanErr: any) {
     console.warn('⚠️ [DB Init] Dynamic cleanup warning:', cleanErr.message);
   }
@@ -227,17 +255,18 @@ export async function ensureDatabaseInitialized() {
 
   // Check and seed master data
   try {
-    const [branchCount, categoryCount, productCount, rawMaterialCount, recipeCount] = await Promise.all([
+    const [branchCount, categoryCount, productCount, rawMaterialCount, recipeCount, settingCount] = await Promise.all([
       prisma.branch.count(),
       prisma.productCategory.count(),
       prisma.product.count(),
       prisma.inventoryItem.count(),
-      prisma.recipe.count()
+      prisma.recipe.count(),
+      prisma.storeSetting.count()
     ]);
-    console.log(`[DB Init] Counts: Branches=${branchCount}, Categories=${categoryCount}, Products=${productCount}, RawMaterials=${rawMaterialCount}, Recipes=${recipeCount}`);
+    console.log(`[DB Init] Counts: Branches=${branchCount}, Settings=${settingCount}, Categories=${categoryCount}, Products=${productCount}, RawMaterials=${rawMaterialCount}, Recipes=${recipeCount}`);
 
     // 1. Seed Branches & StoreSettings if missing
-    if (branchCount < 2) {
+    if (branchCount < 2 || settingCount < 2) {
       console.log('🌱 [DB Init] Seeding Branches & StoreSettings...');
       const branches = [
         {
