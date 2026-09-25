@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: '88204b2',
-      deployedAt: '2026-09-25T09:30:00Z',
-      version: '1.0.1-purchase-fix',
+      commit: '5033be7',
+      deployedAt: '2026-09-25T09:52:00Z',
+      version: '1.0.2-schema-align',
       database: 'Neon PostgreSQL'
     });
   });
