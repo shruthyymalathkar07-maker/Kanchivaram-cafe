@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'phase13-audit-v1.1.0',
+      commit: 'phase13-audit-v1.1.1',
       deployedAt: new Date().toISOString(),
-      version: '1.1.0-phase13-business-flows-verified',
+      version: '1.1.1-phase13-business-flows-perfected',
       database: 'Neon PostgreSQL'
     });
   });
@@ -830,34 +830,65 @@ export function createApiRouter(io: SocketServer) {
         });
       }
 
-      // Fetch recipes to check for BOM deduction
-      const dbRecipes = await prisma.recipe.findMany({
-        include: { items: true }
-      });
+      // Fetch recipes to check for BOM deduction (PostgreSQL first, fallback to master BOM)
+      let allRecipes: any[] = [];
+      try {
+        if (prisma) {
+          const dbRecipes = await prisma.recipe.findMany({
+            include: { items: true }
+          });
+          if (dbRecipes && dbRecipes.length > 0) {
+            allRecipes = dbRecipes;
+          }
+        }
+      } catch (rErr: any) {
+        console.warn('[Sale BOM Fetch Notice]:', rErr.message);
+      }
+
+      if (allRecipes.length === 0) {
+        allRecipes = CLIENT_BOM_MASTER;
+      }
 
       for (const saleItem of newSale.items) {
         const itemProdId = (saleItem.productId || '').toLowerCase().trim();
         const itemProdName = (saleItem.productName || '').toLowerCase().trim();
 
-        const matchedBOM = dbRecipes.find(r => 
+        const matchedBOM = allRecipes.find(r => 
           (r.productId && r.productId.toLowerCase().trim() === itemProdId) || 
           (r.productName && r.productName.toLowerCase().trim() === itemProdName)
         );
 
-        if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.items && matchedBOM.items.length > 0) {
+        const bomSteps = matchedBOM ? (matchedBOM.items || matchedBOM.processes || []) : [];
+
+        if (matchedBOM && matchedBOM.status === 'COMPLETE' && bomSteps.length > 0) {
           newSale.bomDeductionsApplied = true;
 
-          for (const proc of matchedBOM.items) {
-            const totalRawQty = proc.quantity * saleItem.quantity;
+          for (const proc of bomSteps) {
+            const rawQtyNum = (proc.quantity !== undefined ? proc.quantity : proc.qty) || 0;
+            const totalRawQty = rawQtyNum * saleItem.quantity;
+            const rawName = proc.rawMaterialName || proc.name;
+            const rawId = proc.inventoryItemId || proc.rawMaterialId || proc.id;
+            const rawUom = proc.uom || proc.unit || 'units';
+            const procDesc = proc.process || 'Recipe Process';
             
             // Resolve inventory item by ID or by name
             let targetItem = null;
-            if (proc.inventoryItemId) {
-              targetItem = await prisma.inventoryItem.findUnique({ where: { id: proc.inventoryItemId } });
-            }
-            if (!targetItem && proc.rawMaterialName) {
+            if (rawId) {
               targetItem = await prisma.inventoryItem.findFirst({
-                where: { name: { equals: proc.rawMaterialName, mode: 'insensitive' } }
+                where: {
+                  OR: [
+                    { id: rawId },
+                    ...(branchId ? [{ id: rawId, branchId }] : [])
+                  ]
+                }
+              });
+            }
+            if (!targetItem && rawName) {
+              targetItem = await prisma.inventoryItem.findFirst({
+                where: {
+                  name: { equals: rawName, mode: 'insensitive' },
+                  ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
+                }
               });
             }
 
@@ -880,11 +911,11 @@ export function createApiRouter(io: SocketServer) {
                   itemName: targetItem.name,
                   type: 'STOCK_OUT',
                   qty: totalRawQty,
-                  unit: targetItem.unit || proc.uom,
+                  unit: targetItem.unit || rawUom,
                   supplier: '-',
                   ref: billNumber,
                   source: 'POS / Recipe BOM',
-                  notes: `BOM Consumption: ${saleItem.quantity} x ${saleItem.productName} (${proc.process})`,
+                  notes: `BOM Consumption: ${saleItem.quantity} x ${saleItem.productName} (${procDesc})`,
                   remainingAfter,
                   dateIso: todayIso
                 }
@@ -892,9 +923,9 @@ export function createApiRouter(io: SocketServer) {
             }
 
             appliedDeductions.push({
-              rawMaterial: proc.rawMaterialName,
+              rawMaterial: rawName,
               qtyDeducted: totalRawQty,
-              uom: proc.uom,
+              uom: rawUom,
               product: saleItem.productName
             });
           }
