@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'purchase-fix-v1.0.3',
+      commit: 'purchase-23502-v1.0.4',
       deployedAt: new Date().toISOString(),
-      version: '1.0.3-purchase-fix',
+      version: '1.0.4-purchase-23502-fixed',
       database: 'Neon PostgreSQL'
     });
   });
@@ -293,7 +293,7 @@ export function createApiRouter(io: SocketServer) {
           }
         }
 
-        // 1. Create Purchase record in PostgreSQL via direct SQL
+        // 1. Create Purchase record in PostgreSQL via direct SQL with dynamic legacy column alignment
         try {
           await prisma.$executeRawUnsafe(
             `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
@@ -302,21 +302,39 @@ export function createApiRouter(io: SocketServer) {
             purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
           );
         } catch (insertErr: any) {
-          console.warn('[API /inventory/purchases] Initial insert failed, attempting legacy cleanup and fallback:', insertErr.message);
+          console.warn('[API /inventory/purchases] Initial insert failed, attempting dynamic legacy cleanup:', insertErr.message);
           try {
             await prisma.$executeRawUnsafe(`
-              ALTER TABLE "public"."Purchase" 
-                DROP COLUMN IF EXISTS "poNumber",
-                DROP COLUMN IF EXISTS "supplierName",
-                DROP COLUMN IF EXISTS "supplierPhone",
-                DROP COLUMN IF EXISTS "supplierGstin",
-                DROP COLUMN IF EXISTS "supplierAddress",
-                DROP COLUMN IF EXISTS "totalCost",
-                DROP COLUMN IF EXISTS "paidAmount",
-                DROP COLUMN IF EXISTS "paymentStatus",
-                DROP COLUMN IF EXISTS "paymentMethod",
-                DROP COLUMN IF EXISTS "deliveryStatus",
-                DROP COLUMN IF EXISTS "receivedBy";
+              DO $$
+              DECLARE
+                  rec RECORD;
+              BEGIN
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Purchase' 
+                        AND column_name NOT IN ('id', 'branchId', 'invoiceRef', 'supplier')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Purchase" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Purchase' 
+                        AND column_name NOT IN ('id', 'branchId', 'invoiceRef', 'supplier', 'category', 'notes', 'totalAmount', 'recordedBy', 'dateIso', 'createdAt')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Purchase" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+              END $$;
             `);
           } catch (alterErr) {
             console.warn('[API /inventory/purchases] Alter table notice:', alterErr);

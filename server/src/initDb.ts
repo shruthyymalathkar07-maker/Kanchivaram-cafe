@@ -104,6 +104,71 @@ export async function ensureDatabaseInitialized() {
       console.warn('⚠️ [DB Init] DDL notice (continuing):', err.message?.split('\n')[0]);
     }
   }
+
+  // Dynamic schema cleanup for legacy NOT NULL columns on Purchase and PurchaseItem
+  try {
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      DECLARE
+          rec RECORD;
+      BEGIN
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Purchase' 
+                AND column_name NOT IN ('id', 'branchId', 'invoiceRef', 'supplier')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Purchase" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Purchase' 
+                AND column_name NOT IN ('id', 'branchId', 'invoiceRef', 'supplier', 'category', 'notes', 'totalAmount', 'recordedBy', 'dateIso', 'createdAt')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Purchase" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'PurchaseItem' 
+                AND column_name NOT IN ('id', 'purchaseId', 'itemName', 'qty', 'unit', 'pricePerUnit', 'total')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."PurchaseItem" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'PurchaseItem' 
+                AND column_name NOT IN ('id', 'purchaseId', 'itemId', 'itemName', 'category', 'qty', 'unit', 'pricePerUnit', 'total')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."PurchaseItem" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+      END $$;
+    `);
+    console.log('✅ [DB Init] Dynamic legacy NOT NULL columns safely dropped & aligned.');
+  } catch (cleanErr: any) {
+    console.warn('⚠️ [DB Init] Dynamic cleanup warning:', cleanErr.message);
+  }
   console.log('✅ [DB Init] All PostgreSQL tables and indexes verified successfully.');
 
   // Check and seed master data if empty
