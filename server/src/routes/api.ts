@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: '5033be7',
-      deployedAt: '2026-09-25T09:52:00Z',
-      version: '1.0.2-schema-align',
+      commit: 'purchase-fix-v1.0.3',
+      deployedAt: new Date().toISOString(),
+      version: '1.0.3-purchase-fix',
       database: 'Neon PostgreSQL'
     });
   });
@@ -1269,13 +1269,13 @@ export function createApiRouter(io: SocketServer) {
           };
         });
 
-        const totalExpenses = mappedExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+        const totalExpenses = mappedExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         const todayExpenses = mappedExpenses
           .filter(e => e.date === todayIso)
-          .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+          .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
         const monthExpenses = mappedExpenses
           .filter(e => e.date.startsWith(currentMonthPrefix))
-          .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+          .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
         return res.json({
           success: true,
