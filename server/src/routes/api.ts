@@ -25,10 +25,10 @@ export function createApiRouter(io: SocketServer) {
     });
   });
 
-  // Helper to extract branch from request header or query
+  // Helper to extract branch from request header, query, or body
   const getBranchId = (req: Request): string => {
-    const raw = ((req.headers['x-branch-id'] as string) || (req.query.branchId as string) || 'branch-1').trim().toLowerCase();
-    if (raw === 'city' || raw === 'branch-2' || raw.includes('city')) return 'branch-2';
+    const raw = ((req.headers['x-branch-id'] as string) || (req.query.branchId as string) || (req.body && req.body.branchId ? String(req.body.branchId) : '') || 'branch-1').trim().toLowerCase();
+    if (raw === 'city' || raw === 'branch-2' || raw.includes('city') || raw === '2') return 'branch-2';
     return 'branch-1';
   };
 

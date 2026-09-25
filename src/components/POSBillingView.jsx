@@ -148,7 +148,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     }
 
     setIsSubmitting(true);
-
+    const branchId = selectedBranch?.id || 'branch-1';
     const salePayload = {
       items: cart,
       subtotal,
@@ -162,12 +162,13 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       customerPhone: phoneInput.trim() || null,
       orderNote,
       cashierName: 'Shruthy',
-      channel: 'POS'
+      channel: 'POS',
+      branchId
     };
 
     try {
       // 1. Send transaction to backend API if available
-      const response = await createSaleTransaction(salePayload);
+      const response = await createSaleTransaction(salePayload, branchId);
       const billNumber = response?.sale?.billNumber || `KC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
       // 2. Record Completed Bill in centralized inventoryStore (Updates Sales, Stock Out, and Customers if details provided)

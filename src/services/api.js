@@ -55,12 +55,16 @@ export async function fetchProducts() {
   }
 }
 
-export async function createSaleTransaction(salePayload) {
+export async function createSaleTransaction(salePayload, branchId = 'branch-1') {
   try {
+    const finalBranchId = salePayload?.branchId || branchId;
     const res = await fetch(`${API_BASE_URL}/sales`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(salePayload)
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-branch-id': finalBranchId
+      },
+      body: JSON.stringify({ ...salePayload, branchId: finalBranchId })
     });
     return await res.json();
   } catch (err) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bike, 
   ShoppingBag, 
@@ -16,12 +16,54 @@ import {
   Phone,
   User
 } from 'lucide-react';
+import { fetchSales, socket } from '../services/api';
 
 export default function OnlineOrdersView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
-  // Orders State (Default empty array [] -> State 1: Zero Data / Pre-Integration State)
+  // Orders State (Default empty array [] -> Populated from PostgreSQL)
   const [orders, setOrders] = useState([]);
+
+  // Load online orders from PostgreSQL backend
+  useEffect(() => {
+    let isMounted = true;
+    const loadOnlineOrders = async () => {
+      const branchId = selectedBranch?.id || 'branch-1';
+      try {
+        const salesData = await fetchSales('today', branchId, 'ONLINE');
+        if (isMounted && Array.isArray(salesData)) {
+          const mapped = salesData
+            .filter(s => s.channel && !['POS', 'IN_STORE', 'In-Store POS'].includes(s.channel))
+            .map(s => ({
+              id: s.billNumber || s.id,
+              platform: (s.channel || 'ONLINE').toUpperCase(),
+              customer: s.customerName || 'Online Customer',
+              phone: s.customerPhone || 'Phone unavailable',
+              address: s.orderNote || 'Delivery Address',
+              items: (s.items || []).map(i => `${i.quantity || 1}x ${i.name || i.productName}`).join(', ') || 'Online Order Items',
+              total: s.grandTotal || 0,
+              status: s.status || 'DONE',
+              createdAt: s.createdAt
+            }));
+          setOrders(mapped);
+        }
+      } catch (err) {
+        console.warn('[OnlineOrdersView] Fetch error:', err);
+      }
+    };
+
+    loadOnlineOrders();
+
+    if (socket) {
+      socket.on('sale_created', loadOnlineOrders);
+      return () => {
+        isMounted = false;
+        socket.off('sale_created', loadOnlineOrders);
+      };
+    }
+
+    return () => { isMounted = false; };
+  }, [selectedBranch?.id]);
 
   // Filter States
   const [selectedChannel, setSelectedChannel] = useState('ALL');
