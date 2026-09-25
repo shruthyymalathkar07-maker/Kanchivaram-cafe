@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'step9-sync-v1.0.9',
+      commit: 'phase13-audit-v1.1.0',
       deployedAt: new Date().toISOString(),
-      version: '1.0.9-step9-sync-perfected',
+      version: '1.1.0-phase13-business-flows-verified',
       database: 'Neon PostgreSQL'
     });
   });
@@ -836,12 +836,15 @@ export function createApiRouter(io: SocketServer) {
       });
 
       for (const saleItem of newSale.items) {
+        const itemProdId = (saleItem.productId || '').toLowerCase().trim();
+        const itemProdName = (saleItem.productName || '').toLowerCase().trim();
+
         const matchedBOM = dbRecipes.find(r => 
-          (r.productId === saleItem.productId) || 
-          (r.productName.toLowerCase() === saleItem.productName.toLowerCase())
+          (r.productId && r.productId.toLowerCase().trim() === itemProdId) || 
+          (r.productName && r.productName.toLowerCase().trim() === itemProdName)
         );
 
-        if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.items.length > 0) {
+        if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.items && matchedBOM.items.length > 0) {
           newSale.bomDeductionsApplied = true;
 
           for (const proc of matchedBOM.items) {
