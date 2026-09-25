@@ -283,39 +283,12 @@ export function createApiRouter(io: SocketServer) {
         }
 
         // 1. Create Purchase record in PostgreSQL via direct SQL
-        try {
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
-             ON CONFLICT ("id") DO NOTHING;`,
-            purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
-          );
-        } catch (pErr: any) {
-          if (pErr.message?.includes('23502') || pErr.message?.includes('not-null') || pErr.message?.includes('violates not-null')) {
-            await prisma.$executeRawUnsafe(`
-              ALTER TABLE "public"."Purchase" 
-                DROP COLUMN IF EXISTS "poNumber",
-                DROP COLUMN IF EXISTS "supplierName",
-                DROP COLUMN IF EXISTS "supplierPhone",
-                DROP COLUMN IF EXISTS "supplierGstin",
-                DROP COLUMN IF EXISTS "supplierAddress",
-                DROP COLUMN IF EXISTS "totalCost",
-                DROP COLUMN IF EXISTS "paidAmount",
-                DROP COLUMN IF EXISTS "paymentStatus",
-                DROP COLUMN IF EXISTS "paymentMethod",
-                DROP COLUMN IF EXISTS "deliveryStatus",
-                DROP COLUMN IF EXISTS "receivedBy";
-            `);
-            await prisma.$executeRawUnsafe(
-              `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
-               ON CONFLICT ("id") DO NOTHING;`,
-              purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
-            );
-          } else {
-            throw pErr;
-          }
-        }
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
+           ON CONFLICT ("id") DO NOTHING;`,
+          purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
+        );
 
         const purchaseRecord = {
           id: purchaseId,
