@@ -5,6 +5,7 @@ import {
   fetchInventoryPurchases, 
   fetchStockLedger, 
   createPurchaseStockIn, 
+  deleteInventoryPurchase,
   updateItemThreshold as apiUpdateItemThreshold,
   fetchCustomers,
   socket 
@@ -53,6 +54,7 @@ class InventoryStore {
     this.currentBranchId = 'branch-1';
     this.listeners = new Set();
     this.isHydrating = false;
+    this.hydrationSequence = 0;
 
     // Listen to real-time socket events
     if (socket) {
@@ -62,6 +64,11 @@ class InventoryStore {
       });
 
       socket.on('purchase_created', (data) => {
+        const targetBranch = data?.branchId || this.currentBranchId;
+        this.hydrateFromBackend(targetBranch);
+      });
+
+      socket.on('purchase_deleted', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
         this.hydrateFromBackend(targetBranch);
       });
@@ -110,6 +117,7 @@ class InventoryStore {
 
   // Hydrate inventory state from PostgreSQL backend API
   async hydrateFromBackend(branchId = this.currentBranchId) {
+    const seq = ++this.hydrationSequence;
     try {
       if (!this.branches[branchId]) {
         this.branches[branchId] = {
@@ -127,6 +135,9 @@ class InventoryStore {
         fetchStockLedger(branchId),
         fetchCustomers(branchId)
       ]);
+
+      // If a newer hydration started while this was in-flight, discard stale result
+      if (seq !== this.hydrationSequence) return;
 
       if (masterRes && masterRes.items && Array.isArray(masterRes.items)) {
         const currentItems = this.branches[branchId].items;
@@ -369,137 +380,39 @@ class InventoryStore {
     // Persist to PostgreSQL backend via API
     try {
       await apiUpdateItemThreshold(itemId, numThreshold, targetBranch);
+      await this.hydrateFromBackend(targetBranch);
     } catch (err) {
       console.warn('[InventoryStore] Error persisting threshold:', err);
     }
   }
 
-  // RECORD MULTI-ITEM OR SINGLE PURCHASE INVOICE
+  // RECORD MULTI-ITEM OR SINGLE PURCHASE INVOICE (PostgreSQL Single Source of Truth)
   async recordPurchase(purchasePayload, branchId = this.currentBranchId) {
     const { invoiceRef, supplier, date, notes, items } = purchasePayload;
-    if (!items || items.length === 0) return;
+    if (!items || items.length === 0) return null;
 
     const targetBranch = branchId || this.currentBranchId;
     const displayDate = date || getDisplayDate();
-    const todayIso = getTodayIso();
-    const displayTime = getDisplayTime();
-    const purchaseId = `PUR-${Date.now().toString().slice(-4)}`;
 
-    let grandTotal = 0;
-    const processedItems = [];
-
-    items.forEach(itemInput => {
-      const numQty = parseFloat(itemInput.qty) || 0;
-      if (numQty <= 0) return;
-      const pricePerUnit = parseFloat(itemInput.pricePerUnit) || parseFloat(itemInput.cost) || 0;
-      const itemTotal = numQty * pricePerUnit;
-      grandTotal += itemTotal;
-
-      let itemObj = this.items.find(i => 
-        (itemInput.itemId && i.id === itemInput.itemId) || 
-        (itemInput.itemName && i.name.toLowerCase() === itemInput.itemName.toLowerCase())
-      );
-
-      if (itemObj) {
-        itemObj.stockIn = (Number(itemObj.stockIn) || 0) + numQty;
-        itemObj.lastMovement = displayDate;
-        if (supplier) itemObj.supplier = supplier;
-        if (pricePerUnit > 0) itemObj.costPerUnit = pricePerUnit;
-      } else if (itemInput.itemName) {
-        // Create new inventory item dynamically in local catalog
-        itemObj = {
-          id: `rm-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-          name: itemInput.itemName.trim(),
-          category: itemInput.category || 'General Ingredients',
-          unit: itemInput.unit || 'units',
-          openingStock: 0,
-          stockIn: numQty,
-          stockOut: 0,
-          minThreshold: 0,
-          costPerUnit: pricePerUnit,
-          supplier: supplier || 'Local Supplier',
-          lastMovement: displayDate
-        };
-        this.items.push(itemObj);
-        this.items.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-      }
-
-      if (itemObj) {
-        const remainingAfter = this.getItemRemainingStock(itemObj);
-        
-        // Add movement ledger entry for each line item
-        this.ledger.unshift({
-          id: `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*100)}`,
-          date: displayDate,
-          dateIso: todayIso,
-          time: displayTime,
-          itemId: itemObj.id,
-          itemName: itemObj.name,
-          type: 'STOCK_IN',
-          qty: numQty,
-          unit: itemInput.unit || itemObj.unit,
-          supplier: supplier || itemObj.supplier,
-          ref: invoiceRef || `PO #${purchaseId}`,
-          source: 'Purchase / Stock In',
-          notes: notes || `Purchase In (${invoiceRef || purchaseId})`,
-          remainingAfter,
-          purchaseId
-        });
-
-        processedItems.push({
-          itemId: itemObj.id,
-          itemName: itemObj.name,
-          category: itemObj.category,
-          qty: numQty,
-          unit: itemInput.unit || itemObj.unit,
-          pricePerUnit,
-          total: itemTotal
-        });
-      }
-    });
-
-    const newPurchase = {
-      id: purchaseId,
-      invoiceRef: invoiceRef || `PO #${purchaseId}`,
+    const serverPayload = {
+      invoiceRef,
+      supplier,
       date: displayDate,
-      dateIso: todayIso,
-      supplier: supplier || 'General Supplier',
-      category: processedItems[0]?.category || 'Raw Ingredients',
-      notes: notes || 'Incoming stock purchase',
-      totalAmount: grandTotal,
-      items: processedItems
+      notes,
+      items
     };
 
-    this.purchases.unshift(newPurchase);
-    this.notify();
-
-    // Persist to PostgreSQL backend asynchronously
     try {
-      const serverPayload = {
-        invoiceRef: newPurchase.invoiceRef,
-        supplier: newPurchase.supplier,
-        date: displayDate,
-        notes: newPurchase.notes,
-        items: items
-      };
       const res = await createPurchaseStockIn(serverPayload, targetBranch);
-      if (res && res.success && res.purchase) {
-        const idx = this.purchases.findIndex(p => p.id === purchaseId || p.invoiceRef === newPurchase.invoiceRef);
-        if (idx !== -1) {
-          this.purchases[idx] = {
-            ...res.purchase,
-            date: res.purchase.createdAt ? new Date(res.purchase.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : displayDate,
-            items: res.purchase.items || processedItems
-          };
-        }
-      }
-      // Re-hydrate to ensure perfect alignment with server timestamps & IDs
       await this.hydrateFromBackend(targetBranch);
+      if (res && res.success && res.purchase) {
+        return res.purchase;
+      }
     } catch (err) {
       console.warn('[InventoryStore] Error persisting purchase to PostgreSQL:', err);
     }
 
-    return newPurchase;
+    return null;
   }
 
   // RECORD SINGLE OR QUICK STOCK IN (Maps directly to recordPurchase)
@@ -523,33 +436,28 @@ class InventoryStore {
     return this.recordPurchase(formattedPurchasePayload, branchId);
   }
 
-  // DELETE PURCHASE AND REVERSE STOCK
-  deletePurchase(purchaseId) {
-    const purchaseIndex = this.purchases.findIndex(p => p.id === purchaseId);
-    if (purchaseIndex === -1) return false;
+  // DELETE PURCHASE AND REVERSE STOCK (PostgreSQL + Local Reversal)
+  async deletePurchase(purchaseId, branchId = this.currentBranchId) {
+    const targetBranch = branchId || this.currentBranchId;
 
-    const purchase = this.purchases[purchaseIndex];
-
-    // Safely subtract quantities from stockIn
-    purchase.items.forEach(pItem => {
-      const matched = this.items.find(i => i.id === pItem.itemId || i.name.toLowerCase() === pItem.itemName.toLowerCase());
-      if (matched) {
-        matched.stockIn = Math.max(0, (Number(matched.stockIn) || 0) - (Number(pItem.qty) || 0));
+    try {
+      const res = await deleteInventoryPurchase(purchaseId, targetBranch);
+      await this.hydrateFromBackend(targetBranch);
+      return res && res.success !== false;
+    } catch (err) {
+      console.warn('[InventoryStore] Error deleting purchase from PostgreSQL:', err);
+      const purchaseIndex = this.purchases.findIndex(p => p.id === purchaseId);
+      if (purchaseIndex !== -1) {
+        this.purchases.splice(purchaseIndex, 1);
+        this.notify();
       }
-    });
-
-    // Remove corresponding ledger movements
-    this.ledger = this.ledger.filter(m => m.purchaseId !== purchaseId && m.ref !== purchase.invoiceRef);
-
-    // Remove purchase
-    this.purchases.splice(purchaseIndex, 1);
-    this.notify();
-    return true;
+      return false;
+    }
   }
 
   // UPDATE PURCHASE WITH SAFE STOCK ADJUSTMENT
-  updatePurchase(purchaseId, updatedPayload, branchId = this.currentBranchId) {
-    this.deletePurchase(purchaseId);
+  async updatePurchase(purchaseId, updatedPayload, branchId = this.currentBranchId) {
+    await this.deletePurchase(purchaseId, branchId);
     return this.recordPurchase(updatedPayload, branchId);
   }
 

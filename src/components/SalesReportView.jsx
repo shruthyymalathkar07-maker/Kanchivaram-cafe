@@ -19,7 +19,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
-import { fetchDashboardStats, fetchSales } from '../services/api';
+import { fetchDashboardStats, fetchSales, socket } from '../services/api';
 
 export default function SalesReportView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -34,7 +34,6 @@ export default function SalesReportView({ selectedBranch }) {
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
-      setIsLoading(true);
       const branchId = selectedBranch?.id || 'branch-1';
       try {
         const [statsData, salesData] = await Promise.all([
@@ -56,7 +55,22 @@ export default function SalesReportView({ selectedBranch }) {
         if (isMounted) setIsLoading(false);
       }
     };
+
     loadData();
+
+    if (socket) {
+      const handleLiveSale = () => {
+        loadData();
+      };
+      socket.on('sale_created', handleLiveSale);
+      socket.on('inventory_updated', handleLiveSale);
+      return () => {
+        isMounted = false;
+        socket.off('sale_created', handleLiveSale);
+        socket.off('inventory_updated', handleLiveSale);
+      };
+    }
+
     return () => { isMounted = false; };
   }, [period, selectedBranch?.id]);
 

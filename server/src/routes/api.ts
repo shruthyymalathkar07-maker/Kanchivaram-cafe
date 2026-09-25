@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'step8-complete-v1.0.8',
+      commit: 'step9-sync-v1.0.9',
       deployedAt: new Date().toISOString(),
-      version: '1.0.8-step8-complete',
+      version: '1.0.9-step9-sync-perfected',
       database: 'Neon PostgreSQL'
     });
   });
@@ -580,6 +580,7 @@ export function createApiRouter(io: SocketServer) {
         });
 
         io.emit('inventory_updated', { branchId });
+        io.emit('purchase_deleted', { id, branchId });
 
         return res.json({
           success: true,

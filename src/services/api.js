@@ -153,6 +153,21 @@ export async function createPurchaseStockIn(purchasePayload, branchId = 'branch-
   }
 }
 
+export async function deleteInventoryPurchase(purchaseId, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/purchases/${purchaseId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Delete purchase error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 export async function createInventoryItem(itemPayload, branchId = 'branch-1') {
   try {
     const res = await fetch(`${API_BASE_URL}/inventory/items`, {

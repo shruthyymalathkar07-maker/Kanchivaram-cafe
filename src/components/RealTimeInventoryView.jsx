@@ -1196,8 +1196,13 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     onChange={(e) => setUnitInput(e.target.value)}
                     className="w-full px-2 py-2 bg-white text-[#11291f] font-bold rounded-xl border border-[#cabb9e]"
                   >
+                    <option value="NOS">NOS</option>
+                    <option value="Nos.">Nos.</option>
                     <option value="kg">kg</option>
+                    <option value="g">g</option>
                     <option value="L">L</option>
+                    <option value="ml">ml</option>
+                    <option value="units">units</option>
                     <option value="cups">cups</option>
                     <option value="plates">plates</option>
                     <option value="bottles">bottles</option>

@@ -265,19 +265,20 @@ export default function PurchaseStockInView({ selectedBranch }) {
     const branchId = selectedBranch?.id || 'branch-1';
 
     if (editingPurchase) {
-      inventoryStore.updatePurchase(editingPurchase.id, payload, branchId);
+      await inventoryStore.updatePurchase(editingPurchase.id, payload, branchId);
       showToast(`Purchase ${editingPurchase.invoiceRef} updated & inventory re-synchronized!`);
     } else {
-      inventoryStore.recordPurchase(payload, branchId);
+      await inventoryStore.recordPurchase(payload, branchId);
       showToast(`Stock purchase ${payload.invoiceRef} recorded & stock updated!`);
     }
 
     setIsAddModalOpen(false);
   };
 
-  const confirmDeletePurchase = () => {
+  const confirmDeletePurchase = async () => {
     if (!deletingPurchaseId) return;
-    const success = inventoryStore.deletePurchase(deletingPurchaseId);
+    const branchId = selectedBranch?.id || 'branch-1';
+    const success = await inventoryStore.deletePurchase(deletingPurchaseId, branchId);
     if (success) {
       showToast("Purchase record deleted & stock automatically reversed!");
     }
@@ -1023,8 +1024,13 @@ export default function PurchaseStockInView({ selectedBranch }) {
                               onChange={(e) => handleLineItemChange(idx, 'unit', e.target.value)}
                               className="w-full px-1.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-[11px] font-bold rounded-lg border border-[#cabb9e]"
                             >
+                              <option value="NOS">NOS</option>
+                              <option value="Nos.">Nos.</option>
                               <option value="kg">kg</option>
+                              <option value="g">g</option>
                               <option value="L">L</option>
+                              <option value="ml">ml</option>
+                              <option value="units">units</option>
                               <option value="cups">cups</option>
                               <option value="plates">plates</option>
                               <option value="bottles">bottles</option>
