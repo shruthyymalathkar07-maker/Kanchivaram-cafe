@@ -163,9 +163,63 @@ export async function ensureDatabaseInitialized() {
               EXCEPTION WHEN OTHERS THEN NULL;
               END;
           END LOOP;
+
+          -- Dynamic schema cleanup for legacy NOT NULL columns on Expense
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Expense' 
+                AND column_name NOT IN ('id', 'branchId', 'description', 'amount')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Expense" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Expense' 
+                AND column_name NOT IN ('id', 'branchId', 'description', 'category', 'amount', 'dateIso', 'notes', 'recordedBy', 'createdAt')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Expense" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          -- Dynamic schema cleanup for legacy NOT NULL columns on Staff
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Staff' 
+                AND column_name NOT IN ('id', 'branchId', 'name', 'phone')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Staff" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
+
+          FOR rec IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+                AND table_name = 'Staff' 
+                AND column_name NOT IN ('id', 'branchId', 'name', 'role', 'shift', 'shiftType', 'startTime', 'endTime', 'phone', 'status', 'monthlyPay', 'joinedDate', 'createdAt')
+          ) LOOP
+              BEGIN
+                  EXECUTE 'ALTER TABLE "public"."Staff" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+              EXCEPTION WHEN OTHERS THEN NULL;
+              END;
+          END LOOP;
       END $$;
     `);
-    console.log('✅ [DB Init] Dynamic legacy NOT NULL columns safely dropped & aligned.');
+    console.log('✅ [DB Init] Dynamic legacy NOT NULL columns safely dropped & aligned across Purchase, Expense, and Staff.');
   } catch (cleanErr: any) {
     console.warn('⚠️ [DB Init] Dynamic cleanup warning:', cleanErr.message);
   }

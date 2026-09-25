@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'purchase-complete-v1.0.5',
+      commit: 'threshold-expense-staff-v1.0.6',
       deployedAt: new Date().toISOString(),
-      version: '1.0.5-purchase-complete',
+      version: '1.0.6-threshold-expense-staff-aligned',
       database: 'Neon PostgreSQL'
     });
   });
@@ -774,7 +774,9 @@ export function createApiRouter(io: SocketServer) {
   router.post('/sales', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     const branchData = branchDb.getBranchData(branchId);
-    const { items, subtotal, tax, discount, grandTotal, paymentMethod, receiptType, customerPhone, customerName, cashierName, channel } = req.body;
+    const { items, subtotal, tax, discount, grandTotal, paymentMethod, receiptType, cashierName, channel } = req.body;
+    const customerPhone = req.body.customerPhone || req.body.customer?.phone || null;
+    const customerName = req.body.customerName || req.body.customer?.name || null;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart items are required' });
@@ -1408,11 +1410,56 @@ export function createApiRouter(io: SocketServer) {
 
     try {
       if (prisma) {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
-          expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
-        );
+        try {
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
+            expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
+          );
+        } catch (insertErr: any) {
+          console.warn('[API /expenses POST] Initial insert failed, attempting dynamic legacy cleanup:', insertErr.message);
+          try {
+            await prisma.$executeRawUnsafe(`
+              DO $$
+              DECLARE
+                  rec RECORD;
+              BEGIN
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Expense' 
+                        AND column_name NOT IN ('id', 'branchId', 'description', 'amount')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Expense" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Expense' 
+                        AND column_name NOT IN ('id', 'branchId', 'description', 'category', 'amount', 'dateIso', 'notes', 'recordedBy', 'createdAt')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Expense" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+              END $$;
+            `);
+          } catch (alterErr) {
+            console.warn('[API /expenses POST] Alter table notice:', alterErr);
+          }
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
+            expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
+          );
+        }
 
         const dateObj = new Date(dateIso);
         const displayDate = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1677,11 +1724,56 @@ export function createApiRouter(io: SocketServer) {
 
     try {
       if (prisma) {
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "public"."Staff" ("id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);`,
-          staffId, branchId, trimmedName, role, finalShift, shiftType, startTime, endTime, formattedPhone, status, parsedPay, finalJoined
-        );
+        try {
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "public"."Staff" ("id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);`,
+            staffId, branchId, trimmedName, role, finalShift, shiftType, startTime, endTime, formattedPhone, status, parsedPay, finalJoined
+          );
+        } catch (insertErr: any) {
+          console.warn('[API /staff POST] Initial insert failed, attempting dynamic legacy cleanup:', insertErr.message);
+          try {
+            await prisma.$executeRawUnsafe(`
+              DO $$
+              DECLARE
+                  rec RECORD;
+              BEGIN
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Staff' 
+                        AND column_name NOT IN ('id', 'branchId', 'name', 'phone')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Staff" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+
+                  FOR rec IN (
+                      SELECT column_name 
+                      FROM information_schema.columns 
+                      WHERE table_schema = 'public' 
+                        AND table_name = 'Staff' 
+                        AND column_name NOT IN ('id', 'branchId', 'name', 'role', 'shift', 'shiftType', 'startTime', 'endTime', 'phone', 'status', 'monthlyPay', 'joinedDate', 'createdAt')
+                  ) LOOP
+                      BEGIN
+                          EXECUTE 'ALTER TABLE "public"."Staff" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
+                      EXCEPTION WHEN OTHERS THEN NULL;
+                      END;
+                  END LOOP;
+              END $$;
+            `);
+          } catch (alterErr) {
+            console.warn('[API /staff POST] Alter table notice:', alterErr);
+          }
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "public"."Staff" ("id", "branchId", "name", "role", "shift", "shiftType", "startTime", "endTime", "phone", "status", "monthlyPay", "joinedDate", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP);`,
+            staffId, branchId, trimmedName, role, finalShift, shiftType, startTime, endTime, formattedPhone, status, parsedPay, finalJoined
+          );
+        }
 
         const newStaff = {
           id: staffId,
