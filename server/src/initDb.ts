@@ -225,14 +225,20 @@ export async function ensureDatabaseInitialized() {
   }
   console.log('✅ [DB Init] All PostgreSQL tables and indexes verified successfully.');
 
-  // Check and seed master data if empty
+  // Check and seed master data
   try {
-    const productCount = await prisma.product.count();
-    console.log(`[DB Init] Current product count in PostgreSQL: ${productCount}`);
+    const [branchCount, categoryCount, productCount, rawMaterialCount, recipeCount] = await Promise.all([
+      prisma.branch.count(),
+      prisma.productCategory.count(),
+      prisma.product.count(),
+      prisma.inventoryItem.count(),
+      prisma.recipe.count()
+    ]);
+    console.log(`[DB Init] Counts: Branches=${branchCount}, Categories=${categoryCount}, Products=${productCount}, RawMaterials=${rawMaterialCount}, Recipes=${recipeCount}`);
 
-    if (productCount < 59) {
-      console.log('🌱 [DB Init] Seeding Branches, Categories, Products, Inventory & BOM...');
-      
+    // 1. Seed Branches & StoreSettings if missing
+    if (branchCount < 2) {
+      console.log('🌱 [DB Init] Seeding Branches & StoreSettings...');
       const branches = [
         {
           id: 'branch-1',
@@ -300,7 +306,11 @@ export async function ensureDatabaseInitialized() {
           }
         });
       }
+    }
 
+    // 2. Seed Categories if missing
+    if (categoryCount < 9) {
+      console.log('🌱 [DB Init] Seeding Product Categories...');
       for (const cat of PRODUCT_CATEGORIES) {
         await prisma.productCategory.upsert({
           where: { id: cat.id },
@@ -319,7 +329,11 @@ export async function ensureDatabaseInitialized() {
           }
         });
       }
+    }
 
+    // 3. Seed Products if missing
+    if (productCount < 59) {
+      console.log('🌱 [DB Init] Seeding Menu Products...');
       for (const prod of CLIENT_PRODUCTS_MASTER) {
         await prisma.product.upsert({
           where: { id: prod.id },
@@ -352,7 +366,11 @@ export async function ensureDatabaseInitialized() {
           }
         });
       }
+    }
 
+    // 4. Seed Raw Materials / Inventory Master if missing
+    if (rawMaterialCount < 117) {
+      console.log('🌱 [DB Init] Seeding Master Raw Materials...');
       for (const rm of CLIENT_RAW_MATERIALS_MASTER) {
         await prisma.inventoryItem.upsert({
           where: { id: rm.id },
@@ -360,8 +378,7 @@ export async function ensureDatabaseInitialized() {
             name: rm.name,
             category: rm.category,
             unit: rm.unit || 'units',
-            minThreshold: rm.minThreshold || 0.0,
-            costPerUnit: 0.0
+            minThreshold: rm.minThreshold || 0.0
           },
           create: {
             id: rm.id,
@@ -372,11 +389,16 @@ export async function ensureDatabaseInitialized() {
             stockIn: 0,
             stockOut: 0,
             minThreshold: rm.minThreshold || 0.0,
-            costPerUnit: 0.0
+            costPerUnit: 0.0,
+            supplier: 'Unassigned'
           }
         });
       }
+    }
 
+    // 5. Seed BOM Recipes if missing
+    if (recipeCount < 9) {
+      console.log('🌱 [DB Init] Seeding BOM Recipes & Process Items...');
       for (const bom of CLIENT_BOM_MASTER) {
         const recipeRecord = await prisma.recipe.upsert({
           where: { productId: bom.productId },
@@ -420,11 +442,9 @@ export async function ensureDatabaseInitialized() {
           }
         }
       }
-
-      console.log('✅ [DB Init] Master data successfully initialized and seeded into PostgreSQL.');
-    } else {
-      console.log('✅ [DB Init] Master data already populated in PostgreSQL.');
     }
+
+    console.log('✅ [DB Init] Master database verification completed.');
   } catch (seedErr: any) {
     console.error('❌ [DB Init] Seeding notice:', seedErr.message);
   }

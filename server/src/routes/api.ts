@@ -18,9 +18,9 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'bom-resolution-v1.0.7',
+      commit: 'step8-complete-v1.0.8',
       deployedAt: new Date().toISOString(),
-      version: '1.0.7-bom-resolution-perfected',
+      version: '1.0.8-step8-complete',
       database: 'Neon PostgreSQL'
     });
   });
@@ -172,6 +172,7 @@ export function createApiRouter(io: SocketServer) {
     });
   };
 
+  router.get('/inventory', handleGetInventoryMaster);
   router.get('/inventory/master', handleGetInventoryMaster);
   router.get('/inventory/items', handleGetInventoryMaster);
 
