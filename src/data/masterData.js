@@ -15,7 +15,6 @@ export const PRODUCT_CATEGORIES = [
 ];
 
 export const CLIENT_PRODUCTS_MASTER = [
-  // ─── 1. KC Signatures (1-5) ───────────────────────────────────────────────────
   {
     id: 'prod-1',
     name: 'Mini Podi Idli',
@@ -27,10 +26,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 35,
     deliveryPrice: 53,
     packingCharge: 5,
-    description: 'Mini Podi Idli (10 Nos.) tossed in traditional spiced podi & ghee',
+    description: 'Bite-sized ten idlies rolled in fiery homemade podi and a glaze of oil, delivering bold flavour in every soft, pillowy morsel',
     price: 35,
     unit: 'Nos.',
-    stockQuantity: 45,
     image: '/dishes/prod-1.jpg'
   },
   {
@@ -44,10 +42,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 45,
     deliveryPrice: 68,
     packingCharge: 5,
-    description: 'Mini Sambar Idli (10 Nos.) soaked in piping hot South Indian sambar',
+    description: 'Fluffy ten mini-idlies soaking up piping-hot, tangy sambar — a warm, comforting bite in every spoonful',
     price: 45,
     unit: 'Nos.',
-    stockQuantity: 40,
     image: '/dishes/prod-2.jpg'
   },
   {
@@ -61,10 +58,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 75,
     deliveryPrice: 113,
     packingCharge: 5,
-    description: 'Crispy fried Kaima Idli (15 Nos.) tossed with aromatic spices & herbs',
+    description: 'Fifteen Idlies simmered with fragrant whole spices, turning out extra soft and richly flavoured with every steamy bite',
     price: 75,
     unit: 'Nos.',
-    stockQuantity: 30,
     image: '/dishes/prod-3.jpg'
   },
   {
@@ -78,10 +74,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 35,
     deliveryPrice: 53,
     packingCharge: 5,
-    description: 'Crispy golden Medu Vada (1 No.) immersed in rich flavorful sambar',
+    description: 'A soft, spiced vadai soaked in hot, tangy sambar until it turns melt-in-the-mouth tender — comforting in every bite',
     price: 35,
     unit: 'Nos.',
-    stockQuantity: 35,
     image: '/dishes/prod-4.jpg'
   },
   {
@@ -95,14 +90,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'Steamed fluffy Idlis (4 Nos.) served with authentic sambar & fresh coconut chutney',
+    description: 'Two cloud-soft steamed idlies bathed in piping-hot sambar and paired with fresh chutney, for a comforting classic done right',
     price: 80,
     unit: 'Nos.',
-    stockQuantity: 50,
     image: '/dishes/prod-5.jpg'
   },
-
-  // ─── 2. Sandwich (6-8) ────────────────────────────────────────────────────────
   {
     id: 'prod-6',
     name: 'Veg. Cheese Sandwich',
@@ -114,10 +106,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Fresh grilled sandwich loaded with seasonal vegetables and melted cheese',
+    description: 'Savor layers of gooey, melted cheese and fresh vegetables nestled between crispy, toasted bread — made completely mayonnaise-free',
     price: 60,
     unit: 'Nos.',
-    stockQuantity: 25,
     image: '/dishes/prod-6.jpg'
   },
   {
@@ -131,10 +122,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 70,
     deliveryPrice: 105,
     packingCharge: 5,
-    description: 'Sweet golden corn kernels mixed with rich mozzarella & cheddar cheese',
+    description: 'Sweet, juicy corn kernels melt into gooey cheese, all grilled between golden, crunchy bread — no mayonnaise, just pure flavour',
     price: 70,
     unit: 'Nos.',
-    stockQuantity: 20,
     image: '/dishes/prod-7.jpg'
   },
   {
@@ -148,14 +138,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 70,
     deliveryPrice: 105,
     packingCharge: 5,
-    description: 'Spicy green chillies paired with bubbling grilled cheese on toasted bread',
+    description: 'Molten cheese meets a fiery chilli kick, layered between crisp golden bread — a bold, mayo-free bite',
     price: 70,
     unit: 'Nos.',
-    stockQuantity: 20,
     image: '/dishes/prod-8.jpg'
   },
-
-  // ─── 3. Snacks (9-17) ─────────────────────────────────────────────────────────
   {
     id: 'prod-9',
     name: 'Raw Banana Bajji',
@@ -167,10 +154,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Crispy gram-flour battered raw plantain fritters (6 Nos.) served hot with chutney',
+    description: 'Crisp, golden fritters made with fresh raw banana, coated in a light savory batter — crunchy outside, tender and mildly sweet inside. Best devoured 6 hot Bajji — with chutney',
     price: 60,
     unit: 'Nos.',
-    stockQuantity: 25,
     image: '/dishes/prod-9.jpg'
   },
   {
@@ -184,10 +170,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Traditional spiced potato filling coated with crispy golden batter (6 Nos.)',
+    description: 'Deep-fried urad dal fritters with a crisp golden crust and a soft, fluffy center — 6 Bondas, best enjoyed with a side of coconut chutney',
     price: 60,
     unit: 'Nos.',
-    stockQuantity: 30,
     image: '/dishes/prod-10.jpg'
   },
   {
@@ -201,10 +186,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Crunchy chana dal patties infused with onions, fennel, and red chillies (6 Nos.)',
+    description: 'Crunchy, deeply spiced lentil fritters with a crisp golden edge and a soft, herby center, 6 masal vada with a side of coconut chutney',
     price: 60,
     unit: 'Nos.',
-    stockQuantity: 35,
     image: '/dishes/prod-11.jpg'
   },
   {
@@ -218,10 +202,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 45,
     packingCharge: 5,
-    description: 'Flaky pastry filled with aromatic spiced potato and green peas (2 Nos.)',
+    description: 'Shatteringly crisp, flaky layers wrapped around a warm, spiced potato filling — fried to golden perfection, 3 Pcs with a tomato ketchup',
     price: 30,
     unit: 'Nos.',
-    stockQuantity: 40,
     image: '/dishes/prod-12.jpg'
   },
   {
@@ -235,10 +218,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Savory pan-fried fermented batter dumplings seasoned with mustard and curry leaves (6 Nos.)',
+    description: '6 Pcs — Golden, crisp-edged dumplings with a soft spiced core, a fiery little burst in every bite with kara chutney',
     price: 40,
     unit: 'Nos.',
-    stockQuantity: 28,
     image: '/dishes/prod-13.jpg'
   },
   {
@@ -252,10 +234,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Delectable jaggery and cardamom infused sweet dumplings (8 Nos.)',
+    description: '8 Pcs — Golden, caramelized dumplings with a soft sweet center, the perfect little treat with your evening time',
     price: 40,
     unit: 'Nos.',
-    stockQuantity: 28,
     image: '/dishes/prod-14.jpg'
   },
   {
@@ -269,10 +250,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Traditional sweet jaggery, coconut and dal stuffing in a crispy golden coating (6 Nos.)',
+    description: '6 Pcs — Deep golden fritters with a crackling jaggery crust giving way to a soft, sweet center',
     price: 60,
     unit: 'Nos.',
-    stockQuantity: 20,
     image: '/dishes/prod-15.jpg'
   },
   {
@@ -286,10 +266,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 45,
     packingCharge: 0,
-    description: 'Nutritious boiled chickpeas tempered with mustard, grated coconut, and curry leaves (100g)',
+    description: 'A wholesome toss of tender legumes, and curry leaves — light, earthy, and full of flavour- 100g',
     price: 30,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-16.jpg'
   },
   {
@@ -303,14 +282,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 45,
     packingCharge: 0,
-    description: 'Melt-in-mouth semolina sweet flavored with pure ghee, saffron, and roasted cashews (60g)',
+    description: 'Glistening with a rich blend of ghee and palm oil, this semolina sweet melts into a soft, aromatic bite- 60g',
     price: 30,
     unit: 'g',
-    stockQuantity: 25,
     image: '/dishes/prod-17.jpg'
   },
-
-  // ─── 4. Milkshakes (18-24) ────────────────────────────────────────────────────
   {
     id: 'prod-18',
     name: 'Vanilla Milkshake',
@@ -322,10 +298,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 70,
     deliveryPrice: 105,
     packingCharge: 5,
-    description: 'Creamy chilled milkshake flavored with premium vanilla beans in a tall glass (300 ml)',
+    description: 'Thick, creamy, and dreamy — classic vanilla blended to silky smooth perfection in every sip',
     price: 70,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-18.jpg'
   },
   {
@@ -339,10 +314,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'Thick shake blended with fresh crisp apples and rich whole milk in glass (300 ml)',
+    description: 'Fresh apple swirled into a cool, creamy milkshake bursting with natural sweetness in every sip',
     price: 80,
     unit: 'ml',
-    stockQuantity: 25,
     image: '/dishes/prod-19.jpg'
   },
   {
@@ -356,10 +330,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'Decadent chocolate shake prepared with rich cocoa and chilled milk in glass (300 ml)',
+    description: 'Rich, velvety chocolate blended thick and creamy — pure indulgence in every sip',
     price: 80,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-20.jpg'
   },
   {
@@ -373,10 +346,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'Wholesome energy milkshake prepared with sweet Arabian dates and milk in glass (300 ml)',
+    description: 'Naturally sweet dates blended into a thick, wholesome shake that feels like a treat with every sip',
     price: 80,
     unit: 'ml',
-    stockQuantity: 25,
     image: '/dishes/prod-21.jpg'
   },
   {
@@ -390,10 +362,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 120,
     deliveryPrice: 180,
     packingCharge: 5,
-    description: 'Luscious strawberry shake made with fresh strawberries and sweet cream in glass (300 ml)',
+    description: 'Fresh strawberries blended into a luscious, fruity shake — cool, creamy, and refreshing in every sip',
     price: 120,
     unit: 'ml',
-    stockQuantity: 20,
     image: '/dishes/prod-22.jpg'
   },
   {
@@ -407,10 +378,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'King of fruits mango pulp blended into thick creamy refreshing shake in glass (300 ml)',
+    description: 'Ripe, juicy mangoes blended into a thick, luscious shake — tropical sweetness in every sip',
     price: 80,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-23.jpg'
   },
   {
@@ -424,14 +394,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 100,
     deliveryPrice: 150,
     packingCharge: 5,
-    description: 'Creamy avocado (butterfruit) smoothie shake with honey and milk in glass (300 ml)',
+    description: 'Creamy avocado blended into a rich, velvety shake with a subtle natural sweetness in every sip',
     price: 100,
     unit: 'ml',
-    stockQuantity: 20,
     image: '/dishes/prod-24.jpg'
   },
-
-  // ─── 5. Podi (25-31) ──────────────────────────────────────────────────────────
   {
     id: 'prod-25',
     name: 'Idly Milagai Podi',
@@ -443,10 +410,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Authentic spiced gun powder blended with roasted lentils and red chillies (100g pack)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 35,
     image: '/dishes/prod-25.jpg'
   },
   {
@@ -460,10 +426,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Roasted black & white sesame seeds mixed with aromatic spice blend (100g pack)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-26.jpg'
   },
   {
@@ -477,10 +442,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Healthy Kollu (Horsegram) coarse spice powder rich in protein (100g pack)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 25,
     image: '/dishes/prod-27.jpg'
   },
   {
@@ -494,10 +458,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Omega-3 rich roasted flax seed gun powder with South Indian spices (100g pack)',
+    description: null,
     price: 60,
     unit: 'g',
-    stockQuantity: 25,
     image: '/dishes/prod-28.jpg'
   },
   {
@@ -511,10 +474,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Signature heritage blend of slow-roasted dals, spices, and asafoetida (100g pack)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-29.jpg'
   },
   {
@@ -528,10 +490,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 55,
     deliveryPrice: 83,
     packingCharge: 5,
-    description: 'Sun-dried Karuvepillai (curry leaves) spice powder rich in iron and aroma (100g pack)',
+    description: null,
     price: 55,
     unit: 'g',
-    stockQuantity: 28,
     image: '/dishes/prod-30.jpg'
   },
   {
@@ -545,14 +506,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Classic roasted lentil spice powder to mix with hot rice and melted ghee (100g pack)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-31.jpg'
   },
-
-  // ─── 6. Lunch (32-37) ─────────────────────────────────────────────────────────
   {
     id: 'prod-32',
     name: 'Seeraga Samba Vegetable Biriyani',
@@ -564,10 +522,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 45,
     deliveryPrice: 68,
     packingCharge: 5,
-    description: 'Fragrant Seeraga Samba short grain rice cooked with garden vegetables & biryani masala (300g)',
+    description: null,
     price: 45,
     unit: 'g',
-    stockQuantity: 35,
     image: '/dishes/prod-32.jpg'
   },
   {
@@ -581,10 +538,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Juicy button mushrooms simmered in aromatic Seeraga Samba rice with herbs (300g)',
+    description: null,
     price: 50,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-33.jpg'
   },
   {
@@ -598,10 +554,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 45,
     packingCharge: 5,
-    description: 'Soothing creamy curd rice tempered with mustard, green chillies, ginger, and curry leaves (300g)',
+    description: null,
     price: 30,
     unit: 'g',
-    stockQuantity: 40,
     image: '/dishes/prod-34.jpg'
   },
   {
@@ -615,10 +570,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 35,
     deliveryPrice: 53,
     packingCharge: 5,
-    description: 'Tangy and spiced South Indian Thakkali Sadham prepared with ripe tomatoes and spices (300g)',
+    description: null,
     price: 35,
     unit: 'g',
-    stockQuantity: 35,
     image: '/dishes/prod-35.jpg'
   },
   {
@@ -632,10 +586,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 35,
     deliveryPrice: 53,
     packingCharge: 5,
-    description: 'Zesty lemon rice seasoned with crunchy peanuts, turmeric, and fresh curry leaves (300g)',
+    description: null,
     price: 35,
     unit: 'g',
-    stockQuantity: 35,
     image: '/dishes/prod-36.jpg'
   },
   {
@@ -649,14 +602,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Healthy grated carrot rice sautéed with mild spices, cashews, and fresh cilantro (300g)',
+    description: null,
     price: 40,
     unit: 'g',
-    stockQuantity: 30,
     image: '/dishes/prod-37.jpg'
   },
-
-  // ─── 7. Special Drinks (38-43) ────────────────────────────────────────────────
   {
     id: 'prod-38',
     name: 'Rose Milk',
@@ -668,10 +618,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Traditional chilled rose scented milk made with authentic rose syrup in glass (300 ml)',
+    description: null,
     price: 50,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-38.jpg'
   },
   {
@@ -685,10 +634,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Bold dark roast cold brew served chilled on ice without milk in glass (300 ml)',
+    description: null,
     price: 40,
     unit: 'ml',
-    stockQuantity: 25,
     image: '/dishes/prod-39.jpg'
   },
   {
@@ -702,10 +650,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 50,
     deliveryPrice: 75,
     packingCharge: 5,
-    description: 'Classic creamy iced coffee blended with milk and rich coffee decoction in glass (300 ml)',
+    description: null,
     price: 50,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-40.jpg'
   },
   {
@@ -719,10 +666,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Refreshing brewed iced tea infused with fresh lemon and mint leaves in glass (300 ml)',
+    description: null,
     price: 40,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-41.jpg'
   },
   {
@@ -736,10 +682,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Fizzy chilled soda with freshly squeezed lime juice in glass with ice (350 ml)',
+    description: null,
     price: 30,
     unit: 'ml',
-    stockQuantity: 40,
     image: '/dishes/prod-42.jpg'
   },
   {
@@ -753,14 +698,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Shaken Kerala style sarbath with green chilli, basil seeds, and fresh lime in glass (350 ml)',
+    description: null,
     price: 40,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-43.jpg'
   },
-
-  // ─── 8. Beverages (44-50) ────────────────────────────────────────────────────
   {
     id: 'prod-44',
     name: 'Tea',
@@ -772,10 +714,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 20,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Freshly brewed aromatic South Indian ginger cardamom milk tea in cup (100 ml)',
+    description: null,
     price: 20,
     unit: 'ml',
-    stockQuantity: 60,
     image: '/dishes/prod-44.jpg'
   },
   {
@@ -789,10 +730,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 25,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Signature Kanchivaram Kumbakonam degree filter coffee in brass dabara set (100 ml)',
+    description: null,
     price: 25,
     unit: 'ml',
-    stockQuantity: 60,
     image: '/dishes/prod-45.jpg'
   },
   {
@@ -806,10 +746,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 15,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Pure boiled farm fresh whole cow milk served hot in cup (100 ml)',
+    description: null,
     price: 15,
     unit: 'ml',
-    stockQuantity: 40,
     image: '/dishes/prod-46.jpg'
   },
   {
@@ -823,10 +762,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 30,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Herbal dry ginger and coriander seed medicinal brew sweetened with palm jaggery in cup (100 ml)',
+    description: null,
     price: 30,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-47.jpg'
   },
   {
@@ -840,10 +778,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Rich velvety hot cocoa prepared with melted chocolate and creamy milk in cup (100 ml)',
+    description: null,
     price: 40,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-48.jpg'
   },
   {
@@ -857,10 +794,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 20,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Light golden tea infused with tangy fresh lemon and a touch of honey in cup (100 ml)',
+    description: null,
     price: 20,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-49.jpg'
   },
   {
@@ -874,14 +810,11 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 20,
     deliveryPrice: 0,
     packingCharge: 0,
-    description: 'Pure strong black coffee decoction with rich aroma and zero dairy in cup (100 ml)',
+    description: null,
     price: 20,
     unit: 'ml',
-    stockQuantity: 40,
     image: '/dishes/prod-50.jpg'
   },
-
-  // ─── 9. Juices (51-59) ───────────────────────────────────────────────────────
   {
     id: 'prod-51',
     name: 'Lemon Juice',
@@ -893,10 +826,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 20,
     deliveryPrice: 30,
     packingCharge: 5,
-    description: 'Fresh pressed lemon juice in tall glass with lemon slice and ice (300 ml)',
+    description: null,
     price: 20,
     unit: 'ml',
-    stockQuantity: 40,
     image: '/dishes/prod-51.jpg'
   },
   {
@@ -910,10 +842,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 40,
     deliveryPrice: 60,
     packingCharge: 5,
-    description: 'Fresh sweet watermelon juice in tall glass with mint & ice (300 ml)',
+    description: null,
     price: 40,
     unit: 'ml',
-    stockQuantity: 40,
     image: '/dishes/prod-52.jpg'
   },
   {
@@ -927,10 +858,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 70,
     deliveryPrice: 105,
     packingCharge: 5,
-    description: 'Deep purple fresh concord grape juice in clear glass with ice (300 ml)',
+    description: null,
     price: 70,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-53.jpg'
   },
   {
@@ -944,10 +874,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Golden tropical pineapple juice in tall glass with pineapple wedge garnish (300 ml)',
+    description: null,
     price: 60,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-54.jpg'
   },
   {
@@ -961,10 +890,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 60,
     deliveryPrice: 90,
     packingCharge: 5,
-    description: 'Pale citrus fresh cold-pressed Mosambi juice in glass with ice (300 ml)',
+    description: null,
     price: 60,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-55.jpg'
   },
   {
@@ -978,10 +906,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 80,
     deliveryPrice: 120,
     packingCharge: 5,
-    description: 'Vibrant pulpy fresh hand-squeezed orange juice in glass with orange slice (300 ml)',
+    description: null,
     price: 80,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-56.jpg'
   },
   {
@@ -995,10 +922,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 70,
     deliveryPrice: 105,
     packingCharge: 5,
-    description: 'Golden-amber fresh pressed apple juice in clear glass with ice (300 ml)',
+    description: null,
     price: 70,
     unit: 'ml',
-    stockQuantity: 30,
     image: '/dishes/prod-57.jpg'
   },
   {
@@ -1012,10 +938,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 65,
     deliveryPrice: 100,
     packingCharge: 5,
-    description: 'Sweet thick Alphonso mango nectar juice in glass with ice (300 ml)',
+    description: null,
     price: 65,
     unit: 'ml',
-    stockQuantity: 35,
     image: '/dishes/prod-58.jpg'
   },
   {
@@ -1029,10 +954,9 @@ export const CLIENT_PRODUCTS_MASTER = [
     dineInPrice: 150,
     deliveryPrice: 200,
     packingCharge: 5,
-    description: 'Deep ruby-red fresh pomegranate juice in tall glass with seeds (300 ml)',
+    description: null,
     price: 150,
     unit: 'ml',
-    stockQuantity: 25,
     image: '/dishes/prod-59.jpg'
   }
 ];

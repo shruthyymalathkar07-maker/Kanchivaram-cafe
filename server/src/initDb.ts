@@ -360,41 +360,39 @@ export async function ensureDatabaseInitialized() {
       }
     }
 
-    // 3. Seed Products if missing
-    if (productCount < 59) {
-      console.log('🌱 [DB Init] Seeding Menu Products...');
-      for (const prod of CLIENT_PRODUCTS_MASTER) {
-        await prisma.product.upsert({
-          where: { id: prod.id },
-          update: {
-            categoryId: prod.categoryId,
-            categoryName: prod.category,
-            name: prod.name,
-            servingQty: prod.servingQty,
-            uom: prod.uom,
-            dineInPrice: prod.dineInPrice,
-            deliveryPrice: prod.deliveryPrice,
-            packingCharge: prod.packingCharge,
-            description: prod.description,
-            image: prod.image,
-            isAvailable: true
-          },
-          create: {
-            id: prod.id,
-            categoryId: prod.categoryId,
-            categoryName: prod.category,
-            name: prod.name,
-            servingQty: prod.servingQty,
-            uom: prod.uom,
-            dineInPrice: prod.dineInPrice,
-            deliveryPrice: prod.deliveryPrice,
-            packingCharge: prod.packingCharge,
-            description: prod.description,
-            image: prod.image,
-            isAvailable: true
-          }
-        });
-      }
+    // 3. Seed & Sync Products Master (59 Finished Products)
+    console.log('🌱 [DB Init] Syncing 59 Menu Products Master...');
+    for (const prod of CLIENT_PRODUCTS_MASTER) {
+      await prisma.product.upsert({
+        where: { id: prod.id },
+        update: {
+          categoryId: prod.categoryId,
+          categoryName: prod.category,
+          name: prod.name,
+          servingQty: prod.servingQty,
+          uom: prod.uom,
+          dineInPrice: prod.dineInPrice,
+          deliveryPrice: prod.deliveryPrice,
+          packingCharge: prod.packingCharge,
+          description: prod.description,
+          image: prod.image,
+          isAvailable: true
+        },
+        create: {
+          id: prod.id,
+          categoryId: prod.categoryId,
+          categoryName: prod.category,
+          name: prod.name,
+          servingQty: prod.servingQty,
+          uom: prod.uom,
+          dineInPrice: prod.dineInPrice,
+          deliveryPrice: prod.deliveryPrice,
+          packingCharge: prod.packingCharge,
+          description: prod.description,
+          image: prod.image,
+          isAvailable: true
+        }
+      });
     }
 
     // 4. Seed Raw Materials / Inventory Master if missing
