@@ -158,9 +158,72 @@ input::-webkit-credentials-auto-fill-button {
   background: transparent !important;
 }
 
-::-webkit-scrollbar-thumb,
-*::-webkit-scrollbar-thumb {
-  background: transparent !important;
+/* ========================================================================= */
+/* SMOOTH SEQUENTIAL TRANSITION ANIMATIONS FOR AUTH STATE CHANGES            */
+/* ========================================================================= */
+
+@keyframes slideRightToLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(42px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideUpFade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes scaleDownRefresh {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes branchRevealSlide {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-slide-right-left {
+  animation: slideRightToLeft 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-slide-up-fade {
+  animation: slideUpFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-scale-down-refresh {
+  animation: scaleDownRefresh 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-branch-reveal {
+  animation: branchRevealSlide 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
 

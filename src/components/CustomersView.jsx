@@ -33,6 +33,7 @@ export default function CustomersView({ selectedBranch }) {
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Subscribe to real-time store changes from POS sales / inventory store
   useEffect(() => {
@@ -65,45 +66,38 @@ export default function CustomersView({ selectedBranch }) {
 
   const handleAddCustomer = async (e) => {
     e.preventDefault();
-    if (!newName.trim() || !newPhone.trim()) return;
+    if (isSaving || !newName.trim() || !newPhone.trim()) return;
 
     const formattedPhone = newPhone.trim().startsWith('+91') ? newPhone.trim() : `+91 ${newPhone.trim()}`;
     const branchId = selectedBranch?.id || 'branch-1';
-    const newCust = {
-      id: `c-${Date.now()}`,
-      branchId,
-      name: newName.trim(),
-      phone: formattedPhone,
-      email: newEmail.trim() || 'Not specified',
-      visits: 0,
-      totalSpent: 0,
-      lastVisit: 'No purchases yet',
-      tier: 'Regular',
-      favoriteItem: 'None',
-      purchaseHistory: []
-    };
-
-    inventoryStore.customers.unshift(newCust);
-    inventoryStore.notify();
-
     const nameToSave = newName.trim();
     const phoneToSave = formattedPhone;
     const emailToSave = newEmail.trim() || 'Not specified';
 
-    setNewName('');
-    setNewPhone('');
-    setNewEmail('');
-    setIsAddModalOpen(false);
-
+    setIsSaving(true);
     try {
-      await createCustomer({
+      const res = await createCustomer({
         name: nameToSave,
         phone: phoneToSave,
         email: emailToSave
       }, branchId);
-      inventoryStore.hydrateFromBackend(branchId);
+
+      if (res && res.success === false) {
+        throw new Error(res.message || 'Failed to save customer');
+      }
+
+      await inventoryStore.hydrateFromBackend(branchId);
+
+      // Close modal and reset fields ONLY AFTER successful save
+      setNewName('');
+      setNewPhone('');
+      setNewEmail('');
+      setIsAddModalOpen(false);
     } catch (err) {
       console.warn('[CustomersView] Error saving customer:', err);
+      alert('Failed to save customer record. Please check the details and try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -604,9 +598,10 @@ export default function CustomersView({ selectedBranch }) {
               </button>
               <button
                 type="submit"
-                className={`px-4 py-1.5 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F]' : 'bg-[#0f3823] hover:bg-[#0a2618]'} text-white font-black text-xs rounded-xl cursor-pointer`}
+                disabled={isSaving}
+                className={`px-4 py-1.5 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F]' : 'bg-[#0f3823] hover:bg-[#0a2618]'} text-white font-black text-xs rounded-xl cursor-pointer disabled:opacity-50`}
               >
-                Save Record
+                {isSaving ? 'Saving...' : 'Save Record'}
               </button>
             </div>
           </form>

@@ -8,7 +8,7 @@ const isLocalhost = typeof window !== 'undefined' && (
   window.location.hostname === ''
 );
 
-const BACKEND_ORIGIN = import.meta.env.VITE_API_URL || (isLocalhost ? 'http://localhost:5000' : 'https://kanchivaram-cafe.onrender.com');
+const BACKEND_ORIGIN = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || (isLocalhost ? 'http://localhost:5000' : 'https://kanchivaram-cafe.onrender.com');
 const API_BASE_URL = BACKEND_ORIGIN ? `${BACKEND_ORIGIN}/api` : 'https://kanchivaram-cafe.onrender.com/api';
 
 // Socket.IO singleton instance
@@ -23,6 +23,14 @@ export const socket = io(BACKEND_ORIGIN || undefined, {
 socket.on('connect_error', (err) => {
   console.warn('[Socket.IO] Connection notice:', err.message);
 });
+
+// Helper to inject Bearer JWT auth token if available
+export const getAuthHeaders = () => {
+  const token = typeof window !== 'undefined'
+    ? (localStorage.getItem('kanchivaram_auth_token') || sessionStorage.getItem('kanchivaram_auth_token'))
+    : null;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
 export async function fetchDashboardStats(period = 'today', branchId = 'branch-1', startDate = '', endDate = '') {
   try {
@@ -84,23 +92,6 @@ export async function fetchSales(period = 'today', branchId = 'branch-1', channe
   } catch (err) {
     console.warn('[API] Fetch sales error:', err);
     return [];
-  }
-}
-
-export async function sendChatbotQuery(queryText) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/chatbot/query`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: queryText })
-    });
-    return await res.json();
-  } catch (err) {
-    console.warn('[API] Chatbot error:', err);
-    return {
-      success: false,
-      answer: "I am currently analyzing store metrics. Today's gross sales total ₹18,450 across 186 orders."
-    };
   }
 }
 
@@ -381,6 +372,161 @@ export async function deleteStaff(id, branchId = 'branch-1') {
     return { success: false, message: err.message };
   }
 }
+
+export async function fetchStoreSettings(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings?branchId=${branchId}`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    const json = await res.json();
+    return json?.settings || null;
+  } catch (err) {
+    console.warn('[API] Fetch store settings error:', err);
+    return null;
+  }
+}
+
+export async function updateStoreSettings(settingsPayload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify({ ...settingsPayload, branchId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update store settings error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
+// ============================================================
+// AUTHENTICATION API CLIENT
+// ============================================================
+
+export async function loginUserApi({ email, phone, password, branchId }) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, phone, password, branchId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Login request error (offline/fallback):', err.message);
+    return null;
+  }
+}
+
+export async function getCurrentUserApi(token) {
+  try {
+    if (!token) return null;
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Get current user error:', err.message);
+    return null;
+  }
+}
+
+export async function logoutUserApi() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST'
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Logout request notice:', err.message);
+    return { success: true };
+  }
+}
+
+export async function requestPasswordOtpApi(phone) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/request-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Request OTP network error:', err.message);
+    return null;
+  }
+}
+
+export async function verifyPasswordOtpApi({ phone, otp }) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Verify OTP network error:', err.message);
+    return null;
+  }
+}
+
+export async function resetPasswordApi({ resetToken, newPassword, confirmPassword }) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resetToken, newPassword, confirmPassword })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Reset password network error:', err.message);
+    return null;
+  }
+}
+
+export function getGoogleAuthRedirectUrl() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${API_BASE_URL}/auth/google?origin=${encodeURIComponent(origin)}`;
+}
+
+export async function getGoogleAuthStatusApi() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/google/url`);
+    return await res.json();
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function sendChatbotQuery(query, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chatbot/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId,
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ query, branchId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Chatbot query error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+
+
+
 
 
 

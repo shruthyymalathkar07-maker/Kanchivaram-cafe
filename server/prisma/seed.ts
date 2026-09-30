@@ -5,6 +5,7 @@ import {
   CLIENT_RAW_MATERIALS_MASTER, 
   CLIENT_BOM_MASTER 
 } from '../src/data/masterData';
+import { seedDefaultUsers } from '../src/auth';
 
 const prisma = new PrismaClient();
 
@@ -210,8 +211,10 @@ async function main() {
         });
       }
     }
-    console.log(`[Seed] Recipe: ${bom.productName} (${bom.status}, ${bom.processes.length} steps)`);
   }
+
+  // 7. Seed Default Admin & Manager Auth Users
+  await seedDefaultUsers();
 
   console.log('--- Phase 1A Seed Complete ---');
 }

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
 import { expenseStore } from '../services/expenseStore';
+import { sendChatbotQuery } from '../services/api';
 
 // ─── Verified KVCM Analytics & Financial Calculation Engine ───────────────────
 export const getKVCMResponse = (query, state, expenseState) => {
@@ -460,7 +461,7 @@ export default function KVCMAssistantView({ selectedBranch }) {
     }
   }, [messages, isTyping]);
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     const queryText = (text || input).trim();
     if (!queryText || isTyping) return;
 
@@ -477,25 +478,49 @@ export default function KVCMAssistantView({ selectedBranch }) {
     setInput('');
     setIsTyping(true);
 
-    // Simulate a short thinking delay, then respond
-    setTimeout(() => {
+    try {
       if (selectedBranch?.id) {
         inventoryStore.setBranch(selectedBranch.id);
         expenseStore.setBranch(selectedBranch.id);
       }
+      const apiResponse = await sendChatbotQuery(queryText, selectedBranch?.id || 'branch-1');
+      if (apiResponse && apiResponse.success && (apiResponse.answer || apiResponse.message)) {
+        const botMsg = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          text: apiResponse.answer || apiResponse.message,
+          icon: Bot,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, botMsg]);
+      } else {
+        const state = inventoryStore.getState();
+        const expenseState = expenseStore.getState();
+        const fallbackResponse = getKVCMResponse(queryText, state, expenseState);
+        const botMsg = {
+          id: `bot-${Date.now()}`,
+          sender: 'bot',
+          text: fallbackResponse.text,
+          icon: fallbackResponse.icon || Bot,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, botMsg]);
+      }
+    } catch {
       const state = inventoryStore.getState();
       const expenseState = expenseStore.getState();
-      const response = getKVCMResponse(queryText, state, expenseState);
+      const fallbackResponse = getKVCMResponse(queryText, state, expenseState);
       const botMsg = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        text: response.text,
-        icon: response.icon || Bot,
+        text: fallbackResponse.text,
+        icon: fallbackResponse.icon || Bot,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, botMsg]);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
 
   const handleClear = () => {

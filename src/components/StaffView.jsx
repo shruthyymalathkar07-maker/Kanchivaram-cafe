@@ -43,6 +43,7 @@ export default function StaffView({ selectedBranch }) {
   const [endTime, setEndTime] = useState('03:30 PM');
   const [phoneInput, setPhoneInput] = useState('');
   const [payInput, setPayInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadStaffData = async () => {
     try {
@@ -121,7 +122,7 @@ export default function StaffView({ selectedBranch }) {
 
   const handleAddStaff = async (e) => {
     e.preventDefault();
-    if (!nameInput.trim() || !phoneInput.trim()) return;
+    if (isSaving || !nameInput.trim() || !phoneInput.trim()) return;
 
     const formattedSchedule = `${shiftType} (${startTime} - ${endTime})`;
     const formattedPhone = phoneInput.trim().startsWith('+91') ? phoneInput.trim() : `+91 ${phoneInput.trim()}`;
@@ -141,24 +142,31 @@ export default function StaffView({ selectedBranch }) {
       branchId
     };
 
+    setIsSaving(true);
     try {
       const res = await createStaff(payload, branchId);
       if (res && res.success && res.staff) {
         setStaffList(prev => [res.staff, ...prev.filter(s => s.id !== res.staff.id)]);
+      } else if (res && res.success === false) {
+        throw new Error(res.message || 'Failed to create staff');
       } else {
         await loadStaffData();
       }
+
+      // Close modal and reset fields ONLY AFTER successful save
+      setNameInput('');
+      setPhoneInput('');
+      setPayInput('');
+      setShiftType('Morning');
+      setStartTime('06:30 AM');
+      setEndTime('03:30 PM');
+      setIsAddModalOpen(false);
     } catch (err) {
       console.error('[StaffView] Error adding staff:', err);
+      alert('Failed to save staff profile. Please check the details and try again.');
+    } finally {
+      setIsSaving(false);
     }
-
-    setNameInput('');
-    setPhoneInput('');
-    setPayInput('');
-    setShiftType('Morning');
-    setStartTime('06:30 AM');
-    setEndTime('03:30 PM');
-    setIsAddModalOpen(false);
   };
 
   const handleDeleteStaff = async (id) => {
@@ -557,9 +565,10 @@ export default function StaffView({ selectedBranch }) {
               </button>
               <button
                 type="submit"
-                className={`px-4 py-1.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D]' : 'bg-[#0f3823] hover:bg-[#0a2618]'} text-white font-black text-xs rounded-xl cursor-pointer`}
+                disabled={isSaving}
+                className={`px-4 py-1.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D]' : 'bg-[#0f3823] hover:bg-[#0a2618]'} text-white font-black text-xs rounded-xl cursor-pointer disabled:opacity-50`}
               >
-                Save Staff Profile
+                {isSaving ? 'Saving...' : 'Save Staff Profile'}
               </button>
             </div>
           </form>

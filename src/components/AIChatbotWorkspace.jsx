@@ -40,7 +40,7 @@ export default function AIChatbotWorkspace({ onClose, selectedBranch }) {
     setIsLoading(true);
 
     try {
-      const response = await sendChatbotQuery(queryText);
+      const response = await sendChatbotQuery(queryText, selectedBranch?.id || 'branch-1');
       const botMsg = {
         id: `bot-${Date.now()}`,
         sender: 'bot',

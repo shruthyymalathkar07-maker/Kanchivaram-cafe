@@ -59,6 +59,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const [supplierInput, setSupplierInput] = useState('');
   const [invoiceRefInput, setInvoiceRefInput] = useState('');
   const [notesInput, setNotesInput] = useState('');
+  const [isSavingStockIn, setIsSavingStockIn] = useState(false);
 
   // Form states for Stock Out / Usage
   const [outItemId, setOutItemId] = useState('');
@@ -144,44 +145,54 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   };
 
   // Handle Save Purchase / Stock In
-  const handleSaveStockIn = (e) => {
+  const handleSaveStockIn = async (e) => {
     e.preventDefault();
+    if (isSavingStockIn) return;
+
     if (!qtyInput || parseFloat(qtyInput) <= 0) {
       alert("Please enter a valid positive quantity.");
       return;
     }
 
+    setIsSavingStockIn(true);
     const selectedItemObj = realItems.find(i => i.id === selectedItemId);
     const branchId = selectedBranch?.id || 'branch-1';
 
-    inventoryStore.recordStockIn({
-      itemId: selectedItemId || null,
-      itemName: selectedItemObj ? selectedItemObj.name : newItemName,
-      category: categoryInput,
-      qty: qtyInput,
-      unit: selectedItemObj ? selectedItemObj.unit : unitInput,
-      supplier: supplierInput || (selectedItemObj ? selectedItemObj.supplier : 'Local Vendor'),
-      invoiceRef: invoiceRefInput || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
-      cost: priceInput,
-      notes: notesInput
-    }, branchId);
+    try {
+      await inventoryStore.recordStockIn({
+        itemId: selectedItemId || null,
+        itemName: selectedItemObj ? selectedItemObj.name : newItemName,
+        category: categoryInput,
+        qty: qtyInput,
+        unit: selectedItemObj ? selectedItemObj.unit : unitInput,
+        supplier: supplierInput || (selectedItemObj ? selectedItemObj.supplier : 'Local Vendor'),
+        invoiceRef: invoiceRefInput || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+        cost: priceInput,
+        notes: notesInput
+      }, branchId);
 
-    // Reset Form & Switch state to AUTO so user sees their new stock item live
-    setSelectedItemId('');
-    setNewItemName('');
-    setQtyInput('');
-    setPriceInput('');
-    setSupplierInput('');
-    setInvoiceRefInput('');
-    setNotesInput('');
-    setIsStockInModalOpen(false);
-    if (simulatedState === 'EMPTY') {
-      setSimulatedState('AUTO');
+      // Reset Form & Switch state to AUTO so user sees their new stock item live
+      setSelectedItemId('');
+      setNewItemName('');
+      setQtyInput('');
+      setPriceInput('');
+      setSupplierInput('');
+      setInvoiceRefInput('');
+      setNotesInput('');
+      setIsStockInModalOpen(false);
+      if (simulatedState === 'EMPTY') {
+        setSimulatedState('AUTO');
+      }
+    } catch (err) {
+      console.error('[RealTimeInventoryView] StockIn save error:', err);
+      alert('Failed to record stock in. Please try again.');
+    } finally {
+      setIsSavingStockIn(false);
     }
   };
 
   // Handle Save Stock Out / Usage
-  const handleSaveStockOut = (e) => {
+  const handleSaveStockOut = async (e) => {
     e.preventDefault();
     if (!outItemId) {
       alert("Please select an item to deduct.");
@@ -194,20 +205,25 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
     const selectedItemObj = realItems.find(i => i.id === outItemId);
 
-    inventoryStore.recordStockOut({
-      itemId: outItemId,
-      itemName: selectedItemObj ? selectedItemObj.name : 'Unknown Item',
-      qty: outQtyInput,
-      unit: selectedItemObj ? selectedItemObj.unit : 'units',
-      source: outReasonInput,
-      ref: `Usage #${Math.floor(1000 + Math.random() * 9000)}`,
-      notes: outNotesInput || 'Internal usage / wastage record'
-    });
+    try {
+      await inventoryStore.recordStockOut({
+        itemId: outItemId,
+        itemName: selectedItemObj ? selectedItemObj.name : 'Unknown Item',
+        qty: outQtyInput,
+        unit: selectedItemObj ? selectedItemObj.unit : 'units',
+        source: outReasonInput,
+        ref: `Usage #${Math.floor(1000 + Math.random() * 9000)}`,
+        notes: outNotesInput || 'Internal usage / wastage record'
+      });
 
-    setOutItemId('');
-    setOutQtyInput('');
-    setOutNotesInput('');
-    setIsStockOutModalOpen(false);
+      setOutItemId('');
+      setOutQtyInput('');
+      setOutNotesInput('');
+      setIsStockOutModalOpen(false);
+    } catch (err) {
+      console.error('[RealTimeInventoryView] StockOut error:', err);
+      alert('Failed to record stock out. Please try again.');
+    }
   };
 
   // Open Threshold Edit Modal
@@ -220,7 +236,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   // Handle Save Threshold to PostgreSQL & InventoryStore
   const handleSaveThreshold = async (e) => {
     e.preventDefault();
-    if (!thresholdItem) return;
+    if (!thresholdItem || isSavingThreshold) return;
 
     const numVal = parseFloat(thresholdInput);
     if (isNaN(numVal) || numVal < 0) {
@@ -233,12 +249,14 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     try {
       const branchId = selectedBranch?.id || 'branch-1';
       await inventoryStore.updateItemThreshold(thresholdItem.id, numVal, branchId);
-    } catch (err) {
-      console.warn('Could not persist threshold to backend:', err);
-    } finally {
-      setIsSavingThreshold(false);
+      // Close modal and clear state ONLY AFTER successful save
       setIsThresholdModalOpen(false);
       setThresholdItem(null);
+    } catch (err) {
+      console.warn('Could not persist threshold to backend:', err);
+      alert('Failed to save minimum threshold. Please check your connection and try again.');
+    } finally {
+      setIsSavingThreshold(false);
     }
   };
 
@@ -1251,17 +1269,19 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e5d8c8]">
                 <button
                   type="button"
+                  disabled={isSavingStockIn}
                   onClick={() => setIsStockInModalOpen(false)}
-                  className="px-4 py-2 bg-[#ebe0cb] text-[#11291f] font-bold rounded-xl border border-[#cabb9e]"
+                  className="px-4 py-2 bg-[#ebe0cb] text-[#11291f] font-bold rounded-xl border border-[#cabb9e] disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className={`px-5 py-2 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black rounded-xl border shadow-md flex items-center gap-1.5 cursor-pointer`}
+                  disabled={isSavingStockIn}
+                  className={`px-5 py-2 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black rounded-xl border shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer`}
                 >
                   <CheckCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-                  <span>Save Stock In</span>
+                  <span>{isSavingStockIn ? 'Saving...' : 'Save Stock In'}</span>
                 </button>
               </div>
 

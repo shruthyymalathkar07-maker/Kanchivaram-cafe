@@ -83,6 +83,13 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     };
   }, [authStep, resendTimer]);
 
+  // Sync OAuth errors from authStore
+  useEffect(() => {
+    if (authState.oauthError) {
+      setErrorMessage(authState.oauthError);
+    }
+  }, [authState.oauthError]);
+
   // Handle Quick Demo Login fill
   const handleQuickDemoFill = (email, pass) => {
     setEmailInput(email);
@@ -90,8 +97,15 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     setErrorMessage(null);
   };
 
+  // Handle Google Sign-In
+  const handleGoogleLogin = () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    authStore.loginWithGoogle();
+  };
+
   // 1. HANDLE LOGIN SUBMIT
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -107,7 +121,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
       return;
     }
 
-    const res = authStore.login({
+    const res = await authStore.login({
       email: emailInput,
       password: passwordInput,
       rememberMe
@@ -116,6 +130,9 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     if (!res.success) {
       setErrorMessage(res.error);
     } else {
+      if (!res.branch) {
+        setAuthStep('BRANCH_SELECT');
+      }
       if (onAuthSuccess) {
         onAuthSuccess(authStore.getState());
       }
@@ -123,15 +140,15 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
   };
 
   // 2. HANDLE FORGOT PASSWORD (REQUEST OTP)
-  const handleRequestOtpSubmit = (e) => {
+  const handleRequestOtpSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const res = authStore.requestPhoneOtp(phoneInput);
+    const res = await authStore.requestPhoneOtp(phoneInput);
     if (!res.success) {
       setErrorMessage(res.error);
     } else {
-      setSuccessMessage(`OTP sent to registered phone number. (Demo code: 123456)`);
+      setSuccessMessage(res.message || `OTP sent to ${res.maskedPhone || 'registered phone'}.`);
       setResendTimer(30);
       setCanResend(false);
       setOtpArray(['', '', '', '', '', '']);
@@ -176,12 +193,12 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
   };
 
   // 4. HANDLE OTP VERIFY SUBMIT
-  const handleVerifyOtpSubmit = (e) => {
+  const handleVerifyOtpSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
 
     const enteredCode = otpArray.join('');
-    const res = authStore.verifyOtp(enteredCode);
+    const res = await authStore.verifyOtp(enteredCode);
 
     if (!res.success) {
       setErrorMessage(res.error);
@@ -193,24 +210,26 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     }
   };
 
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (!canResend) return;
-    const res = authStore.requestPhoneOtp(phoneInput);
+    const res = await authStore.requestPhoneOtp(phoneInput);
     if (res.success) {
       setResendTimer(30);
       setCanResend(false);
-      setSuccessMessage('A new 6-digit OTP code has been sent.');
+      setSuccessMessage(res.message || 'A new 6-digit OTP code has been sent.');
       setOtpArray(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();
+    } else {
+      setErrorMessage(res.error);
     }
   };
 
   // 5. HANDLE RESET PASSWORD SUBMIT
-  const handleResetPasswordSubmit = (e) => {
+  const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    const res = authStore.resetPassword({
+    const res = await authStore.resetPassword({
       newPassword: newPasswordInput,
       confirmPassword: confirmPasswordInput
     });
@@ -432,7 +451,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
         /* ------------------------------------------------------------------------- */
         /* BRANCH SELECTION PAGE: MASTER REFERENCE LAYOUT WITH 3D SLANTED CARDS     */
         /* ------------------------------------------------------------------------- */
-        <div className="w-full max-w-[1440px] mx-auto my-auto flex-1 flex flex-col items-center justify-center relative z-10 py-2 px-2 sm:px-4 overflow-visible min-h-0">
+        <div className="w-full max-w-[1440px] mx-auto my-auto flex-1 flex flex-col items-center justify-center relative z-10 py-2 px-2 sm:px-4 overflow-visible min-h-0 animate-branch-reveal">
           
           {/* Main Content Layout with Side Quotes Inline so Quotes Are 100% Visible */}
           <div className="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-center gap-4 lg:gap-8 relative z-10 overflow-visible">
@@ -663,7 +682,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 1: LOGIN FORM */}
             {authStep === 'LOGIN' && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-scale-down-refresh">
                 
                 {/* Card Emblem & Titles */}
                 <div className="text-center space-y-0.5">
@@ -767,10 +786,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
                 {/* Google Login Button */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setSuccessMessage(null);
-                    setErrorMessage('Google sign-in is not configured yet. Please log in using your registered email & password.');
-                  }}
+                  onClick={handleGoogleLogin}
                   className="w-full py-3 bg-white hover:bg-[#FDFBF7] border border-[#E8DCC8] rounded-full text-xs font-bold text-[#2B211B] transition-all shadow-2xs hover:shadow-xs flex items-center justify-center gap-2.5 cursor-pointer"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -787,7 +803,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 2: FORGOT PASSWORD */}
             {authStep === 'FORGOT_PASSWORD' && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-slide-right-left">
                 <div className="text-center space-y-1">
                   <div className="inline-flex p-2.5 bg-[#F5EDE0] text-[#0D3B2E] rounded-2xl border border-[#E2D5C3] mb-1">
                     <KeyRound className="w-5 h-5" />
@@ -848,7 +864,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 3: OTP VERIFICATION */}
             {authStep === 'OTP_VERIFY' && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-slide-right-left">
                 <div className="text-center space-y-1">
                   <div className="inline-flex p-2.5 bg-[#F5EDE0] text-[#0D3B2E] rounded-2xl border border-[#E2D5C3] mb-1">
                     <ShieldCheck className="w-5 h-5 text-[#0D3B2E]" />
@@ -921,7 +937,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 4: UPDATE PASSWORD */}
             {authStep === 'RESET_PASSWORD' && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-slide-up-fade">
                 <div className="text-center space-y-1">
                   <h2 className="text-xl font-bold font-serif text-[#0D3B2E]">
                     Your Brew Is Ready
@@ -1011,7 +1027,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 5: RESET SUCCESS */}
             {authStep === 'RESET_SUCCESS' && (
-              <div className="text-center space-y-4 py-2">
+              <div className="text-center space-y-4 py-2 animate-slide-up-fade">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 border-2 border-emerald-300 shadow-sm">
                   <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                 </div>

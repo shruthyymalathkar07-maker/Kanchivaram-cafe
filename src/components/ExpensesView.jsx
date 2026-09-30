@@ -66,6 +66,7 @@ export default function ExpensesView({ selectedBranch }) {
   const [amountInput, setAmountInput] = useState('');
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [notesInput, setNotesInput] = useState('');
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
 
   // Edit Modal State
   const [editingExpense, setEditingExpense] = useState(null);
@@ -74,6 +75,7 @@ export default function ExpensesView({ selectedBranch }) {
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Delete Dialog State
   const [deletingId, setDeletingId] = useState(null);
@@ -136,7 +138,7 @@ export default function ExpensesView({ selectedBranch }) {
   // Filtered Expense Records
   const filteredExpenses = combinedExpenses.filter(item => {
     const matchesSearch = !searchQuery || 
-      (item.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (item.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -153,8 +155,9 @@ export default function ExpensesView({ selectedBranch }) {
   });
 
   // Handle Save New Operating Expense
-  const handleSaveExpense = (e) => {
+  const handleSaveExpense = async (e) => {
     e.preventDefault();
+    if (isSavingExpense) return;
     const numAmount = parseFloat(amountInput);
     if (!descriptionInput.trim()) {
       alert("Please enter an expense description.");
@@ -167,20 +170,32 @@ export default function ExpensesView({ selectedBranch }) {
 
     const selectedCategoryToSave = categoryInput || 'Utilities';
 
-    expenseStore.addExpense({
-      description: descriptionInput.trim(),
-      category: selectedCategoryToSave,
-      amount: numAmount,
-      date: dateInput,
-      notes: notesInput
-    });
+    setIsSavingExpense(true);
+    try {
+      const res = await expenseStore.addExpense({
+        description: descriptionInput.trim(),
+        category: selectedCategoryToSave,
+        amount: numAmount,
+        date: dateInput,
+        notes: notesInput
+      });
 
-    // Reset Form
-    setDescriptionInput('');
-    setAmountInput('');
-    setNotesInput('');
-    setCategoryInput('Utilities');
-    setDateInput(new Date().toISOString().split('T')[0]);
+      if (!res) {
+        throw new Error('Failed to create expense');
+      }
+
+      // Reset Form only after successful save
+      setDescriptionInput('');
+      setAmountInput('');
+      setNotesInput('');
+      setCategoryInput('Utilities');
+      setDateInput(new Date().toISOString().split('T')[0]);
+    } catch (err) {
+      console.error('[ExpensesView] Add expense error:', err);
+      alert('Failed to save expense record. Please check the details and try again.');
+    } finally {
+      setIsSavingExpense(false);
+    }
   };
 
   // Open Edit Modal
@@ -198,19 +213,32 @@ export default function ExpensesView({ selectedBranch }) {
   };
 
   // Save Edit Record
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (!editingExpense) return;
+    if (!editingExpense || isSavingEdit) return;
 
-    expenseStore.updateExpense(editingExpense.id, {
-      description: editDesc,
-      category: editCategory,
-      amount: editAmount,
-      date: editDate,
-      notes: editNotes
-    });
+    setIsSavingEdit(true);
+    try {
+      const res = await expenseStore.updateExpense(editingExpense.id, {
+        description: editDesc,
+        category: editCategory,
+        amount: editAmount,
+        date: editDate,
+        notes: editNotes
+      });
 
-    setEditingExpense(null);
+      if (!res) {
+        throw new Error('Failed to update expense');
+      }
+
+      // Close modal ONLY AFTER successful persistence
+      setEditingExpense(null);
+    } catch (err) {
+      console.error('[ExpensesView] Save edit error:', err);
+      alert('Failed to save changes to expense. Please try again.');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   // Confirm & Delete Expense Record
@@ -429,10 +457,11 @@ export default function ExpensesView({ selectedBranch }) {
             {/* Save Button */}
             <button
               type="submit"
-              className={`w-full py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border flex items-center justify-center gap-2 mt-1`}
+              disabled={isSavingExpense}
+              className={`w-full py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border flex items-center justify-center gap-2 mt-1 disabled:opacity-50`}
             >
               <PlusCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-              <span>Save Expense Record</span>
+              <span>{isSavingExpense ? 'Saving...' : 'Save Expense Record'}</span>
             </button>
 
           </form>
@@ -701,9 +730,10 @@ export default function ExpensesView({ selectedBranch }) {
               </button>
               <button
                 type="submit"
-                className={`px-5 py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md border cursor-pointer`}
+                disabled={isSavingEdit}
+                className={`px-5 py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md border cursor-pointer disabled:opacity-50`}
               >
-                Save Changes
+                {isSavingEdit ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
 

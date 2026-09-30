@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Receipt, 
@@ -7,20 +7,23 @@ import {
   Bell, 
   Save, 
   CheckCircle2, 
-  Coffee,
-  Globe,
-  Sliders
+  Coffee, 
+  Globe, 
+  Sliders 
 } from 'lucide-react';
+import { fetchStoreSettings, updateStoreSettings } from '../services/api';
 
 export default function SettingsView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
+  const branchId = selectedBranch?.id || 'branch-1';
   
   const [activeTab, setActiveTab] = useState('store');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Store Information State
   const [storeName, setStoreName] = useState('Kanchivaram Café');
-  const [branchName, setBranchName] = useState(selectedBranch?.name || 'Main Branch - Kanchipuram');
+  const [branchName, setBranchName] = useState(selectedBranch?.name || 'Main Branch - Gandhi Road');
   const [gstin, setGstin] = useState('33AAACK1234F1Z9');
   const [fssaiNo, setFssaiNo] = useState('12421008000142');
   const [contactPhone, setContactPhone] = useState('+91 98765 43210');
@@ -33,10 +36,53 @@ export default function SettingsView({ selectedBranch }) {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(true);
   const [defaultPaymentMode, setDefaultPaymentMode] = useState('CASH');
 
-  const handleSaveSettings = (e) => {
+  useEffect(() => {
+    let isMounted = true;
+    const loadSettings = async () => {
+      const data = await fetchStoreSettings(branchId);
+      if (isMounted && data) {
+        if (data.storeName) setStoreName(data.storeName);
+        if (data.branchName) setBranchName(data.branchName);
+        if (data.gstin) setGstin(data.gstin);
+        if (data.fssaiNo) setFssaiNo(data.fssaiNo);
+        if (data.contactPhone) setContactPhone(data.contactPhone);
+        if (data.contactEmail) setContactEmail(data.contactEmail);
+        if (typeof data.cgstPercent !== 'undefined') setCgstPercent(String(data.cgstPercent));
+        if (typeof data.sgstPercent !== 'undefined') setSgstPercent(String(data.sgstPercent));
+        if (typeof data.autoPrintReceipt !== 'undefined') setAutoPrintReceipt(Boolean(data.autoPrintReceipt));
+        if (data.defaultPaymentMode) setDefaultPaymentMode(data.defaultPaymentMode);
+      }
+    };
+    loadSettings();
+    return () => { isMounted = false; };
+  }, [branchId]);
+
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      const payload = {
+        storeName,
+        branchName,
+        gstin,
+        fssaiNo,
+        contactPhone,
+        contactEmail,
+        cgstPercent: parseFloat(cgstPercent) || 2.5,
+        sgstPercent: parseFloat(sgstPercent) || 2.5,
+        autoPrintReceipt,
+        defaultPaymentMode
+      };
+      await updateStoreSettings(payload, branchId);
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      console.error('[SettingsView] Save error:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -263,10 +309,11 @@ export default function SettingsView({ selectedBranch }) {
         <div className="pt-2 border-t border-[#ded4c5] flex justify-end">
           <button
             type="submit"
-            className={`px-6 py-2.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer border`}
+            disabled={isSaving}
+            className={`px-6 py-2.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer border disabled:opacity-50`}
           >
             <Save className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-            <span>Save Settings</span>
+            <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
           </button>
         </div>
 

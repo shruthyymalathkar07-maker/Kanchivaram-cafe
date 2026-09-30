@@ -55,32 +55,45 @@ class InventoryStore {
     this.listeners = new Set();
     this.isHydrating = false;
     this.hydrationSequence = 0;
+    this.hydrationTimers = {};
 
-    // Listen to real-time socket events
+    // Listen to real-time socket events with deduplication and debounced sync
     if (socket) {
       socket.on('inventory_updated', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
-        this.hydrateFromBackend(targetBranch);
+        this.scheduleDebouncedHydration(targetBranch, 200);
       });
 
       socket.on('purchase_created', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
-        this.hydrateFromBackend(targetBranch);
+        if (data?.purchase && this.branches[targetBranch]) {
+          const list = this.branches[targetBranch].purchases;
+          const exists = list.some(p => p.id === data.purchase.id || (data.purchase.invoiceRef && p.invoiceRef === data.purchase.invoiceRef));
+          if (!exists) {
+            this.branches[targetBranch].purchases = [data.purchase, ...list];
+            this.notify();
+          }
+        }
+        this.scheduleDebouncedHydration(targetBranch, 200);
       });
 
       socket.on('purchase_deleted', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
-        this.hydrateFromBackend(targetBranch);
+        if (data?.id && this.branches[targetBranch]) {
+          this.branches[targetBranch].purchases = this.branches[targetBranch].purchases.filter(p => p.id !== data.id);
+          this.notify();
+        }
+        this.scheduleDebouncedHydration(targetBranch, 200);
       });
 
       socket.on('customer_updated', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
-        this.hydrateFromBackend(targetBranch);
+        this.scheduleDebouncedHydration(targetBranch, 200);
       });
 
       socket.on('sale_created', (data) => {
         const targetBranch = data?.branchId || this.currentBranchId;
-        this.hydrateFromBackend(targetBranch);
+        this.scheduleDebouncedHydration(targetBranch, 200);
       });
 
       socket.on('inventory_threshold_updated', (data) => {
@@ -96,6 +109,16 @@ class InventoryStore {
         }
       });
     }
+  }
+
+  scheduleDebouncedHydration(branchId = this.currentBranchId, delayMs = 150) {
+    if (this.hydrationTimers[branchId]) {
+      clearTimeout(this.hydrationTimers[branchId]);
+    }
+    this.hydrationTimers[branchId] = setTimeout(() => {
+      this.hydrateFromBackend(branchId);
+      delete this.hydrationTimers[branchId];
+    }, delayMs);
   }
 
   setBranch(branchId) {
@@ -190,7 +213,16 @@ class InventoryStore {
       }
 
       if (purchasesRes && purchasesRes.purchases && Array.isArray(purchasesRes.purchases)) {
-        this.branches[branchId].purchases = purchasesRes.purchases;
+        const seenIds = new Set();
+        const dedupedPurchases = [];
+        for (const p of purchasesRes.purchases) {
+          const key = p.id || p.invoiceRef;
+          if (!seenIds.has(key)) {
+            seenIds.add(key);
+            dedupedPurchases.push(p);
+          }
+        }
+        this.branches[branchId].purchases = dedupedPurchases;
       }
 
       if (ledgerRes && ledgerRes.ledger && Array.isArray(ledgerRes.ledger)) {
@@ -379,10 +411,15 @@ class InventoryStore {
 
     // Persist to PostgreSQL backend via API
     try {
-      await apiUpdateItemThreshold(itemId, numThreshold, targetBranch);
+      const res = await apiUpdateItemThreshold(itemId, numThreshold, targetBranch);
+      if (res && res.success === false) {
+        throw new Error(res.message || 'Failed to update threshold');
+      }
       await this.hydrateFromBackend(targetBranch);
+      return { success: true };
     } catch (err) {
       console.warn('[InventoryStore] Error persisting threshold:', err);
+      throw err;
     }
   }
 
@@ -404,8 +441,25 @@ class InventoryStore {
 
     try {
       const res = await createPurchaseStockIn(serverPayload, targetBranch);
-      await this.hydrateFromBackend(targetBranch);
       if (res && res.success && res.purchase) {
+        if (!this.branches[targetBranch]) {
+          this.branches[targetBranch] = { items: createInitialItems(), ledger: [], purchases: [], customers: [], sales: [] };
+        }
+        
+        // Immediately insert newly created purchase into store
+        const existingList = this.branches[targetBranch].purchases;
+        const alreadyPresent = existingList.some(p => p.id === res.purchase.id || (res.purchase.invoiceRef && p.invoiceRef === res.purchase.invoiceRef));
+        if (!alreadyPresent) {
+          this.branches[targetBranch].purchases = [res.purchase, ...existingList];
+        } else {
+          this.branches[targetBranch].purchases = existingList.map(p => 
+            (p.id === res.purchase.id || (res.purchase.invoiceRef && p.invoiceRef === res.purchase.invoiceRef)) ? res.purchase : p
+          );
+        }
+        this.notify();
+
+        // Background sync to update stock items and ledger balances
+        this.scheduleDebouncedHydration(targetBranch, 50);
         return res.purchase;
       }
     } catch (err) {
@@ -440,17 +494,19 @@ class InventoryStore {
   async deletePurchase(purchaseId, branchId = this.currentBranchId) {
     const targetBranch = branchId || this.currentBranchId;
 
+    // Immediately remove locally so user sees instantaneous removal
+    if (this.branches[targetBranch]) {
+      this.branches[targetBranch].purchases = this.branches[targetBranch].purchases.filter(p => p.id !== purchaseId);
+      this.notify();
+    }
+
     try {
       const res = await deleteInventoryPurchase(purchaseId, targetBranch);
-      await this.hydrateFromBackend(targetBranch);
+      this.scheduleDebouncedHydration(targetBranch, 50);
       return res && res.success !== false;
     } catch (err) {
       console.warn('[InventoryStore] Error deleting purchase from PostgreSQL:', err);
-      const purchaseIndex = this.purchases.findIndex(p => p.id === purchaseId);
-      if (purchaseIndex !== -1) {
-        this.purchases.splice(purchaseIndex, 1);
-        this.notify();
-      }
+      this.scheduleDebouncedHydration(targetBranch, 50);
       return false;
     }
   }

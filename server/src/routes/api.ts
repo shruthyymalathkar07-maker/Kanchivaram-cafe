@@ -9,6 +9,33 @@ import {
   SaleRecord,
   StockLedgerEntry
 } from '../db';
+import { 
+  findUserByEmail, 
+  findUserByPhone, 
+  findUserById, 
+  comparePassword, 
+  hashPassword,
+  signAccessToken, 
+  toSafeUser, 
+  authenticateToken, 
+  requireRole, 
+  AuthenticatedRequest,
+  sendTwoFactorOtp,
+  verifyTwoFactorOtp,
+  sendFast2SmsOtp,
+  verifyFast2SmsOtp,
+  getGoogleOAuthUrl,
+  exchangeGoogleOAuthCode,
+  signPasswordResetToken,
+  verifyPasswordResetToken,
+  invalidatePasswordResetToken,
+  checkOtpRateLimit,
+  recordOtpRequest,
+  incrementOtpVerifyAttempts,
+  verifyAccessToken
+} from '../auth';
+import { processKVCMQuery } from '../ai';
+import { executeProductionHandoverCleanup } from '../cleanupProductionDatabase';
 import { Server as SocketServer } from 'socket.io';
 
 export function createApiRouter(io: SocketServer) {
@@ -18,11 +45,474 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'phase13-audit-v1.1.1',
+      commit: 'phase14-forgot-password-v1.0.0',
       deployedAt: new Date().toISOString(),
-      version: '1.1.1-phase13-business-flows-perfected',
+      version: '1.0.0-phase14-forgot-password-fast2sms',
       database: 'Neon PostgreSQL'
     });
+  });
+
+  // ============================================================
+  // AUTHENTICATION ROUTES
+  // ============================================================
+
+  // 1. POST /api/auth/login
+  router.post('/auth/login', async (req: Request, res: Response) => {
+    try {
+      const { email, phone, password, branchId } = req.body || {};
+
+      const lookupIdentifier = (email || phone || '').trim();
+      const rawPassword = password || '';
+
+      if (!lookupIdentifier || !rawPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email or phone number and password are required.'
+        });
+      }
+
+      // Lookup user by email or phone
+      let user = null;
+      if (lookupIdentifier.includes('@')) {
+        user = await findUserByEmail(lookupIdentifier, true);
+      } else {
+        user = await findUserByPhone(lookupIdentifier, true);
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'No account found with this email ID / phone number. Please check and try again.'
+        });
+      }
+
+      // Verify active status
+      if (user.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          error: 'Your account is deactivated. Please contact the administrator.'
+        });
+      }
+
+      // Verify password via bcrypt
+      const isMatch = await comparePassword(rawPassword, user.passwordHash);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          error: 'Incorrect password entered. Please verify or use Forgot Password.'
+        });
+      }
+
+      // Determine active branch
+      let targetBranchId = (branchId || user.branchId || 'branch-1').trim().toLowerCase();
+      if (targetBranchId === 'city' || targetBranchId === 'branch-2') {
+        targetBranchId = 'branch-2';
+      } else {
+        targetBranchId = 'branch-1';
+      }
+
+      // Fetch target branch info
+      let branchInfo = null;
+      try {
+        if (prisma) {
+          branchInfo = await prisma.branch.findUnique({
+            where: { id: targetBranchId },
+            include: { settings: true }
+          });
+        }
+      } catch (err: any) {
+        console.warn('[API /auth/login] Branch query notice:', err.message);
+      }
+
+      if (!branchInfo) {
+        branchInfo = {
+          id: targetBranchId,
+          name: targetBranchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road',
+          badge: targetBranchId === 'branch-2' ? 'City Branch' : 'Main Branch',
+          location: targetBranchId === 'branch-2' ? 'Anna Salai' : 'Gandhi Road',
+          status: 'Operational (Live)'
+        };
+      }
+
+      // Sign JWT token
+      const token = signAccessToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        branchId: targetBranchId
+      });
+
+      const safeUser = toSafeUser(user);
+
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: safeUser,
+        branch: branchInfo
+      });
+    } catch (err: any) {
+      console.error('[API /auth/login] Error during login:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'An unexpected authentication error occurred. Please try again.'
+      });
+    }
+  });
+
+  // 2. GET /api/auth/me
+  router.get('/auth/me', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+
+      const user = await findUserById(userId, true);
+      if (!user || user.isActive === false) {
+        return res.status(401).json({
+          success: false,
+          error: 'User account is no longer active or valid.'
+        });
+      }
+
+      return res.json({
+        success: true,
+        user: toSafeUser(user),
+        branch: user.branch || null
+      });
+    } catch (err: any) {
+      console.error('[API /auth/me] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to retrieve current user details.'
+      });
+    }
+  });
+
+  // 3. POST /api/auth/logout
+  router.post('/auth/logout', (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  });
+
+  // 4. POST /api/auth/forgot-password/request-otp
+  router.post('/auth/forgot-password/request-otp', async (req: Request, res: Response) => {
+    try {
+      const { phone } = req.body || {};
+      const rawPhone = (phone || '').trim();
+      const digitsOnly = rawPhone.replace(/\D/g, '');
+
+      if (!rawPhone || digitsOnly.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please enter a valid 10-digit Indian mobile number.'
+        });
+      }
+
+      // Rate limiting check (30s minimum interval)
+      const rateLimit = checkOtpRateLimit(digitsOnly, 30000);
+      if (!rateLimit.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: `Please wait ${rateLimit.remainingSeconds}s before requesting a new OTP.`
+        });
+      }
+
+      // Lookup user in PostgreSQL
+      const user = await findUserByPhone(digitsOnly, false);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'Phone number is not registered with any Kanchivaram Café account.'
+        });
+      }
+
+      if (user.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          error: 'Account is deactivated. Please contact the administrator.'
+        });
+      }
+
+      // Call 2Factor OTP Provider
+      const smsResult = await sendTwoFactorOtp(digitsOnly);
+      if (!smsResult.success) {
+        return res.status(502).json({
+          success: false,
+          error: smsResult.message
+        });
+      }
+
+      // Record successful request timestamp for rate limiting
+      recordOtpRequest(digitsOnly);
+
+      const last4 = digitsOnly.slice(-4);
+      const maskedPhone = `+91 ******${last4}`;
+
+      return res.json({
+        success: true,
+        message: `OTP sent successfully to ${maskedPhone}.`,
+        maskedPhone
+      });
+    } catch (err: any) {
+      console.error('[API /auth/forgot-password/request-otp] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'An unexpected error occurred while requesting OTP. Please try again.'
+      });
+    }
+  });
+
+  // 5. POST /api/auth/forgot-password/verify-otp
+  router.post('/auth/forgot-password/verify-otp', async (req: Request, res: Response) => {
+    try {
+      const { phone, otp } = req.body || {};
+      const rawPhone = (phone || '').trim();
+      const digitsOnly = rawPhone.replace(/\D/g, '');
+      const rawOtp = (otp || '').trim();
+
+      if (!digitsOnly || digitsOnly.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Valid 10-digit phone number is required.'
+        });
+      }
+
+      if (!rawOtp || rawOtp.length !== 6 || !/^\d{6}$/.test(rawOtp)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please enter the complete 6-digit numeric OTP code.'
+        });
+      }
+
+      // Verify attempts limit
+      const attempts = incrementOtpVerifyAttempts(digitsOnly);
+      if (attempts > 5) {
+        return res.status(429).json({
+          success: false,
+          error: 'Too many failed verification attempts. Please request a new OTP.'
+        });
+      }
+
+      // Verify user exists
+      const user = await findUserByPhone(digitsOnly, false);
+      if (!user || user.isActive === false) {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found or account is inactive.'
+        });
+      }
+
+      // Verify OTP via 2Factor
+      const verifyRes = await verifyTwoFactorOtp(digitsOnly, rawOtp);
+      if (!verifyRes.success) {
+        return res.status(400).json({
+          success: false,
+          error: verifyRes.message
+        });
+      }
+
+      // Generate single-use, 10-minute password reset authorization token
+      const resetToken = signPasswordResetToken({
+        userId: user.id,
+        phone: user.phone
+      });
+
+      return res.json({
+        success: true,
+        message: 'OTP verified successfully.',
+        resetToken
+      });
+    } catch (err: any) {
+      console.error('[API /auth/forgot-password/verify-otp] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'An unexpected error occurred during OTP verification.'
+      });
+    }
+  });
+
+  // 6. POST /api/auth/forgot-password/reset
+  router.post('/auth/forgot-password/reset', async (req: Request, res: Response) => {
+    try {
+      const { resetToken, newPassword, confirmPassword } = req.body || {};
+
+      if (!resetToken) {
+        return res.status(401).json({
+          success: false,
+          error: 'Password reset authorization token is missing or expired. Please verify OTP again.'
+        });
+      }
+
+      // Verify single-use reset authorization token
+      const tokenPayload = verifyPasswordResetToken(resetToken);
+      if (!tokenPayload || !tokenPayload.userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid, expired, or already-used password reset session. Please request a new OTP.'
+        });
+      }
+
+      // Password strength validation
+      const pwd = newPassword || '';
+      if (pwd.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password must be at least 8 characters long.'
+        });
+      }
+
+      if (!/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password must include at least one letter and one number.'
+        });
+      }
+
+      if (confirmPassword !== undefined && pwd !== confirmPassword) {
+        return res.status(400).json({
+          success: false,
+          error: 'Passwords do not match. Please verify both fields.'
+        });
+      }
+
+      // Hash new password using bcrypt
+      const hashedPassword = await hashPassword(pwd);
+
+      // Update password in PostgreSQL database
+      if (prisma) {
+        await prisma.user.update({
+          where: { id: tokenPayload.userId },
+          data: { passwordHash: hashedPassword }
+        });
+      }
+
+      // Invalidate the single-use token
+      invalidatePasswordResetToken(resetToken);
+
+      return res.json({
+        success: true,
+        message: 'Password updated successfully. Please log in with your new password.'
+      });
+    } catch (err: any) {
+      console.error('[API /auth/forgot-password/reset] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'An unexpected error occurred while updating password.'
+      });
+    }
+  });
+
+  // 7. GET /api/auth/google (Initiate Google OAuth 2.0 Web Flow)
+  router.get('/auth/google', (req: Request, res: Response) => {
+    try {
+      const origin = (req.query.origin as string) || '';
+      const stateParam = (req.query.state as string) || '';
+      const googleAuthUrl = getGoogleOAuthUrl(stateParam, origin);
+
+      if (!googleAuthUrl) {
+        const fallbackOrigin = origin || (process.env.NODE_ENV === 'production' ? 'https://kanchivaram-cafe.surge.sh' : 'http://localhost:5173');
+        return res.redirect(`${fallbackOrigin}/?error=google_oauth_not_configured`);
+      }
+
+      return res.redirect(googleAuthUrl);
+    } catch (err: any) {
+      console.error('[API /auth/google] Error:', err.message);
+      return res.status(500).json({ success: false, error: 'Failed to initiate Google sign-in.' });
+    }
+  });
+
+  // 7b. GET /api/auth/google/url (Helper to query Google OAuth URL)
+  router.get('/auth/google/url', (req: Request, res: Response) => {
+    const origin = (req.query.origin as string) || '';
+    const stateParam = (req.query.state as string) || '';
+    const googleAuthUrl = getGoogleOAuthUrl(stateParam, origin);
+
+    if (!googleAuthUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Google OAuth is not configured on the backend. GOOGLE_CLIENT_ID is missing.'
+      });
+    }
+
+    return res.json({ success: true, url: googleAuthUrl });
+  });
+
+  // 8. GET /api/auth/google/callback (Google OAuth 2.0 Web Callback)
+  router.get('/auth/google/callback', async (req: Request, res: Response) => {
+    // Extract origin from state if provided
+    let frontendOrigin = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://kanchivaram-cafe.surge.sh' : 'http://localhost:5173');
+    const stateRaw = req.query.state as string;
+    if (stateRaw) {
+      try {
+        const decoded = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
+        if (decoded.origin && typeof decoded.origin === 'string') {
+          const originUrl = new URL(decoded.origin);
+          if (
+            originUrl.hostname === 'localhost' ||
+            originUrl.hostname === '127.0.0.1' ||
+            originUrl.hostname.endsWith('surge.sh') ||
+            originUrl.hostname.includes('kanchivaram-cafe')
+          ) {
+            frontendOrigin = decoded.origin;
+          }
+        }
+      } catch {}
+    }
+
+    try {
+      // 1. Check for OAuth errors (e.g. user cancelled or denied access)
+      if (req.query.error) {
+        const oauthError = req.query.error === 'access_denied' ? 'oauth_cancelled' : String(req.query.error);
+        return res.redirect(`${frontendOrigin}/?error=${encodeURIComponent(oauthError)}`);
+      }
+
+      // 2. Validate authorization code
+      const code = req.query.code as string;
+      if (!code) {
+        return res.redirect(`${frontendOrigin}/?error=invalid_oauth_response`);
+      }
+
+      // 3. Exchange code for Google tokens and retrieve verified user profile
+      const exchangeResult = await exchangeGoogleOAuthCode(code);
+      if (!exchangeResult.success || !exchangeResult.profile) {
+        const errorDetail = exchangeResult.error || 'oauth_failed';
+        return res.redirect(`${frontendOrigin}/?error=${encodeURIComponent(errorDetail)}`);
+      }
+
+      const googleProfile = exchangeResult.profile;
+      const normalizedEmail = googleProfile.email.trim().toLowerCase();
+
+      // 4. Find existing user in PostgreSQL
+      const user = await findUserByEmail(normalizedEmail, true);
+      if (!user) {
+        // IMPORTANT ACCOUNT RULE: Do not silently create a privileged account from an arbitrary Google email.
+        console.warn(`[Google OAuth] Unauthorized Google email attempted login: ${normalizedEmail}`);
+        return res.redirect(`${frontendOrigin}/?error=unauthorized_google_account`);
+      }
+
+      // 5. Check if user is active
+      if (user.isActive === false) {
+        return res.redirect(`${frontendOrigin}/?error=account_deactivated`);
+      }
+
+      // 6. Generate normal JWT access token
+      const token = signAccessToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        branchId: user.branchId ?? null
+      });
+
+      // 7. Redirect back to frontend application with token
+      return res.redirect(`${frontendOrigin}/?token=${encodeURIComponent(token)}`);
+    } catch (err: any) {
+      console.error('[API /auth/google/callback] Exception:', err.message);
+      return res.redirect(`${frontendOrigin}/?error=oauth_internal_error`);
+    }
   });
 
   // Helper to extract branch from request header, query, or body
@@ -292,6 +782,25 @@ export function createApiRouter(io: SocketServer) {
           if (qtyNum > 0) {
             totalAmount += qtyNum * priceNum;
           }
+        }
+
+        // Check for idempotency: if an identical invoice was saved within the last 15 seconds, return it
+        const existingPurchase = await prisma.purchase.findFirst({
+          where: {
+            branchId,
+            invoiceRef: finalInvoiceRef
+          },
+          include: { items: true }
+        });
+        if (existingPurchase) {
+          return res.status(200).json({
+            success: true,
+            message: `Stock purchase ${finalInvoiceRef} already recorded`,
+            purchase: {
+              ...existingPurchase,
+              date: existingPurchase.createdAt ? new Date(existingPurchase.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : existingPurchase.dateIso
+            }
+          });
         }
 
         // 1. Create Purchase record in PostgreSQL via direct SQL with dynamic legacy column alignment
@@ -636,6 +1145,56 @@ export function createApiRouter(io: SocketServer) {
       success: false,
       message: 'PostgreSQL database connection unavailable'
     });
+  });
+
+  // 4d-1. DELETE /api/inventory/ledger (Clear all or branch-specific stock ledger movements from PostgreSQL)
+  router.delete('/inventory/ledger', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const deleted = await prisma.stockLedger.deleteMany({
+          where: branchId ? { branchId } : {}
+        });
+
+        io.emit('inventory_updated', { branchId });
+
+        return res.json({
+          success: true,
+          message: `Deleted ${deleted.count} stock ledger records for branch ${branchId || 'all'}`,
+          count: deleted.count
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /inventory/ledger DELETE] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete stock ledger',
+        error: err.message
+      });
+    }
+
+    return res.json({ success: true, count: 0 });
+  });
+
+  // 4d-2. POST /api/admin/clean-database (Full Production Handover Database Reset)
+  router.post('/admin/clean-database', async (_req: Request, res: Response) => {
+    try {
+      const result = await executeProductionHandoverCleanup();
+      io.emit('inventory_updated', { branchId: 'branch-1' });
+      io.emit('inventory_updated', { branchId: 'branch-2' });
+      return res.json({
+        success: true,
+        message: 'Production database clean state executed successfully',
+        result
+      });
+    } catch (err: any) {
+      console.error('[API /admin/clean-database POST] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to execute production database cleanup',
+        error: err.message
+      });
+    }
   });
 
   // 4e. PUT/PATCH /api/inventory/items/:id/threshold (Secure update for item minThreshold in PostgreSQL)
@@ -2019,7 +2578,104 @@ export function createApiRouter(io: SocketServer) {
     });
   });
 
-  // 11. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
+  // 11. GET /api/settings (Store Settings & Tax Preferences from PostgreSQL)
+  router.get('/settings', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const settings = await prisma.storeSetting.findUnique({
+          where: { branchId }
+        });
+        if (settings) {
+          return res.json({ success: true, settings });
+        }
+      }
+      return res.json({
+        success: true,
+        settings: {
+          branchId,
+          storeName: 'Kanchivaram Café',
+          branchName: branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road',
+          gstin: '33AAACK1234F1Z9',
+          fssaiNo: '12421008000142',
+          contactPhone: '+91 98765 43210',
+          contactEmail: 'contact@kanchivaram.cafe',
+          cgstPercent: 2.5,
+          sgstPercent: 2.5,
+          autoPrintReceipt: true,
+          defaultPaymentMode: 'CASH'
+        }
+      });
+    } catch (err: any) {
+      console.error('[API /settings GET] Error:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to fetch store settings', error: err.message });
+    }
+  });
+
+  // 12. PUT /api/settings (Save & Persist Store Settings in PostgreSQL)
+  router.put('/settings', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const {
+      storeName,
+      branchName,
+      gstin,
+      fssaiNo,
+      contactPhone,
+      contactEmail,
+      cgstPercent,
+      sgstPercent,
+      autoPrintReceipt,
+      defaultPaymentMode
+    } = req.body;
+
+    try {
+      if (prisma) {
+        const updated = await prisma.storeSetting.upsert({
+          where: { branchId },
+          update: {
+            storeName: storeName || 'Kanchivaram Café',
+            branchName: branchName || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road'),
+            gstin: gstin || '33AAACK1234F1Z9',
+            fssaiNo: fssaiNo || '12421008000142',
+            contactPhone: contactPhone || '+91 98765 43210',
+            contactEmail: contactEmail || 'contact@kanchivaram.cafe',
+            cgstPercent: typeof cgstPercent !== 'undefined' ? parseFloat(cgstPercent) : 2.5,
+            sgstPercent: typeof sgstPercent !== 'undefined' ? parseFloat(sgstPercent) : 2.5,
+            autoPrintReceipt: typeof autoPrintReceipt === 'boolean' ? autoPrintReceipt : true,
+            defaultPaymentMode: defaultPaymentMode || 'CASH'
+          },
+          create: {
+            branchId,
+            storeName: storeName || 'Kanchivaram Café',
+            branchName: branchName || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road'),
+            gstin: gstin || '33AAACK1234F1Z9',
+            fssaiNo: fssaiNo || '12421008000142',
+            contactPhone: contactPhone || '+91 98765 43210',
+            contactEmail: contactEmail || 'contact@kanchivaram.cafe',
+            cgstPercent: typeof cgstPercent !== 'undefined' ? parseFloat(cgstPercent) : 2.5,
+            sgstPercent: typeof sgstPercent !== 'undefined' ? parseFloat(sgstPercent) : 2.5,
+            autoPrintReceipt: typeof autoPrintReceipt === 'boolean' ? autoPrintReceipt : true,
+            defaultPaymentMode: defaultPaymentMode || 'CASH'
+          }
+        });
+
+        io.emit('settings_updated', { branchId, settings: updated });
+
+        return res.json({
+          success: true,
+          message: 'Settings updated successfully in PostgreSQL',
+          settings: updated
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /settings PUT] Error:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to update store settings', error: err.message });
+    }
+
+    return res.status(503).json({ success: false, message: 'PostgreSQL database connection unavailable' });
+  });
+
+  // 13. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     const period = (req.query.period as string) || 'today';
@@ -2215,6 +2871,66 @@ export function createApiRouter(io: SocketServer) {
       });
     }
   });
+
+  // 14. POST /api/chatbot/query (Protected KVCM AI Assistant Query Endpoint)
+  const handleChatbotQuery = async (req: Request, res: Response) => {
+    try {
+      // 1. Validate Authentication (from Bearer token or optional header)
+      const authHeader = req.headers['authorization'];
+      let authenticatedUser = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7).trim();
+        authenticatedUser = verifyAccessToken(token);
+      }
+
+      // Determine authorized branchId
+      let branchId = getBranchId(req);
+      if (authenticatedUser?.branchId) {
+        // Enforce user's branch if user is locked to a branch
+        branchId = authenticatedUser.branchId;
+      }
+
+      const rawQuery = req.body?.query || req.body?.message || req.body?.prompt || '';
+      const cleanQuery = typeof rawQuery === 'string' ? rawQuery.trim() : '';
+
+      if (!cleanQuery) {
+        return res.status(400).json({
+          success: false,
+          answer: 'Please provide a valid question for KVCM Assistant.',
+          branchId
+        });
+      }
+
+      // Process query with verified PostgreSQL context and OpenAI
+      const result = await processKVCMQuery(prisma, {
+        query: cleanQuery,
+        branchId,
+        userId: authenticatedUser?.userId,
+        userEmail: authenticatedUser?.email,
+        userRole: authenticatedUser?.role
+      });
+
+      return res.json({
+        success: result.success,
+        answer: result.answer,
+        message: result.answer,
+        branchId: result.branchId,
+        dataContext: result.dataContext,
+        modelUsed: result.modelUsed
+      });
+    } catch (err: any) {
+      console.error('[API /chatbot/query] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        answer: 'I encountered an unexpected error retrieving your café data. Please try again.',
+        error: 'AI assistant service temporarily unavailable.'
+      });
+    }
+  };
+
+  router.post('/chatbot/query', handleChatbotQuery);
+  router.post('/ai/query', handleChatbotQuery);
+  router.post('/ai/assistant', handleChatbotQuery);
 
   return router;
 }

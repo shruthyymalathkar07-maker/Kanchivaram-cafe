@@ -82,8 +82,10 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
 
   const cgstAmount = activeTaxData.cgst ?? (taxGstAmount / 2);
   const sgstAmount = activeTaxData.sgst ?? (taxGstAmount / 2);
-  const posTaxGst = activeTaxData.inStoreGst ?? 0;
-  const onlineTaxGst = activeTaxData.onlineGst ?? 0;
+  const posGstAmount = activeTaxData.inStoreGst ?? activeTaxData.posGst ?? 0;
+  const onlineGstAmount = activeTaxData.onlineGst ?? 0;
+  const posTaxGst = posGstAmount;
+  const onlineTaxGst = onlineGstAmount;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">

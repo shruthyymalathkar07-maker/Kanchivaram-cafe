@@ -5,6 +5,7 @@ import {
   CLIENT_RAW_MATERIALS_MASTER, 
   CLIENT_BOM_MASTER 
 } from './data/masterData';
+import { seedDefaultUsers } from './auth';
 
 const DDL_STATEMENTS: string[] = [
   "CREATE TABLE IF NOT EXISTS \"public\".\"Branch\" (\n    \"id\" TEXT NOT NULL,\n    \"code\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"badge\" TEXT NOT NULL,\n    \"location\" TEXT NOT NULL,\n    \"fullAddress\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'Operational (Live)',\n    \"tablesCount\" INTEGER NOT NULL DEFAULT 24,\n    \"posTerminals\" INTEGER NOT NULL DEFAULT 3,\n    \"accentColor\" TEXT NOT NULL DEFAULT '#0D3B2E',\n    \"badgeBg\" TEXT NOT NULL DEFAULT 'bg-[#0D3B2E]',\n    \"badgeText\" TEXT NOT NULL DEFAULT 'text-white',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Branch_pkey\" PRIMARY KEY (\"id\")\n  );",
@@ -470,6 +471,9 @@ export async function ensureDatabaseInitialized() {
         }
       }
     }
+
+    // 7. Seed Default Admin & Manager Auth Users with bcrypt hashes
+    await seedDefaultUsers();
 
     console.log('✅ [DB Init] Master database verification completed.');
   } catch (seedErr: any) {

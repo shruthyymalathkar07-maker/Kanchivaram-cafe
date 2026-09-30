@@ -69,6 +69,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState(null);
   const [deletingPurchaseId, setDeletingPurchaseId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State for Purchase Invoice
   const [formData, setFormData] = useState({
@@ -244,6 +246,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
   const handleSavePurchase = async (e) => {
     e.preventDefault();
+    if (isSaving) return;
     
     // Validate line items
     const validItems = formData.items.filter(i => i.itemName && i.itemName.trim() && parseFloat(i.qty) > 0);
@@ -252,6 +255,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
       return;
     }
 
+    setIsSaving(true);
     const finalSupplier = formData.supplier === 'Other' ? (formData.customSupplier || 'Custom Supplier') : formData.supplier;
 
     const payload = {
@@ -264,25 +268,43 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
     const branchId = selectedBranch?.id || 'branch-1';
 
-    if (editingPurchase) {
-      await inventoryStore.updatePurchase(editingPurchase.id, payload, branchId);
-      showToast(`Purchase ${editingPurchase.invoiceRef} updated & inventory re-synchronized!`);
-    } else {
-      await inventoryStore.recordPurchase(payload, branchId);
-      showToast(`Stock purchase ${payload.invoiceRef} recorded & stock updated!`);
+    try {
+      if (editingPurchase) {
+        const res = await inventoryStore.updatePurchase(editingPurchase.id, payload, branchId);
+        if (!res) throw new Error('Failed to update purchase');
+        showToast(`Purchase ${editingPurchase.invoiceRef} updated & inventory re-synchronized!`);
+      } else {
+        const res = await inventoryStore.recordPurchase(payload, branchId);
+        if (!res) throw new Error('Failed to record purchase');
+        showToast(`Stock purchase ${payload.invoiceRef} recorded & stock updated!`);
+      }
+      setIsAddModalOpen(false);
+      setEditingPurchase(null);
+    } catch (err) {
+      console.error('[PurchaseStockInView] Save error:', err);
+      showToast('Failed to save purchase. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsAddModalOpen(false);
   };
 
   const confirmDeletePurchase = async () => {
-    if (!deletingPurchaseId) return;
+    if (!deletingPurchaseId || isDeleting) return;
+    setIsDeleting(true);
+    const targetId = deletingPurchaseId;
     const branchId = selectedBranch?.id || 'branch-1';
-    const success = await inventoryStore.deletePurchase(deletingPurchaseId, branchId);
-    if (success) {
-      showToast("Purchase record deleted & stock automatically reversed!");
-    }
     setDeletingPurchaseId(null);
+
+    try {
+      const success = await inventoryStore.deletePurchase(targetId, branchId);
+      if (success) {
+        showToast("Purchase record deleted & stock automatically reversed!");
+      }
+    } catch (err) {
+      console.error('[PurchaseStockInView] Delete error:', err);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Filter Purchases
@@ -950,16 +972,26 @@ export default function PurchaseStockInView({ selectedBranch }) {
                           {/* Item Selector / Custom Name */}
                           <div className="sm:col-span-4">
                             <div className="flex items-center justify-between mb-0.5">
-                              <label className="text-[10px] font-bold text-[#547363]">Item Name</label>
+                              <label className="text-[10px] font-bold text-[#547363]">
+                                {line.isCustom ? 'Custom Item Name' : 'Item Name'}
+                              </label>
                               {line.isCustom ? (
                                 <button
                                   type="button"
                                   onClick={() => handleItemSelect(idx, storeState.items[0]?.name || '')}
-                                  className="text-[9px] text-[#0f3823] font-bold underline cursor-pointer"
+                                  className={`text-[9px] ${isBrownBranch ? 'text-[#8B5E3C]' : 'text-[#0f3823]'} font-bold underline cursor-pointer hover:opacity-80 leading-none`}
                                 >
-                                  Pick from Catalog
+                                  ← Pick from Catalog
                                 </button>
-                              ) : null}
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleItemSelect(idx, '__CUSTOM__')}
+                                  className={`text-[9px] ${isBrownBranch ? 'text-[#8B5E3C]' : 'text-[#0f3823]'} font-bold underline cursor-pointer hover:opacity-80 leading-none`}
+                                >
+                                  + Add Custom
+                                </button>
+                              )}
                             </div>
                             {line.isCustom ? (
                               <input
@@ -977,7 +1009,18 @@ export default function PurchaseStockInView({ selectedBranch }) {
                                 className="w-full px-2.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e] focus:outline-none focus:ring-1 focus:ring-[#0f3823]"
                               >
                                 <option value="">-- Select Raw Material (A-Z) --</option>
-                                <option value="__CUSTOM__">✨ + Add Custom Raw Material...</option>
+                                <optgroup label="CUSTOM / NEW MATERIAL">
+                                  <option
+                                    value="__CUSTOM__"
+                                    style={{
+                                      fontWeight: 'bold',
+                                      color: isBrownBranch ? '#8B5E3C' : '#0f3823',
+                                      backgroundColor: '#e6f4ea'
+                                    }}
+                                  >
+                                    + Add Custom Raw Material...
+                                  </option>
+                                </optgroup>
                                 <optgroup label={`Master Catalog (${storeState.items.length} Items, Alphabetical A-Z)`}>
                                   {storeState.items.map(i => (
                                     <option key={i.id} value={i.name}>{i.name} ({i.unit})</option>
@@ -1109,18 +1152,20 @@ export default function PurchaseStockInView({ selectedBranch }) {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e5d8c8]">
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#11291f] text-xs font-bold rounded-xl border border-[#cabb9e]"
+                  className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#11291f] text-xs font-bold rounded-xl border border-[#cabb9e] disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className={`px-5 py-2 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white text-xs font-black rounded-xl border shadow-md flex items-center gap-1.5`}
+                  disabled={isSaving}
+                  className={`px-5 py-2 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'} text-white text-xs font-black rounded-xl border shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer`}
                 >
                   <CheckCircle2 className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-                  <span>{editingPurchase ? 'Update & Re-sync Stock' : 'Save & Update Real-Time Inventory'}</span>
+                  <span>{isSaving ? 'Saving...' : (editingPurchase ? 'Update & Re-sync Stock' : 'Save & Update Real-Time Inventory')}</span>
                 </button>
               </div>
 
