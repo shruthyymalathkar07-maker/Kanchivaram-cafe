@@ -242,11 +242,11 @@ input::-webkit-credentials-auto-fill-button {
   will-change: transform, opacity;
 }
 
-/* Branch Selection -> Main / City Branch Home Entry (Smooth ease-in-out fade + subtle 8px upward glide) */
+/* Branch Selection -> Main / City Branch Home Entry (Smooth continuous fade + subtle 6px upward glide) */
 @keyframes branchHomeEnter {
   0% {
     opacity: 0;
-    transform: translate3d(0, 8px, 0);
+    transform: translate3d(0, 6px, 0);
   }
   100% {
     opacity: 1;
@@ -255,8 +255,8 @@ input::-webkit-credentials-auto-fill-button {
 }
 
 .animate-branch-home-enter {
-  animation: branchHomeEnter 0.36s cubic-bezier(0.25, 1, 0.5, 1) both;
-  will-change: transform, opacity;
+  animation: branchHomeEnter 0.42s cubic-bezier(0.33, 1, 0.68, 1) both;
+  will-change: opacity, transform;
 }
 
 /* Branch Selection Exit (Smooth subtle fade out) */
@@ -267,13 +267,13 @@ input::-webkit-credentials-auto-fill-button {
   }
   100% {
     opacity: 0;
-    transform: translate3d(0, -6px, 0);
+    transform: translate3d(0, -4px, 0);
   }
 }
 
 .animate-branch-select-exit {
-  animation: branchSelectExit 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  will-change: transform, opacity;
+  animation: branchSelectExit 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: opacity, transform;
   pointer-events: none;
 }
 

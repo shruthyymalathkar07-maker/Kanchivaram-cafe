@@ -198,7 +198,7 @@ export default function App() {
           setActiveTab('home');
           setTimeout(() => {
             setIsBranchEntering(false);
-          }, 450);
+          }, 500);
         }}
       />
     );
@@ -212,10 +212,10 @@ export default function App() {
   const currentOnlineSales = stats?.kpis?.totalSales?.online ?? 0;
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a] ${isBranchEntering ? 'animate-branch-home-enter' : ''}`}>
+    <div className="flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a]">
       
       {/* Main Full-Width Application Shell */}
-      <div className="flex w-full h-screen overflow-hidden bg-[#f8f6f0]">
+      <div className={`flex w-full h-screen overflow-hidden bg-[#f8f6f0] ${isBranchEntering ? 'animate-branch-home-enter' : ''}`}>
         
         {/* A. LEFT SIDEBAR */}
         <Sidebar 
