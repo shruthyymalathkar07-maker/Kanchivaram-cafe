@@ -327,14 +327,15 @@ input::-webkit-credentials-auto-fill-button {
 }
 
 /* ========================================================================= */
-/* SHARED MODAL BACKDROP: SOFT TRANSLUCENT CAFÉ TINT & SUBTLE BLUR           */
+/* SHARED MODAL BACKDROP: CLEAN SOFT BACKDROP BLUR (NO COLOR OVERLAY)        */
 /* ========================================================================= */
 
 .modal-backdrop-overlay {
-  background-color: rgba(13, 59, 46, 0.38) !important;
-  backdrop-filter: blur(2.5px) !important;
-  -webkit-backdrop-filter: blur(2.5px) !important;
+  background-color: transparent !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
+
 
 
 

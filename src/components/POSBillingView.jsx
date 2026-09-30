@@ -721,7 +721,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               resetOrder();
             }
           }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-transparent animate-fadeIn"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn"
         >
           <div className="relative bg-[#fdfbf7] border-2 border-[#d4af37] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
             {/* Close Button */}
