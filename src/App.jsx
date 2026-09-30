@@ -89,7 +89,7 @@ export default function App() {
 
   const getModuleAnimationClass = () => {
     if (isBranchEntering) {
-      return 'animate-branch-home-enter';
+      return '';
     }
     if (activeTab === 'home' && navDirection === 'home-scale') {
       return 'animate-home-fade-scale';
@@ -198,7 +198,7 @@ export default function App() {
           setActiveTab('home');
           setTimeout(() => {
             setIsBranchEntering(false);
-          }, 500);
+          }, 450);
         }}
       />
     );
@@ -212,7 +212,7 @@ export default function App() {
   const currentOnlineSales = stats?.kpis?.totalSales?.online ?? 0;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a]">
+    <div className={`flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a] ${isBranchEntering ? 'animate-branch-home-enter' : ''}`}>
       
       {/* Main Full-Width Application Shell */}
       <div className="flex w-full h-screen overflow-hidden bg-[#f8f6f0]">

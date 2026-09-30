@@ -242,11 +242,11 @@ input::-webkit-credentials-auto-fill-button {
   will-change: transform, opacity;
 }
 
-/* Branch Selection -> Main / City Branch Home Entry (350-450ms fade + subtle upward movement) */
+/* Branch Selection -> Main / City Branch Home Entry (Smooth ease-in-out fade + subtle 8px upward glide) */
 @keyframes branchHomeEnter {
   0% {
     opacity: 0;
-    transform: translate3d(0, 16px, 0);
+    transform: translate3d(0, 8px, 0);
   }
   100% {
     opacity: 1;
@@ -255,8 +255,26 @@ input::-webkit-credentials-auto-fill-button {
 }
 
 .animate-branch-home-enter {
-  animation: branchHomeEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: branchHomeEnter 0.36s cubic-bezier(0.25, 1, 0.5, 1) both;
   will-change: transform, opacity;
+}
+
+/* Branch Selection Exit (Smooth subtle fade out) */
+@keyframes branchSelectExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+.animate-branch-select-exit {
+  animation: branchSelectExit 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+  pointer-events: none;
 }
 
 /* Navigation Back to Home (Subtle fade + scale transition 280-320ms) */
@@ -317,6 +335,7 @@ input::-webkit-credentials-auto-fill-button {
   .animate-branch-reveal,
   .animate-login-reveal,
   .animate-branch-home-enter,
+  .animate-branch-select-exit,
   .animate-home-fade-scale,
   .animate-module-slide-forward,
   .animate-module-slide-backward {
