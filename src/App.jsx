@@ -171,34 +171,24 @@ export default function App() {
     };
   }, [salesTimeframe, authState.isAuthenticated, authState.selectedBranch?.id]);
 
-  // UNAUTHENTICATED ROUTE PROTECTION: Show Login & Auth Flow
-  if (!authState.isAuthenticated) {
+  // AUTHENTICATION & BRANCH SELECTION ROUTE PROTECTION
+  if (!authState.isAuthenticated || !authState.selectedBranch) {
     return (
       <AuthView
-        key="auth-login"
-        initialStep="LOGIN"
+        key="auth-view"
+        initialStep={!authState.isAuthenticated ? 'LOGIN' : 'BRANCH_SELECT'}
         onAuthSuccess={(newState) => {
-          setAuthState(newState);
-          setActiveTab('home');
-        }}
-      />
-    );
-  }
-
-  // BRANCH SELECTION STEP PROTECTION
-  if (!authState.selectedBranch) {
-    return (
-      <AuthView
-        key="branch-select"
-        initialStep="BRANCH_SELECT"
-        onAuthSuccess={(newState) => {
-          setIsBranchEntering(true);
-          setNavDirection('branch-enter');
-          setAuthState(newState);
-          setActiveTab('home');
-          setTimeout(() => {
-            setIsBranchEntering(false);
-          }, 500);
+          if (newState.selectedBranch) {
+            setIsBranchEntering(true);
+            setNavDirection('branch-enter');
+            setAuthState(newState);
+            setActiveTab('home');
+            setTimeout(() => {
+              setIsBranchEntering(false);
+            }, 500);
+          } else {
+            setAuthState(newState);
+          }
         }}
       />
     );
