@@ -89,11 +89,12 @@ export async function executeProductionHandoverCleanup() {
 
   console.log('\nSTEP 3: Resetting 117 Master Inventory Items to clean 0 stock...');
   for (const rm of CLIENT_RAW_MATERIALS_MASTER) {
+    const categoryName = rm.category || 'Raw Ingredients';
     await prisma.inventoryItem.upsert({
       where: { id: rm.id },
       update: {
         name: rm.name,
-        category: rm.category,
+        category: categoryName,
         unit: rm.unit || 'units',
         openingStock: 0.0,
         stockIn: 0.0,
@@ -106,7 +107,7 @@ export async function executeProductionHandoverCleanup() {
       create: {
         id: rm.id,
         name: rm.name,
-        category: rm.category,
+        category: categoryName,
         unit: rm.unit || 'units',
         openingStock: 0.0,
         stockIn: 0.0,
