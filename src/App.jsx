@@ -40,6 +40,22 @@ import { inventoryStore } from './services/inventoryStore';
 import { authStore } from './services/authStore';
 import { fetchDashboardStats, fetchProducts, socket } from './services/api';
 
+const TAB_ORDER = {
+  'home': 0,
+  'pos': 1,
+  'online-orders': 2,
+  'menu-products': 3,
+  'inventory': 4,
+  'purchase': 5,
+  'sales-reports': 6,
+  'customers': 7,
+  'expenses': 8,
+  'staff': 9,
+  'kvcm-assistant': 10,
+  'chatbot': 10,
+  'settings': 11
+};
+
 export default function App() {
   const getInitialTab = () => {
     const params = new URLSearchParams(window.location.search);
@@ -49,8 +65,40 @@ export default function App() {
     return 'home';
   };
   const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [navDirection, setNavDirection] = useState('forward');
+  const [isBranchEntering, setIsBranchEntering] = useState(false);
   const [salesTimeframe, setSalesTimeframe] = useState('today');
   const [posSearchQuery, setPosSearchQuery] = useState('');
+
+  const handleTabChange = (nextTab) => {
+    if (nextTab === activeTab) return;
+    if (nextTab === 'home') {
+      setNavDirection('home-scale');
+    } else {
+      const currentOrder = TAB_ORDER[activeTab] ?? 0;
+      const nextOrder = TAB_ORDER[nextTab] ?? 0;
+      if (nextOrder >= currentOrder) {
+        setNavDirection('forward');
+      } else {
+        setNavDirection('backward');
+      }
+    }
+    setIsBranchEntering(false);
+    setActiveTab(nextTab);
+  };
+
+  const getModuleAnimationClass = () => {
+    if (isBranchEntering) {
+      return 'animate-branch-home-enter';
+    }
+    if (activeTab === 'home' && navDirection === 'home-scale') {
+      return 'animate-home-fade-scale';
+    }
+    if (navDirection === 'backward') {
+      return 'animate-module-slide-backward';
+    }
+    return 'animate-module-slide-forward';
+  };
   
   // KPI Detail Modal State (TOTAL_SALES, NET_SALES, DISCOUNTS, CASH_COLLECTION, ONLINE_SALES)
   const [activeModal, setActiveModal] = useState(null);
@@ -144,8 +192,13 @@ export default function App() {
         key="branch-select"
         initialStep="BRANCH_SELECT"
         onAuthSuccess={(newState) => {
+          setIsBranchEntering(true);
+          setNavDirection('branch-enter');
           setAuthState(newState);
           setActiveTab('home');
+          setTimeout(() => {
+            setIsBranchEntering(false);
+          }, 500);
         }}
       />
     );
@@ -167,7 +220,7 @@ export default function App() {
         {/* A. LEFT SIDEBAR */}
         <Sidebar 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={handleTabChange} 
           selectedBranch={authState.selectedBranch}
           onChangeBranch={() => authStore.clearSelectedBranch()}
         />
@@ -180,7 +233,7 @@ export default function App() {
             activeTab={activeTab}
             searchQuery={posSearchQuery}
             onSearchChange={setPosSearchQuery}
-            onNavigateTab={(tab) => setActiveTab(tab)} 
+            onNavigateTab={handleTabChange} 
             onOpenNotifications={() => alert("Notification: Stock levels updated! 3 items are at low threshold.")} 
             currentUser={authState.currentUser}
             selectedBranch={authState.selectedBranch}
@@ -190,6 +243,7 @@ export default function App() {
 
           {/* Dynamic Main Body Content */}
           <main className={`flex-1 p-2 sm:p-3 lg:p-4 max-w-[1600px] w-full mx-auto flex flex-col ${activeTab === 'kvcm-assistant' || activeTab === 'chatbot' ? 'pb-20 md:pb-4 overflow-hidden min-h-0' : 'space-y-2.5 pb-20 md:pb-4'}`}>
+            <div key={activeTab} className={`w-full flex-1 flex flex-col min-h-0 ${getModuleAnimationClass()}`}>
             
             {/* VIEW 1: HOME DASHBOARD */}
             {activeTab === 'home' && (
@@ -218,7 +272,7 @@ export default function App() {
                   {/* Quick Action Buttons Row */}
                   <div className="flex flex-wrap items-center gap-2.5">
                     <button
-                      onClick={() => setActiveTab('pos')}
+                      onClick={() => handleTabChange('pos')}
                       className={`flex items-center gap-2 px-4 py-1.5 text-white font-black text-xs rounded-full shadow-md transition-all cursor-pointer border ${
                         isBrownBranch 
                           ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' 
@@ -230,7 +284,7 @@ export default function App() {
                     </button>
 
                     <button
-                      onClick={() => setActiveTab('inventory')}
+                      onClick={() => handleTabChange('inventory')}
                       className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
                     >
                       <PackagePlus className="w-3.5 h-3.5 text-[#122c20]" />
@@ -238,7 +292,7 @@ export default function App() {
                     </button>
 
                     <button
-                      onClick={() => setActiveTab('online-orders')}
+                      onClick={() => handleTabChange('online-orders')}
                       className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
                     >
                       <ShoppingBag className="w-3.5 h-3.5 text-[#122c20]" />
@@ -402,7 +456,7 @@ export default function App() {
                     </div>
 
                     <button 
-                      onClick={() => setActiveTab('inventory')}
+                      onClick={() => handleTabChange('inventory')}
                       className="text-[11px] text-[#0f3823] hover:underline font-black flex items-center gap-1 cursor-pointer"
                     >
                       <span>View All</span>
@@ -502,7 +556,7 @@ export default function App() {
 
             {/* VIEW 3: DEDICATED AI CHATBOT WORKSPACE */}
             {activeTab === 'chatbot' && (
-              <AIChatbotWorkspace onClose={() => setActiveTab('home')} selectedBranch={selectedBranch} />
+              <AIChatbotWorkspace onClose={() => handleTabChange('home')} selectedBranch={selectedBranch} />
             )}
 
             {/* VIEW 4: ONLINE ORDERS */}
@@ -512,7 +566,7 @@ export default function App() {
             {activeTab === 'menu-products' && <MenuProductsView selectedBranch={selectedBranch} />}
 
             {/* VIEW 6: INVENTORY */}
-            {activeTab === 'inventory' && <RealTimeInventoryView selectedBranch={selectedBranch} onNavigate={(tab) => setActiveTab(tab)} />}
+            {activeTab === 'inventory' && <RealTimeInventoryView selectedBranch={selectedBranch} onNavigate={handleTabChange} />}
 
             {/* VIEW 7: CUSTOMERS */}
             {activeTab === 'customers' && <CustomersView selectedBranch={selectedBranch} />}
@@ -535,6 +589,7 @@ export default function App() {
             {/* VIEW 13: KVCM ASSISTANT */}
             {activeTab === 'kvcm-assistant' && <KVCMAssistantView selectedBranch={selectedBranch} />}
 
+            </div>
           </main>
         </div>
 
@@ -543,7 +598,7 @@ export default function App() {
       {/* C. MOBILE BOTTOM NAVIGATION & DRAWER */}
       <MobileNav 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         selectedBranch={authState.selectedBranch}
         onChangeBranch={() => authStore.clearSelectedBranch()}
         onLogout={() => authStore.logout()}

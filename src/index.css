@@ -242,12 +242,84 @@ input::-webkit-credentials-auto-fill-button {
   will-change: transform, opacity;
 }
 
+/* Branch Selection -> Main / City Branch Home Entry (350-450ms fade + subtle upward movement) */
+@keyframes branchHomeEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-branch-home-enter {
+  animation: branchHomeEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Navigation Back to Home (Subtle fade + scale transition 280-320ms) */
+@keyframes homeFadeScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-home-fade-scale {
+  animation: homeFadeScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Forward Navigation between Modules (250-350ms fade + subtle slide from right) */
+@keyframes moduleSlideForward {
+  0% {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-module-slide-forward {
+  animation: moduleSlideForward 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+/* Backward Navigation between Modules (250-350ms fade + reverse subtle slide from left) */
+@keyframes moduleSlideBackward {
+  0% {
+    opacity: 0;
+    transform: translate3d(-16px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-module-slide-backward {
+  animation: moduleSlideBackward 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-right-left,
   .animate-slide-up-fade,
   .animate-scale-down-refresh,
   .animate-branch-reveal,
-  .animate-login-reveal {
+  .animate-login-reveal,
+  .animate-branch-home-enter,
+  .animate-home-fade-scale,
+  .animate-module-slide-forward,
+  .animate-module-slide-backward {
     animation: none !important;
     transform: none !important;
     opacity: 1 !important;
