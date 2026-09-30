@@ -226,7 +226,7 @@ export default function App() {
                       }`}
                     >
                       <PlusCircle className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
-                      <span>+ New Bill</span>
+                      <span>New Bill</span>
                     </button>
 
                     <button

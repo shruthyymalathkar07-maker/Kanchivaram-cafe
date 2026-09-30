@@ -682,7 +682,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
             {/* STATE 1: LOGIN FORM */}
             {authStep === 'LOGIN' && (
-              <div className="space-y-4 animate-scale-down-refresh">
+              <div className="space-y-4 animate-login-reveal">
                 
                 {/* Card Emblem & Titles */}
                 <div className="text-center space-y-0.5">

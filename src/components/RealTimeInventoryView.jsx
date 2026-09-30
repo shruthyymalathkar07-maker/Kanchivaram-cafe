@@ -1451,11 +1451,11 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     value={thresholdInput}
                     onChange={(e) => setThresholdInput(e.target.value)}
                     placeholder="e.g. 5"
-                    className={`w-full px-3 py-2 bg-white text-[#11291f] font-mono font-black text-sm rounded-xl border-2 ${
+                    className={`w-full pl-3 pr-20 py-2 bg-white text-[#11291f] font-mono font-black text-sm rounded-xl border-2 ${
                       isBrownBranch ? 'focus:border-[#7A4325]' : 'focus:border-[#0f3823]'
                     } border-[#cabb9e] focus:outline-none`}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#547363]">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-bold text-[#547363] pointer-events-none select-none">
                     {thresholdItem.unit}
                   </span>
                 </div>
