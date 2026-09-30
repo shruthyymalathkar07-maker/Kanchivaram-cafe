@@ -854,7 +854,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
       {/* ADD / EDIT MULTI-ITEM PURCHASE MODAL */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-transparent flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-[#fbf8f3] w-full max-w-3xl rounded-2xl border-2 border-[#cabb9e] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}

@@ -448,7 +448,7 @@ export default function StaffView({ selectedBranch }) {
 
       {/* ADD STAFF MODAL */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-transparent animate-fadeIn">
           <form onSubmit={handleAddStaff} className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#cabb9e]">
               <h3 className={`font-serif font-black text-base ${isBrownBranch ? 'text-[#3E2312]' : 'text-[#0f3823]'}`}>Add New Staff Member</h3>
