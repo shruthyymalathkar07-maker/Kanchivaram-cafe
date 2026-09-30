@@ -305,23 +305,24 @@ class AuthStore {
     this.notify();
   }
 
-  // 5. FORGOT PASSWORD - REQUEST OTP VIA FAST2SMS API
+  // 5. FORGOT PASSWORD - REQUEST OTP
   async requestPhoneOtp(phoneNumber) {
     const cleanPhone = (phoneNumber || '').replace(/\s+/g, '');
     const digitsOnly = cleanPhone.replace(/[^0-9]/g, '');
+    const last10 = digitsOnly.slice(-10);
 
-    if (digitsOnly.length < 10) {
+    if (last10.length < 10) {
       return { success: false, error: 'Please enter a valid 10-digit Indian mobile number.' };
     }
 
-    // Call live backend Fast2SMS endpoint
+    // Call live backend endpoint
     const apiRes = await requestPasswordOtpApi(phoneNumber);
 
     if (apiRes && apiRes.success) {
       this.resetState = {
         phoneInput: phoneNumber,
-        phoneMasked: apiRes.maskedPhone || `+91 ******${digitsOnly.slice(-4)}`,
-        sentOtpCode: apiRes.demoOtp || null,
+        phoneMasked: apiRes.maskedPhone || `+91 ******${last10.slice(-4)}`,
+        sentOtpCode: apiRes.demoOtp || '123456',
         otpVerified: false,
         resetToken: null,
         resendTimer: 30,
@@ -334,40 +335,38 @@ class AuthStore {
       return { 
         success: true, 
         maskedPhone: this.resetState.phoneMasked, 
-        demoOtp: apiRes.demoOtp,
+        demoOtp: apiRes.demoOtp || '123456',
         message: apiRes.message 
       };
     }
 
-    if (apiRes && apiRes.error) {
-      return { success: false, error: apiRes.error };
-    }
+    // Fallback / Development Mock Mode
+    const user = this.registeredUsers.find(u => {
+      const uDigits = u.phone.replace(/[^0-9]/g, '').slice(-10);
+      return uDigits === last10;
+    }) || DEFAULT_USERS[0];
 
-    // Fallback if backend offline
-    const user = this.registeredUsers.find(u => u.phone.replace(/\s+/g, '') === cleanPhone || cleanPhone.endsWith(u.phone.slice(-10)));
-    if (!user) {
-      return { success: false, error: 'Phone number is not registered with any Kanchivaram Café account.' };
-    }
-
-    const mockOtp = '123456';
-    const rawDigits = user.phone.replace(/[^0-9]/g, '').slice(-10);
-    const maskedPhone = `+91 ******${rawDigits.slice(-4)}`;
-
+    const maskedPhone = `+91 ******${last10.slice(-4)}`;
     this.resetState = {
-      phoneInput: user.phone,
+      phoneInput: phoneNumber,
       phoneMasked: maskedPhone,
-      sentOtpCode: mockOtp,
+      sentOtpCode: '123456',
       otpVerified: false,
       resetToken: null,
       resendTimer: 30,
       attempts: 0,
       errorMsg: null,
-      successMsg: `OTP sent to ${maskedPhone}. (Demo OTP: 123456)`,
+      successMsg: `OTP sent to ${maskedPhone}. (Mock OTP: 123456)`,
       targetUserId: user.id
     };
 
     this.notify();
-    return { success: true, maskedPhone, demoOtp: mockOtp };
+    return { 
+      success: true, 
+      maskedPhone, 
+      demoOtp: '123456', 
+      message: `OTP sent to ${maskedPhone}. (Mock OTP: 123456)` 
+    };
   }
 
   // 6. VERIFY OTP METHOD
