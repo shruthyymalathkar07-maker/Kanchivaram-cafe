@@ -17,7 +17,7 @@ export default function NetSalesModal({ isOpen, onClose }) {
   const grandTotalNetSales = totalOnlineNet + posCollectionData.totalPOS - (sales.totalDiscounts - totalOnlineDiscounts);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
       <div className="bg-[#fdfbf7] text-[#11291f] w-full max-w-5xl rounded-3xl border-2 border-[#d4af37] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}

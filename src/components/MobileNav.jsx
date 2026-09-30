@@ -146,7 +146,7 @@ export default function MobileNav({
         <div className="md:hidden fixed inset-0 z-50 flex">
           {/* Backdrop Blur Overlay */}
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 modal-backdrop-overlay transition-opacity"
             onClick={() => setIsDrawerOpen(false)}
           />
 

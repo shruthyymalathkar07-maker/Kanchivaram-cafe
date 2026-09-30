@@ -181,7 +181,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
       // 3. Print Paper Receipt if checked
       if (isPrintPaperChecked) {
-        PrintService.printPaperReceipt(completedSaleObj);
+        PrintService.printPaperReceipt(completedSaleObj, selectedBranch);
       }
 
       // 4. Send SMS Digital Receipt if checked and phone number provided
@@ -675,7 +675,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* RECALL HELD BILLS MODAL                                                   */}
       {/* ========================================================================= */}
       {isHeldBillsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-md w-full text-[#11291f] shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-[#cabb9e]">
               <h3 className="font-serif font-black text-sm text-[#0f3823] flex items-center gap-2">
@@ -721,7 +721,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               resetOrder();
             }
           }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn"
         >
           <div className="relative bg-[#fdfbf7] border-2 border-[#d4af37] rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
             {/* Close Button */}

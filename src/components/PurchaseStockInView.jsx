@@ -854,7 +854,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
       {/* ADD / EDIT MULTI-ITEM PURCHASE MODAL */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-[#fbf8f3] w-full max-w-3xl rounded-2xl border-2 border-[#cabb9e] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Modal Header */}
@@ -1177,7 +1177,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
       {/* CONFIRM DELETE MODAL WITH SAFE STOCK REVERSAL */}
       {deletingPurchaseId && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-4">
           <div className="bg-[#fbf8f3] max-w-md w-full p-5 rounded-2xl border-2 border-[#cabb9e] shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-red-700">
               <div className="p-2.5 bg-red-100 rounded-full">

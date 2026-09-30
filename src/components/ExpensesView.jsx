@@ -642,7 +642,7 @@ export default function ExpensesView({ selectedBranch }) {
       {/* 4. MODAL: EDIT EXPENSE RECORD                                             */}
       {/* ========================================================================= */}
       {editingExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <form onSubmit={handleSaveEdit} className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl">
             
             <div className="flex items-center justify-between pb-2 border-b border-[#cabb9e]">
@@ -745,7 +745,7 @@ export default function ExpensesView({ selectedBranch }) {
       {/* 5. MODAL: CONFIRM DELETE                                                  */}
       {/* ========================================================================= */}
       {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#fdfbf7] border-2 border-red-800 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
             
             <div className="flex items-center gap-3 text-red-700">

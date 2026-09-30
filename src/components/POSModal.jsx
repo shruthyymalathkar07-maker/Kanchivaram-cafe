@@ -59,7 +59,7 @@ export default function POSModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
       <div className="bg-[#122a20] text-slate-100 w-full max-w-4xl rounded-3xl border border-[#27523f] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}

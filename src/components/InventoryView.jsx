@@ -278,7 +278,7 @@ export default function InventoryView({ onBackToHome }) {
 
       {/* Receive Stock Modal */}
       {showAddStockModal && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#122a20] text-slate-100 w-full max-w-md rounded-3xl border border-[#27523f] shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-[#27523f] pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
