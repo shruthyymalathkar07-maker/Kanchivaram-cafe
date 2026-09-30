@@ -37,7 +37,7 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
     include: { settings: true }
   });
 
-  const branchName = branch?.name || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+  const branchName = branch?.name || (branchId === 'branch-2' ? 'City Branch' : 'Main Branch');
 
   // 2. Sales records (strictly filtered by branchId and non-cancelled)
   const sales = await prisma.sale.findMany({
@@ -47,7 +47,7 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
     },
     include: { items: true },
     orderBy: { createdAt: 'desc' },
-    take: 200
+    take: 300
   });
 
   const todaySales = sales.filter(s => s.dateIso === todayIso || (s.createdAt && new Date(s.createdAt).toISOString().startsWith(todayIso)));
@@ -75,18 +75,49 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
   const sevenDaysTotal = sevenDaysSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
   const monthTotal = monthSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
 
-  // 3. Inventory & Raw Materials (filtered by branchId if applicable)
-  const rawItems = await prisma.inventoryItem.findMany();
-  const lowStockItems = rawItems.filter(i => {
-    const remaining = Math.max(0, (i.openingStock || 0) + (i.stockIn || 0) - (i.stockOut || 0));
-    return remaining <= (i.minThreshold || 5);
+  // 3. Inventory & Raw Materials (strictly isolated by branchId or global fallback)
+  const rawItems = await prisma.inventoryItem.findMany({
+    where: {
+      OR: [
+        { branchId },
+        { branchId: null }
+      ]
+    },
+    orderBy: { name: 'asc' }
   });
+
+  const parsedInventory = rawItems.map(i => {
+    const opening = Number(i.openingStock || 0);
+    const stockIn = Number(i.stockIn || 0);
+    const stockOut = Number(i.stockOut || 0);
+    const remainingStock = Math.max(0, opening + stockIn - stockOut);
+    const minThreshold = Number(i.minThreshold || 0);
+    const isLowStock = minThreshold > 0 && remainingStock <= minThreshold;
+    const status = isLowStock ? (remainingStock === 0 ? 'CRITICAL' : 'LOW_STOCK') : 'HEALTHY';
+    return {
+      id: i.id,
+      name: i.name,
+      category: i.category || 'General',
+      unit: i.unit || 'units',
+      openingStock: opening,
+      stockIn,
+      stockOut,
+      remainingStock,
+      minThreshold,
+      status,
+      isLowStock
+    };
+  });
+
+  // Only items with minThreshold > 0 and remainingStock <= minThreshold qualify as low stock
+  const lowStockItems = parsedInventory.filter(i => i.isLowStock);
+  const healthyItems = parsedInventory.filter(i => !i.isLowStock);
 
   // 4. Operating Expenses
   const expenses = await prisma.expense.findMany({
     where: { branchId },
     orderBy: { createdAt: 'desc' },
-    take: 50
+    take: 100
   });
   const todayExpenses = expenses.filter(e => e.dateIso === todayIso);
   const todayExpensesTotal = todayExpenses.reduce((acc, e) => acc + (parseFloat(String(e.amount)) || 0), 0);
@@ -97,22 +128,49 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
   const purchases = await prisma.purchase.findMany({
     where: { branchId },
     orderBy: { createdAt: 'desc' },
-    take: 20
+    take: 50
   });
   const todayPurchases = purchases.filter(p => (p.dateIso || '').startsWith(todayIso));
   const todayPurchasesTotal = todayPurchases.reduce((acc, p) => acc + (parseFloat(String(p.totalAmount)) || 0), 0);
+  const monthPurchases = purchases.filter(p => (p.dateIso || '').startsWith(currentMonthIso));
+  const monthPurchasesTotal = monthPurchases.reduce((acc, p) => acc + (parseFloat(String(p.totalAmount)) || 0), 0);
 
-  // 6. Top menu items sold today
-  const itemQtyMap: Record<string, number> = {};
+  // 6. Top menu items sold (Today & 7-Days)
+  const itemMapToday: Record<string, { name: string; quantity: number; revenue: number }> = {};
   for (const s of todaySales) {
     for (const item of (s.items || [])) {
-      itemQtyMap[item.name] = (itemQtyMap[item.name] || 0) + (item.quantity || 0);
+      const name = item.name || 'Unknown Item';
+      const qty = item.quantity || 1;
+      const rev = item.total || (qty * (item.price || 0));
+      if (!itemMapToday[name]) {
+        itemMapToday[name] = { name, quantity: 0, revenue: 0 };
+      }
+      itemMapToday[name].quantity += qty;
+      itemMapToday[name].revenue += rev;
     }
   }
-  const topDishesToday = Object.entries(itemQtyMap)
-    .map(([name, qty]) => ({ name, quantity: qty }))
+
+  const itemMap7Days: Record<string, { name: string; quantity: number; revenue: number }> = {};
+  for (const s of sevenDaysSales) {
+    for (const item of (s.items || [])) {
+      const name = item.name || 'Unknown Item';
+      const qty = item.quantity || 1;
+      const rev = item.total || (qty * (item.price || 0));
+      if (!itemMap7Days[name]) {
+        itemMap7Days[name] = { name, quantity: 0, revenue: 0 };
+      }
+      itemMap7Days[name].quantity += qty;
+      itemMap7Days[name].revenue += rev;
+    }
+  }
+
+  const topDishesToday = Object.values(itemMapToday)
     .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 5);
+    .slice(0, 10);
+
+  const topDishes7Days = Object.values(itemMap7Days)
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 10);
 
   return {
     branchId,
@@ -133,7 +191,8 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
       },
       past7Days: {
         totalAmount: sevenDaysTotal,
-        orderCount: sevenDaysSales.length
+        orderCount: sevenDaysSales.length,
+        topItems: topDishes7Days
       },
       thisMonth: {
         totalAmount: monthTotal,
@@ -141,15 +200,18 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
       }
     },
     inventory: {
-      totalTrackedItems: rawItems.length,
+      totalTrackedItems: parsedInventory.length,
+      healthyCount: healthyItems.length,
       lowStockCount: lowStockItems.length,
-      lowStockList: lowStockItems.slice(0, 10).map(i => ({
+      lowStockList: lowStockItems.map(i => ({
         name: i.name,
         category: i.category,
-        remainingStock: Math.max(0, (i.openingStock || 0) + (i.stockIn || 0) - (i.stockOut || 0)),
+        remainingStock: i.remainingStock,
         unit: i.unit,
-        threshold: i.minThreshold
-      }))
+        threshold: i.minThreshold,
+        status: i.status
+      })),
+      allItems: parsedInventory
     },
     expenses: {
       todayTotal: todayExpensesTotal,
@@ -164,6 +226,7 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
     },
     purchases: {
       todayTotal: todayPurchasesTotal,
+      monthTotal: monthPurchasesTotal,
       recent: purchases.slice(0, 5).map(p => ({
         invoiceNo: p.invoiceRef,
         supplierName: p.supplier,
@@ -213,11 +276,35 @@ CURRENT AUTHORIZED BRANCH CONTEXT:
 CRITICAL RULES:
 1. You are authorized ONLY for "${context.branchName}". You must NEVER provide or infer data for any other branch.
 2. NEVER invent, hallucinate, or estimate business numbers. All numbers MUST come strictly from the VERIFIED DATABASE CONTEXT below.
-3. If the user asks for data that is not present in the context, explicitly state that the record is not available in the database.
-4. Keep answers concise, clear, and professional with appropriate café and financial formatting (e.g. ₹ amounts with commas).
+3. INVENTORY QUERIES:
+   - "Stock Status": Provide the real status of inventory items with remaining quantities (openingStock + stockIn - stockOut). Mention healthy items and any low stock items.
+   - "Low Stock Items": Report ONLY items where minThreshold > 0 and remainingStock <= minThreshold. If lowStockCount is 0, explicitly state: "There are currently no low-stock items in ${context.branchName}." Do NOT create fake alerts for items with 0 threshold.
+   - Specific Item Stock (e.g. "lemon stock", "how much milk"): Search the inventory context and report exact remaining quantity, unit, purchased count, and status.
+4. TOP SELLING ITEMS: List dishes sold with quantity and revenue from the verified sales data.
+5. FINANCIALS: Report verified revenue, GST, and expenses accurately formatted with ₹.
+6. Keep answers concise, clear, and professional.
 
 VERIFIED DATABASE CONTEXT (Authoritative Source of Truth):
-${JSON.stringify(context, null, 2)}
+${JSON.stringify({
+  branchName: context.branchName,
+  todayIso: context.todayIso,
+  sales: context.sales,
+  inventory: {
+    totalTrackedItems: context.inventory.totalTrackedItems,
+    healthyCount: context.inventory.healthyCount,
+    lowStockCount: context.inventory.lowStockCount,
+    lowStockList: context.inventory.lowStockList,
+    sampleItems: context.inventory.allItems.slice(0, 30).map(i => ({
+      name: i.name,
+      remainingStock: i.remainingStock,
+      unit: i.unit,
+      minThreshold: i.minThreshold,
+      status: i.status
+    }))
+  },
+  expenses: context.expenses,
+  purchases: context.purchases
+}, null, 2)}
 `;
 
       const completion = await openai.chat.completions.create({
@@ -227,7 +314,7 @@ ${JSON.stringify(context, null, 2)}
           { role: 'user', content: query.trim() }
         ],
         temperature: 0.2,
-        max_tokens: 500
+        max_tokens: 600
       });
 
       const aiAnswer = completion.choices?.[0]?.message?.content || '';
@@ -252,14 +339,114 @@ ${JSON.stringify(context, null, 2)}
   }
 
   // 3. Deterministic Verified Fallback Engine (when OpenAI is offline/unconfigured)
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
 
-  // A. Sales & Revenue
-  if (q.includes('sale') || q.includes('revenue') || q.includes('collection') || q.includes('sell') || q.includes('how much')) {
-    if (q.includes('week') || q.includes('7 day')) {
+  // A. Specific item stock search (e.g., "lemon stock", "what is the current lemon stock?", "sugar stock", "milk")
+  const strippedItemQuery = q
+    .replace(/what is the current/g, '')
+    .replace(/what is the/g, '')
+    .replace(/what is/g, '')
+    .replace(/how much/g, '')
+    .replace(/how many/g, '')
+    .replace(/current/g, '')
+    .replace(/stock status/g, '')
+    .replace(/stock/g, '')
+    .replace(/inventory/g, '')
+    .replace(/quantity/g, '')
+    .replace(/available/g, '')
+    .replace(/left/g, '')
+    .replace(/[?!.]/g, '')
+    .trim();
+
+  if (strippedItemQuery.length >= 3) {
+    const matchedItem = context.inventory.allItems.find(item => 
+      item.name.toLowerCase() === strippedItemQuery ||
+      item.name.toLowerCase().includes(strippedItemQuery) ||
+      strippedItemQuery.includes(item.name.toLowerCase())
+    );
+
+    if (matchedItem) {
+      const statusLabel = matchedItem.status === 'HEALTHY' ? 'Healthy' : 'Low Stock';
       return {
         success: true,
-        answer: `📊 Past 7 Days Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.past7Days.totalAmount.toLocaleString('en-IN')}\n• Completed Bills: ${context.sales.past7Days.orderCount} orders`,
+        answer: `📦 Stock Status for ${matchedItem.name} (${context.branchName}):\n• Remaining Stock: ${matchedItem.remainingStock} ${matchedItem.unit} (${statusLabel})\n• Opening Stock: ${matchedItem.openingStock} ${matchedItem.unit}\n• Total Purchased (Stock In): ${matchedItem.stockIn} ${matchedItem.unit}\n• Total Consumed (Stock Out): ${matchedItem.stockOut} ${matchedItem.unit}\n• Minimum Threshold: ${matchedItem.minThreshold} ${matchedItem.unit}`,
+        branchId,
+        dataContext: matchedItem
+      };
+    }
+  }
+
+  // B. Distinct Low Stock Items query (explicitly looking for low stock / critical alerts)
+  if (q.includes('low stock') || q.includes('critical stock') || q.includes('out of stock') || q.includes('running out') || q.includes('reorder')) {
+    if (context.inventory.lowStockCount === 0) {
+      return {
+        success: true,
+        answer: `✅ There are currently no low-stock items in ${context.branchName}.\n\nAll ${context.inventory.totalTrackedItems} tracked inventory items are at healthy stock levels above their configured minimum thresholds.`,
+        branchId,
+        dataContext: context.inventory
+      };
+    }
+    const listStr = context.inventory.lowStockList.map(i => `• ${i.name}: ${i.remainingStock} ${i.unit} (Min Threshold: ${i.threshold})`).join('\n');
+    return {
+      success: true,
+      answer: `⚠️ Low Stock Alert for ${context.branchName} (${context.inventory.lowStockCount} items below threshold):\n\n${listStr}\n\n💡 Raise a purchase invoice in Purchase / Stock In to replenish these ingredients.`,
+      branchId,
+      dataContext: context.inventory
+    };
+  }
+
+  // C. General Stock Status query (lists real inventory items with health status)
+  if (q.includes('stock status') || q.includes('inventory') || q.includes('stock')) {
+    const sampleList = context.inventory.allItems.slice(0, 8).map(i => 
+      `• ${i.name}: ${i.remainingStock} ${i.unit} (${i.status === 'HEALTHY' ? 'Healthy' : 'Low Stock'})`
+    ).join('\n');
+    return {
+      success: true,
+      answer: `📦 Real-Time Inventory Stock Status for ${context.branchName}:\n• Total Tracked Items: ${context.inventory.totalTrackedItems}\n• Healthy Items: ${context.inventory.healthyCount}\n• Low Stock Items: ${context.inventory.lowStockCount}\n\n📋 Active Stock Levels:\n${sampleList}${context.inventory.totalTrackedItems > 8 ? `\n...and ${context.inventory.totalTrackedItems - 8} more items in live inventory.` : ''}`,
+      branchId,
+      dataContext: context.inventory
+    };
+  }
+
+  // D. Profit & Loss / P&L
+  if (q.includes('profit') || q.includes('loss') || q.includes('p&l') || q.includes('p and l') || q.includes('margin') || q.includes('bottom line')) {
+    const grossRev = context.sales.today.totalAmount;
+    const tax = context.sales.today.taxCollected;
+    const netTaxable = Math.max(0, grossRev - tax);
+    const expenses = context.expenses.todayTotal;
+    const purchases = context.purchases.todayTotal;
+    const totalCosts = expenses + purchases;
+    const netProfit = netTaxable - totalCosts;
+
+    if (grossRev === 0 && totalCosts === 0) {
+      return {
+        success: true,
+        answer: `📊 Verified Profit & Loss Statement (Today) for ${context.branchName}:\n\nNo completed sales or expense records found for today.\n• Net Sales Revenue: ₹0.00 (0 completed bills)\n• Operating Expenses: ₹0.00 (0 entries)\n• Stock Purchases: ₹0.00 (0 invoices)\n\n💡 Complete orders in POS and record operational expenses to generate live P&L figures.`,
+        branchId,
+        dataContext: { grossRev, totalCosts, netProfit }
+      };
+    }
+
+    const banner = netProfit > 0 
+      ? `🟢 NET PROFIT: +₹${netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+      : netProfit === 0
+      ? `⚖️ BREAK-EVEN: ₹0.00`
+      : `🔴 NET LOSS: -₹${Math.abs(netProfit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+    return {
+      success: true,
+      answer: `📊 Verified Profit & Loss Statement (Today) for ${context.branchName}:\n\n📈 REVENUE:\n• Gross Sales: ₹${grossRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${context.sales.today.orderCount} orders)\n• GST Collected: ₹${tax.toFixed(2)}\n• Net Taxable Revenue: ₹${netTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📉 RECORDED COSTS:\n• Operating Expenses: ₹${expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Stock Purchases: ₹${purchases.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Total Recorded Costs: ₹${totalCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n═══════════════════════════════════\n${banner}\n═══════════════════════════════════`,
+      branchId,
+      dataContext: { grossRev, totalCosts, netProfit }
+    };
+  }
+
+  // E. Sales & Revenue / 7-Day Trends
+  if (q.includes('sale') || q.includes('revenue') || q.includes('collection') || q.includes('trend')) {
+    if (q.includes('week') || q.includes('7 day') || q.includes('trend')) {
+      return {
+        success: true,
+        answer: `📊 Past 7 Days Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.past7Days.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Completed Bills: ${context.sales.past7Days.orderCount} orders`,
         branchId,
         dataContext: context.sales.past7Days
       };
@@ -267,80 +454,86 @@ ${JSON.stringify(context, null, 2)}
     if (q.includes('month')) {
       return {
         success: true,
-        answer: `📊 This Month's Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.thisMonth.totalAmount.toLocaleString('en-IN')}\n• Completed Bills: ${context.sales.thisMonth.orderCount} orders`,
+        answer: `📊 This Month's Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.thisMonth.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Completed Bills: ${context.sales.thisMonth.orderCount} orders`,
         branchId,
         dataContext: context.sales.thisMonth
       };
     }
     return {
       success: true,
-      answer: `📊 Today's Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.today.totalAmount.toLocaleString('en-IN')}\n• Completed Orders: ${context.sales.today.orderCount}\n• In-Store POS: ₹${context.sales.today.inStorePos.toLocaleString('en-IN')}\n• Online Delivery: ₹${context.sales.today.onlineDelivery.toLocaleString('en-IN')}\n• Cash: ₹${context.sales.today.cashCollected.toLocaleString('en-IN')} | UPI: ₹${context.sales.today.upiCollected.toLocaleString('en-IN')}`,
+      answer: `📊 Today's Sales for ${context.branchName}:\n• Total Revenue: ₹${context.sales.today.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Completed Orders: ${context.sales.today.orderCount}\n• In-Store POS: ₹${context.sales.today.inStorePos.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Online Delivery: ₹${context.sales.today.onlineDelivery.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Cash: ₹${context.sales.today.cashCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 })} | Digital/UPI: ₹${context.sales.today.upiCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
       branchId,
       dataContext: context.sales.today
     };
   }
 
-  // B. Inventory & Low Stock
-  if (q.includes('stock') || q.includes('inventory') || q.includes('low') || q.includes('critical') || q.includes('material')) {
-    if (context.inventory.lowStockCount === 0) {
+  // F. Top Selling Items
+  if (q.includes('top sell') || q.includes('best sell') || q.includes('top item') || q.includes('popular') || q.includes('favorite') || q.includes('dish')) {
+    const list = context.sales.today.topItems.length > 0 ? context.sales.today.topItems : context.sales.past7Days.topItems;
+    const periodLabel = context.sales.today.topItems.length > 0 ? "Today" : "Past 7 Days";
+    if (list.length === 0) {
       return {
         success: true,
-        answer: `✅ All inventory items are well-stocked for ${context.branchName}. There are currently 0 items below the minimum threshold.`,
-        branchId,
-        dataContext: context.inventory
+        answer: `☕ No completed item sales recorded yet for ${context.branchName}. Complete bills in POS to see your top-selling products here.`,
+        branchId
       };
     }
-    const listStr = context.inventory.lowStockList.map(i => `• ${i.name}: ${i.remainingStock} ${i.unit} (Min: ${i.threshold})`).join('\n');
+    const itemsStr = list.map((item, idx) => `${idx + 1}. ${item.name}: ${item.quantity} sold, ₹${item.revenue.toFixed(2)} revenue`).join('\n');
     return {
       success: true,
-      answer: `⚠️ Low Stock Alert for ${context.branchName} (${context.inventory.lowStockCount} items below threshold):\n\n${listStr}`,
+      answer: `🏆 Top Selling Items (${periodLabel}) at ${context.branchName}:\n\n${itemsStr}`,
       branchId,
-      dataContext: context.inventory
+      dataContext: list
     };
   }
 
-  // C. Operating Expenses
+  // G. Operating Expenses
   if (q.includes('expense') || q.includes('spend') || q.includes('cost')) {
     return {
       success: true,
-      answer: `💼 Operating Expenses for ${context.branchName}:\n• Today's Expenses: ₹${context.expenses.todayTotal.toLocaleString('en-IN')} (${context.expenses.todayCount} entries)\n• This Month's Total: ₹${context.expenses.monthTotal.toLocaleString('en-IN')}`,
+      answer: `💼 Operating Expenses for ${context.branchName}:\n• Today's Expenses: ₹${context.expenses.todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${context.expenses.todayCount} entries)\n• This Month's Total: ₹${context.expenses.monthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
       branchId,
       dataContext: context.expenses
     };
   }
 
-  // D. Purchases / Inward Stock
-  if (q.includes('purchase') || q.includes('supplier') || q.includes('invoice') || q.includes('vendor')) {
+  // H. Tax / GST
+  if (q.includes('tax') || q.includes('gst') || q.includes('cgst') || q.includes('sgst')) {
+    const tax = context.sales.today.taxCollected;
+    const cgst = tax / 2;
+    const sgst = tax / 2;
     return {
       success: true,
-      answer: `📦 Stock Purchases for ${context.branchName}:\n• Today's Stock Purchases: ₹${context.purchases.todayTotal.toLocaleString('en-IN')}\n• Recent Invoices: ${context.purchases.recent.length} recorded`,
+      answer: `🧾 Today's Tax Summary (GST 5%) for ${context.branchName}:\n• Total Tax Collected: ₹${tax.toFixed(2)}\n  - CGST (2.5%): ₹${cgst.toFixed(2)}\n  - SGST (2.5%): ₹${sgst.toFixed(2)}\n• Completed Bills: ${context.sales.today.orderCount}`,
+      branchId,
+      dataContext: { tax, cgst, sgst }
+    };
+  }
+
+  // I. Purchases / Stock In
+  if (q.includes('purchase') || q.includes('stock in') || q.includes('supplier') || q.includes('invoice') || q.includes('vendor')) {
+    return {
+      success: true,
+      answer: `📦 Stock Purchases for ${context.branchName}:\n• Today's Stock Purchases: ₹${context.purchases.todayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• This Month's Purchases: ₹${context.purchases.monthTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n• Recent Invoices: ${context.purchases.recent.length} recorded`,
       branchId,
       dataContext: context.purchases
     };
   }
 
-  // E. Best selling / Top items
-  if (q.includes('best') || q.includes('top') || q.includes('popular') || q.includes('dish') || q.includes('item')) {
-    if (context.sales.today.topItems.length === 0) {
-      return {
-        success: true,
-        answer: `☕ No dish sales have been recorded yet today for ${context.branchName}.`,
-        branchId
-      };
-    }
-    const itemsStr = context.sales.today.topItems.map((item, idx) => `${idx + 1}. ${item.name} (${item.quantity} sold)`).join('\n');
+  // J. Online Orders
+  if (q.includes('online') || q.includes('pending') || q.includes('swiggy') || q.includes('zomato') || q.includes('dunzo')) {
     return {
       success: true,
-      answer: `🏆 Top Selling Items Today at ${context.branchName}:\n\n${itemsStr}`,
+      answer: `🛵 Online Orders for ${context.branchName}:\n• Online Revenue Today: ₹${context.sales.today.onlineDelivery.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\nCheck the Online Orders page for incoming delivery partner requests.`,
       branchId,
-      dataContext: context.sales.today.topItems
+      dataContext: { onlineDelivery: context.sales.today.onlineDelivery }
     };
   }
 
-  // F. General Fallback
+  // K. General Fallback
   return {
     success: true,
-    answer: `☕ Hello! I am KVCM Assistant for ${context.branchName}. I can answer questions about today's sales, payment splits, low-stock inventory, operating expenses, and purchases based on your live verified database.`,
+    answer: `☕ Hello! I am KVCM Assistant for ${context.branchName}. I can answer questions about today's sales, profit & loss, real-time inventory stock levels, low-stock alerts, operating expenses, and purchases based on your live verified database.`,
     branchId,
     dataContext: {
       branchName: context.branchName,
@@ -349,3 +542,4 @@ ${JSON.stringify(context, null, 2)}
     }
   };
 }
+

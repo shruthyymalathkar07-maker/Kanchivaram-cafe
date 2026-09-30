@@ -21,11 +21,12 @@ import { expenseStore } from '../services/expenseStore';
 import { sendChatbotQuery } from '../services/api';
 
 // ─── Verified KVCM Analytics & Financial Calculation Engine ───────────────────
-export const getKVCMResponse = (query, state, expenseState) => {
-  const q = query.toLowerCase();
+export const getKVCMResponse = (query, state, expenseState, selectedBranch) => {
+  const q = query.toLowerCase().trim();
   const todayIso = new Date().toISOString().split('T')[0];
   const currentMonthPrefix = todayIso.slice(0, 7);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const branchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch' : 'Main Branch');
 
   // 1. Filter ONLY valid completed sales (strictly exclude cancelled, refunded, or returned)
   const validSales = (state.sales || []).filter(
@@ -55,7 +56,16 @@ export const getKVCMResponse = (query, state, expenseState) => {
   const monthPurchases = allPurchases.filter(p => (p.dateIso || '').startsWith(currentMonthPrefix));
 
   const items = state.items || [];
-  const lowStock = items.filter(i => i.status === 'LOW_STOCK' || i.status === 'CRITICAL');
+  const lowStock = items.filter(i => {
+    const thresh = Number(i.minThreshold || 0);
+    const rem = Number(i.remainingStock || 0);
+    return thresh > 0 && rem <= thresh;
+  });
+  const healthyItems = items.filter(i => {
+    const thresh = Number(i.minThreshold || 0);
+    const rem = Number(i.remainingStock || 0);
+    return thresh === 0 || rem > thresh;
+  });
 
   // =========================================================================
   // INTENT A: PROFIT & LOSS / NET MARGIN / FINANCIAL BREAKDOWN
@@ -97,7 +107,7 @@ export const getKVCMResponse = (query, state, expenseState) => {
     if (!hasSales && !hasCostData) {
       return {
         icon: DollarSign,
-        text: `📊 Verified Profit & Loss Statement (${periodLabel})\n\nNo completed sales or expense records found for ${periodLabel.toLowerCase()}.\n\n• Net Sales Revenue: ₹0.00 (0 completed bills)\n• Operating Expenses: ₹0.00 (0 entries)\n• Stock Purchases: ₹0.00 (0 invoices)\n\n💡 Complete orders in POS and record operational expenses in the Expenses module to generate your live verified P&L calculations.`
+        text: `📊 Verified Profit & Loss Statement (${periodLabel}) — ${branchName}\n\nNo completed sales or expense records found for ${periodLabel.toLowerCase()}.\n\n• Net Sales Revenue: ₹0.00 (0 completed bills)\n• Operating Expenses: ₹0.00 (0 entries)\n• Stock Purchases: ₹0.00 (0 invoices)\n\n💡 Complete orders in POS and record operational expenses in the Expenses module to generate your live verified P&L calculations.`
       };
     }
 
@@ -105,7 +115,7 @@ export const getKVCMResponse = (query, state, expenseState) => {
     if (hasSales && !hasCostData) {
       return {
         icon: DollarSign,
-        text: `📊 Profit & Loss Status (${periodLabel})\n\n📈 REVENUE RECORDED:\n• Gross Sales: ₹${grossRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetSales.length} completed orders)\n• Discounts Applied: ₹${totalDiscounts.toFixed(2)}\n• GST (5%) Collected: ₹${totalTax.toFixed(2)}\n• Net Taxable Revenue: ₹${netTaxableRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n⚠️ REQUIRED COST DATA UNAVAILABLE:\nNo operational expenses (e.g. rent, utilities, wages) or supplier stock purchases have been logged in the system for ${periodLabel.toLowerCase()}.\n\nℹ️ To calculate verified Net Profit or Loss, please record your daily expenses in the Expenses module and supplier invoices in Purchase & Stock In. KVCM only calculates profit/loss from verified data and never estimates or invents missing cost figures.`
+        text: `📊 Profit & Loss Status (${periodLabel}) — ${branchName}\n\n📈 REVENUE RECORDED:\n• Gross Sales: ₹${grossRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetSales.length} completed orders)\n• Discounts Applied: ₹${totalDiscounts.toFixed(2)}\n• GST (5%) Collected: ₹${totalTax.toFixed(2)}\n• Net Taxable Revenue: ₹${netTaxableRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n⚠️ REQUIRED COST DATA UNAVAILABLE:\nNo operational expenses (e.g. rent, utilities, wages) or supplier stock purchases have been logged in the system for ${periodLabel.toLowerCase()}.\n\nℹ️ To calculate verified Net Profit or Loss, please record your daily expenses in the Expenses module and supplier invoices in Purchase & Stock In.`
       };
     }
 
@@ -113,7 +123,7 @@ export const getKVCMResponse = (query, state, expenseState) => {
     if (!hasSales && hasCostData) {
       return {
         icon: DollarSign,
-        text: `📊 Profit & Loss Status (${periodLabel})\n\n📉 RECORDED OPERATING OUTFLOWS:\n• Operating Expenses: ₹${opExpensesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetExpenses.length} entries)\n• Raw Material Stock In: ₹${purchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetPurchases.length} invoices)\n• Total Recorded Costs: ₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📈 REVENUE:\n• Net Sales Revenue: ₹0.00 (0 completed sales)\n\n🔴 CURRENT NET OUTFLOW: -₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n💡 Start taking orders in POS to begin offsetting recorded costs with live revenue.`
+        text: `📊 Profit & Loss Status (${periodLabel}) — ${branchName}\n\n📉 RECORDED OPERATING OUTFLOWS:\n• Operating Expenses: ₹${opExpensesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetExpenses.length} entries)\n• Raw Material Stock In: ₹${purchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetPurchases.length} invoices)\n• Total Recorded Costs: ₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📈 REVENUE:\n• Net Sales Revenue: ₹0.00 (0 completed sales)\n\n🔴 CURRENT NET OUTFLOW: -₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n💡 Start taking orders in POS to begin offsetting recorded costs with live revenue.`
       };
     }
 
@@ -134,28 +144,102 @@ export const getKVCMResponse = (query, state, expenseState) => {
 
     return {
       icon: DollarSign,
-      text: `📊 Verified Profit & Loss Statement (${periodLabel})\n\n📈 REVENUE BREAKDOWN:\n• Gross Sales (POS + Online): ₹${grossRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetSales.length} orders)\n• Discounts Given: -₹${totalDiscounts.toFixed(2)}\n• GST (5%) Collected: ₹${totalTax.toFixed(2)}\n• Net Taxable Revenue: ₹${netTaxableRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📉 RECORDED COSTS & OUTFLOWS:\n• Operating Expenses (Utilities, Rent, etc.): ₹${opExpensesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetExpenses.length} entries)\n• Raw Material Stock Purchases: ₹${purchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetPurchases.length} invoices)\n• Total Recorded Costs: ₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n═══════════════════════════════════\n${resultBanner}\n═══════════════════════════════════\n\n📋 Note: Computed strictly from completed, unreturned orders and recorded cost entries.`
+      text: `📊 Verified Profit & Loss Statement (${periodLabel}) — ${branchName}\n\n📈 REVENUE BREAKDOWN:\n• Gross Sales (POS + Online): ₹${grossRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetSales.length} orders)\n• Discounts Given: -₹${totalDiscounts.toFixed(2)}\n• GST (5%) Collected: ₹${totalTax.toFixed(2)}\n• Net Taxable Revenue: ₹${netTaxableRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📉 RECORDED COSTS & OUTFLOWS:\n• Operating Expenses (Utilities, Rent, etc.): ₹${opExpensesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetExpenses.length} entries)\n• Raw Material Stock Purchases: ₹${purchasesTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${targetPurchases.length} invoices)\n• Total Recorded Costs: ₹${totalRecordedCosts.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n═══════════════════════════════════\n${resultBanner}\n═══════════════════════════════════\n\n📋 Note: Computed strictly from completed transactions and recorded cost entries.`
     };
   }
 
   // =========================================================================
-  // INTENT B: PRODUCT-LEVEL ANALYTICS, 7-DAY TRENDS & CUSTOMER PREFERENCES
+  // INTENT B: SPECIFIC ITEM STOCK QUERY (e.g. "lemon stock", "milk", "sugar")
+  // =========================================================================
+  const strippedItemQuery = q
+    .replace(/what is the current/g, '')
+    .replace(/what is the/g, '')
+    .replace(/what is/g, '')
+    .replace(/how much/g, '')
+    .replace(/how many/g, '')
+    .replace(/current/g, '')
+    .replace(/stock status/g, '')
+    .replace(/stock/g, '')
+    .replace(/inventory/g, '')
+    .replace(/quantity/g, '')
+    .replace(/available/g, '')
+    .replace(/left/g, '')
+    .replace(/[?!.]/g, '')
+    .trim();
+
+  if (strippedItemQuery.length >= 3 && !['today', 'sales', 'order', 'expense', 'purchase', 'profit', 'trend', 'report'].includes(strippedItemQuery)) {
+    const matchedItem = items.find(item => 
+      item.name.toLowerCase() === strippedItemQuery ||
+      item.name.toLowerCase().includes(strippedItemQuery) ||
+      strippedItemQuery.includes(item.name.toLowerCase())
+    );
+
+    if (matchedItem) {
+      const isLow = Number(matchedItem.minThreshold || 0) > 0 && Number(matchedItem.remainingStock || 0) <= Number(matchedItem.minThreshold || 0);
+      const statusLabel = isLow ? 'Low Stock' : 'Healthy';
+      return {
+        icon: Package,
+        text: `📦 Stock Status for ${matchedItem.name} (${branchName}):\n• Remaining Stock: ${matchedItem.remainingStock || 0} ${matchedItem.unit || 'units'} (${statusLabel})\n• Opening Stock: ${matchedItem.openingStock || 0} ${matchedItem.unit || 'units'}\n• Total Purchased (Stock In): ${matchedItem.stockIn || 0} ${matchedItem.unit || 'units'}\n• Total Consumed (Stock Out): ${matchedItem.stockOut || 0} ${matchedItem.unit || 'units'}\n• Minimum Threshold: ${matchedItem.minThreshold || 0} ${matchedItem.unit || 'units'}`
+      };
+    }
+  }
+
+  // =========================================================================
+  // INTENT C: LOW STOCK & CRITICAL ALERTS (Strictly threshold > 0 & stock <= threshold)
+  // =========================================================================
+  if (q.includes('low stock') || q.includes('critical stock') || q.includes('out of stock') || q.includes('running out') || q.includes('reorder')) {
+    if (lowStock.length === 0) {
+      return {
+        icon: Package,
+        text: `✅ Low Stock Status for ${branchName}\n\nGreat news! There are currently no low-stock items in ${branchName}.\n\nAll ${items.length} tracked inventory items are at healthy stock levels above their configured minimum thresholds.`
+      };
+    }
+    const critical = lowStock.filter(i => (i.remainingStock || 0) === 0);
+    const low = lowStock.filter(i => (i.remainingStock || 0) > 0);
+    let msg = `⚠️ Low Stock Alert for ${branchName}\n\n${lowStock.length} item(s) currently need attention:\n`;
+    if (critical.length > 0) {
+      msg += `\n🔴 CRITICAL (Zero stock left):\n`;
+      critical.forEach(i => { msg += `• ${i.name}: ${i.remainingStock || 0} ${i.unit || 'units'} left (min: ${i.minThreshold})\n`; });
+    }
+    if (low.length > 0) {
+      msg += `\n🟡 LOW STOCK (Below minimum threshold):\n`;
+      low.forEach(i => { msg += `• ${i.name}: ${i.remainingStock || 0} ${i.unit || 'units'} left (min: ${i.minThreshold})\n`; });
+    }
+    msg += `\n💡 Go to Purchase / Stock In to record a stock replenishment invoice! 🛒`;
+    return { icon: AlertTriangle, text: msg };
+  }
+
+  // =========================================================================
+  // INTENT D: GENERAL STOCK STATUS OVERVIEW (Lists active items with quantities)
+  // =========================================================================
+  if (q.includes('stock status') || q.includes('stock') || q.includes('inventory')) {
+    const sampleList = items.slice(0, 8).map(i => {
+      const isLow = Number(i.minThreshold || 0) > 0 && Number(i.remainingStock || 0) <= Number(i.minThreshold || 0);
+      return `• ${i.name}: ${i.remainingStock || 0} ${i.unit || 'units'} (${isLow ? 'Low Stock' : 'Healthy'})`;
+    }).join('\n');
+
+    return {
+      icon: Package,
+      text: `📦 Real-Time Inventory Stock Status for ${branchName}:\n• Total Tracked Items: ${items.length}\n• Healthy Items: ${healthyItems.length}\n• Low Stock Items: ${lowStock.length}\n\n📋 Active Stock Levels:\n${sampleList || '• No tracked inventory items found.'}${items.length > 8 ? `\n...and ${items.length - 8} more items in live inventory.` : ''}`
+    };
+  }
+
+  // =========================================================================
+  // INTENT E: PRODUCT-LEVEL ANALYTICS & TOP SELLING ITEMS
   // =========================================================================
   if (
     q.includes('trend') || 
     q.includes('7 day') || 
     q.includes('seven day') || 
     q.includes('product') || 
-    q.includes('item') || 
     q.includes('analytics') || 
     q.includes('preference') || 
     q.includes('demand') || 
     q.includes('top sell') || 
     q.includes('best sell') || 
     q.includes('popular') || 
-    q.includes('variety') || 
-    q.includes('variation') || 
-    q.includes('average')
+    q.includes('dish') || 
+    q.includes('item')
   ) {
     // Build 7-day comprehensive product ledger
     const productMap = {};
@@ -164,7 +248,7 @@ export const getKVCMResponse = (query, state, expenseState) => {
     sevenDaysSales.forEach(sale => {
       const saleDate = sale.dateIso || todayIso;
       (sale.items || []).forEach(item => {
-        const name = item.name || 'Unknown Item';
+        const name = item.name || item.productName || 'Unknown Item';
         const category = item.categoryName || 'General';
 
         if (!productMap[name]) {
@@ -179,8 +263,8 @@ export const getKVCMResponse = (query, state, expenseState) => {
           };
         }
 
-        const qty = Number(item.qty || 1);
-        const revenue = Number(item.total || (qty * (item.price || 0)));
+        const qty = Number(item.qty || item.quantity || 1);
+        const revenue = Number(item.total || item.subtotal || (qty * (item.price || item.unitPrice || 0)));
 
         productMap[name].sevenDayQty += qty;
         productMap[name].sevenDayRevenue += revenue;
@@ -197,68 +281,51 @@ export const getKVCMResponse = (query, state, expenseState) => {
 
     const productsList = Object.values(productMap);
 
-    // Check if user is asking about a SPECIFIC product name (e.g. "filter coffee", "ghee roast", etc.)
+    // Check if user is asking about a SPECIFIC product name
     const specificMatch = productsList.find(p => q.includes(p.name.toLowerCase()));
     if (specificMatch) {
       const dailyAvg = (specificMatch.sevenDayQty / 7).toFixed(1);
       return {
         icon: TrendingUp,
-        text: `☕ Product Sales Analytics: ${specificMatch.name}\n\n📅 TODAY'S PERFORMANCE:\n• Quantity Sold: ${specificMatch.todayQty} units\n• Revenue: ₹${specificMatch.todayRevenue.toFixed(2)}\n\n📊 PAST 7 DAYS PERFORMANCE:\n• Total Quantity Sold: ${specificMatch.sevenDayQty} units\n• 7-Day Daily Average: ${dailyAvg} units/day\n• Total 7-Day Revenue: ₹${specificMatch.sevenDayRevenue.toFixed(2)}\n• Sales Consistency: Active on ${specificMatch.activeDays.size} of the last 7 days\n• Category: ${specificMatch.category}\n\n📌 Note: Verified historical sales metrics provided to help guide your menu and inventory decisions.`
+        text: `☕ Product Sales Analytics: ${specificMatch.name} (${branchName})\n\n📅 TODAY'S PERFORMANCE:\n• Quantity Sold: ${specificMatch.todayQty} units\n• Revenue: ₹${specificMatch.todayRevenue.toFixed(2)}\n\n📊 PAST 7 DAYS PERFORMANCE:\n• Total Quantity Sold: ${specificMatch.sevenDayQty} units\n• 7-Day Daily Average: ${dailyAvg} units/day\n• Total 7-Day Revenue: ₹${specificMatch.sevenDayRevenue.toFixed(2)}\n• Sales Consistency: Active on ${specificMatch.activeDays.size} of the last 7 days\n• Category: ${specificMatch.category}`
       };
     }
 
     if (productsList.length === 0) {
       return {
         icon: TrendingUp,
-        text: `📊 Product Sales & 7-Day Demand Analytics\n\nNo product sales recorded in the past 7 days. Once you complete orders in POS or receive online orders, your verified product-level sales volumes, daily averages, and customer preference trends will be generated here in real time.`
+        text: `📊 Product Sales & Top Sellers (${branchName})\n\nNo product sales recorded yet in the past 7 days. Once you complete orders in POS or receive online orders, your top-selling products and quantities will appear here in real time.`
       };
     }
 
-    // Sort products by 7-Day Quantity descending
+    // Sort products by Quantity descending
     const sortedBy7Day = [...productsList].sort((a, b) => b.sevenDayQty - a.sevenDayQty);
     const top7Day = sortedBy7Day.slice(0, 5);
-
-    // Sort products by Today's Quantity descending
     const sortedByToday = [...productsList].filter(p => p.todayQty > 0).sort((a, b) => b.todayQty - a.todayQty).slice(0, 5);
 
-    // Formatted 7-Day Top Sellers Ranking
     let top7DayText = top7Day.map((p, idx) => {
       const dailyAvg = (p.sevenDayQty / 7).toFixed(1);
-      return `${idx + 1}. ${p.name}: ${p.sevenDayQty} units (avg ${dailyAvg}/day) — ₹${p.sevenDayRevenue.toFixed(2)}`;
+      return `${idx + 1}. ${p.name}: ${p.sevenDayQty} sold (avg ${dailyAvg}/day) — ₹${p.sevenDayRevenue.toFixed(2)}`;
     }).join('\n');
 
-    // Formatted Today's Sales Ranking
     let todayText = sortedByToday.length > 0 
-      ? sortedByToday.map((p, idx) => `${idx + 1}. ${p.name}: ${p.todayQty} served — ₹${p.todayRevenue.toFixed(2)}`).join('\n')
+      ? sortedByToday.map((p, idx) => `${idx + 1}. ${p.name}: ${p.todayQty} sold — ₹${p.todayRevenue.toFixed(2)}`).join('\n')
       : '• No items sold today yet.';
 
-    // Category Preference Distribution
-    const sortedCategories = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
-    const topCatName = sortedCategories[0]?.[0] || 'Beverages';
-    const totalUnitsSold = productsList.reduce((sum, p) => sum + p.sevenDayQty, 0);
-    const topCatUnits = sortedCategories[0]?.[1] || 0;
-    const topCatShare = totalUnitsSold > 0 ? ((topCatUnits / totalUnitsSold) * 100).toFixed(0) : '0';
-
-    // High consistency items (sold on 4+ out of 7 days)
-    const steadyItems = productsList.filter(p => p.activeDays.size >= 4).map(p => p.name);
-    const consistencyNote = steadyItems.length > 0 
-      ? `• High-Consistency Daily Staples: ${steadyItems.slice(0, 3).join(', ')} (ordered across multiple active days)`
-      : '• Sales distributed across various menu items.';
-
     return {
-      icon: TrendingUp,
-      text: `📊 Product Sales & 7-Day Analytics Report\n\n🏆 TOP-SELLING PRODUCTS (Past 7 Days):\n${top7DayText}\n\n☕ TODAY'S HIGHEST VELOCITY ITEMS:\n${todayText}\n\n📈 CUSTOMER PREFERENCE & DEMAND INSIGHTS:\n• Highest Demand Category: ${topCatName} (${topCatShare}% of total 7-day volume)\n${consistencyNote}\n• Total 7-Day Volume: ${totalUnitsSold} items served across ${sevenDaysSales.length} orders\n\n═══════════════════════════════════\n📌 Management Advisory:\nThe above calculations report verified historical volume and customer demand trends from your actual POS & Online sales records to support your product and variation planning. KVCM Assistant reports verified calculations only and does not automatically add, modify, or recommend specific menu items.\n═══════════════════════════════════`
+      icon: Sparkles,
+      text: `🏆 Top-Selling Products (${branchName})\n\n☕ TODAY'S TOP ITEMS:\n${todayText}\n\n📊 PAST 7 DAYS TOP ITEMS:\n${top7DayText}`
     };
   }
 
   // =========================================================================
-  // INTENT C: TODAY'S SALES & REVENUE SUMMARY
+  // INTENT F: TODAY'S SALES & REVENUE SUMMARY
   // =========================================================================
   if (q.includes('sales') || q.includes('revenue') || q.includes('today')) {
     if (todaySales.length === 0) {
       return {
         icon: BarChart2,
-        text: `📊 Today's Sales\n\nNo completed sales recorded yet for today. Head to POS / Billing to start taking orders — your revenue will show up here in real time! ☕`
+        text: `📊 Today's Sales for ${branchName}\n\nNo completed sales recorded yet for today. Head to POS / Billing to start taking orders — your revenue will show up here in real time! ☕`
       };
     }
     const posSales = todaySales.filter(s => !s.channel || s.channel === 'POS' || s.channel === 'In-Store POS');
@@ -274,18 +341,18 @@ export const getKVCMResponse = (query, state, expenseState) => {
 
     return {
       icon: BarChart2,
-      text: `📊 Today's Sales Summary\n\nTotal Revenue: ₹${totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 })}\nTotal Completed Bills: ${todaySales.length}\n\n🖥️ In-Store POS: ₹${posTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${posSales.length} bills)\n🛵 Online Platforms: ₹${onlineTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${onlineSales.length} orders)\n\n💳 Collections:\n• Cash: ₹${cashSales.toFixed(2)}\n• Digital / UPI / Card: ₹${digitalSales.toFixed(2)}\n\n🎟️ Discounts Given: ₹${totalDiscounts.toFixed(2)}\n🧾 GST 5% Collected: ₹${totalTax.toFixed(2)}`
+      text: `📊 Today's Sales Summary for ${branchName}\n\nTotal Revenue: ₹${totalSales.toLocaleString('en-IN', { maximumFractionDigits: 2 })}\nTotal Completed Bills: ${todaySales.length}\n\n🖥️ In-Store POS: ₹${posTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${posSales.length} bills)\n🛵 Online Platforms: ₹${onlineTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })} (${onlineSales.length} orders)\n\n💳 Collections:\n• Cash: ₹${cashSales.toFixed(2)}\n• Digital / UPI / Card: ₹${digitalSales.toFixed(2)}\n\n🎟️ Discounts Given: ₹${totalDiscounts.toFixed(2)}\n🧾 GST 5% Collected: ₹${totalTax.toFixed(2)}`
     };
   }
 
   // =========================================================================
-  // INTENT D: TAX & GST BREAKDOWN
+  // INTENT G: TAX & GST BREAKDOWN
   // =========================================================================
   if (q.includes('tax') || q.includes('gst') || q.includes('cgst') || q.includes('sgst')) {
     if (todaySales.length === 0) {
       return {
         icon: Percent,
-        text: `🧾 Today's Tax (GST 5%)\n\nNo sales recorded yet today, so tax is ₹0.00. Complete your first POS bill to see live GST data here! ☕`
+        text: `🧾 Today's Tax (GST 5%) for ${branchName}\n\nNo sales recorded yet today, so tax is ₹0.00. Complete your first POS bill to see live GST data here! ☕`
       };
     }
     const totalSales = todaySales.reduce((sum, s) => sum + (s.grandTotal || 0), 0);
@@ -296,50 +363,12 @@ export const getKVCMResponse = (query, state, expenseState) => {
 
     return {
       icon: Percent,
-      text: `🧾 Today's GST Summary\n\nTotal Tax Collected: ₹${totalTax.toFixed(2)}\n  • CGST (2.5%): ₹${cgst.toFixed(2)}\n  • SGST (2.5%): ₹${sgst.toFixed(2)}\n\nTaxable Sales: ₹${taxableSales.toFixed(2)}\nBased on ${todaySales.length} completed bills. All GST amounts are logged for official reporting. 📋`
+      text: `🧾 Today's GST Summary for ${branchName}\n\nTotal Tax Collected: ₹${totalTax.toFixed(2)}\n  • CGST (2.5%): ₹${cgst.toFixed(2)}\n  • SGST (2.5%): ₹${sgst.toFixed(2)}\n\nTaxable Sales: ₹${taxableSales.toFixed(2)}\nBased on ${todaySales.length} completed bills.`
     };
   }
 
   // =========================================================================
-  // INTENT E: LOW STOCK & CRITICAL ALERTS
-  // =========================================================================
-  if (q.includes('low stock') || q.includes('low') || q.includes('running out') || q.includes('reorder')) {
-    if (lowStock.length === 0) {
-      return {
-        icon: Package,
-        text: `✅ Stock Status\n\nGreat news! All inventory items are at healthy stock levels. No items are running low right now. Keep an eye on the Inventory page for real-time updates. 📦`
-      };
-    }
-    const critical = lowStock.filter(i => i.status === 'CRITICAL');
-    const low = lowStock.filter(i => i.status === 'LOW_STOCK');
-    let msg = `⚠️ Low Stock Alert\n\n${lowStock.length} item(s) need attention:\n`;
-    if (critical.length > 0) {
-      msg += `\n🔴 CRITICAL (reorder immediately):\n`;
-      critical.forEach(i => { msg += `• ${i.name}: ${i.remainingStock} ${i.unit} left (min: ${i.minThreshold})\n`; });
-    }
-    if (low.length > 0) {
-      msg += `\n🟡 LOW STOCK (reorder soon):\n`;
-      low.forEach(i => { msg += `• ${i.name}: ${i.remainingStock} ${i.unit} left (min: ${i.minThreshold})\n`; });
-    }
-    msg += `\nGo to Purchase / Stock In to raise a purchase order! 🛒`;
-    return { icon: AlertTriangle, text: msg };
-  }
-
-  // =========================================================================
-  // INTENT F: GENERAL INVENTORY OVERVIEW
-  // =========================================================================
-  if (q.includes('stock') || q.includes('inventory')) {
-    const healthy = items.filter(i => i.status === 'HEALTHY').length;
-    const lowCount = items.filter(i => i.status === 'LOW_STOCK').length;
-    const critCount = items.filter(i => i.status === 'CRITICAL').length;
-    return {
-      icon: Package,
-      text: `📦 Inventory Overview\n\nTotal SKUs Tracked: ${items.length}\n✅ Healthy: ${healthy} items\n🟡 Low Stock: ${lowCount} items\n🔴 Critical: ${critCount} items\n\n${critCount > 0 ? '⚠️ Action needed! Some items are critically low.' : lowCount > 0 ? 'Consider placing purchase orders for low stock items soon.' : 'All items are at healthy levels. Well done!'}`
-    };
-  }
-
-  // =========================================================================
-  // INTENT G: ONLINE ORDERS
+  // INTENT H: ONLINE ORDERS
   // =========================================================================
   if (q.includes('online') || q.includes('pending') || q.includes('swiggy') || q.includes('zomato') || q.includes('dunzo')) {
     const onlineOrders = todaySales.filter(s => s.channel && s.channel !== 'POS' && s.channel !== 'In-Store POS');
@@ -352,17 +381,17 @@ export const getKVCMResponse = (query, state, expenseState) => {
     if (onlineOrders.length === 0) {
       return {
         icon: ShoppingBag,
-        text: `🛵 Online Orders\n\nNo online orders received today yet. Check the Online Orders page to accept and manage incoming orders from Swiggy, Zomato, and Dunzo! 📱`
+        text: `🛵 Online Orders for ${branchName}\n\nNo online orders received today yet. Check the Online Orders page to accept and manage incoming delivery partner orders! 📱`
       };
     }
     return {
       icon: ShoppingBag,
-      text: `🛵 Today's Online Orders\n\nTotal Online Revenue: ₹${onlineTotal.toFixed(2)}\nTotal Orders: ${onlineOrders.length}\n\n📦 By Platform:\n• Swiggy: ${swiggy.length} orders (₹${swiggy.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n• Zomato: ${zomato.length} orders (₹${zomato.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n• Dunzo: ${dunzo.length} orders (₹${dunzo.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n${other.length > 0 ? `• Other Channels: ${other.length} orders (₹${other.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n` : ''}\nCheck the Online Orders page for live order tracking! 📱`
+      text: `🛵 Today's Online Orders for ${branchName}\n\nTotal Online Revenue: ₹${onlineTotal.toFixed(2)}\nTotal Orders: ${onlineOrders.length}\n\n📦 By Platform:\n• Swiggy: ${swiggy.length} orders (₹${swiggy.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n• Zomato: ${zomato.length} orders (₹${zomato.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n• Dunzo: ${dunzo.length} orders (₹${dunzo.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n${other.length > 0 ? `• Other Channels: ${other.length} orders (₹${other.reduce((acc, s) => acc + (s.grandTotal || 0), 0).toFixed(2)})\n` : ''}`
     };
   }
 
   // =========================================================================
-  // INTENT H: EXPENSES
+  // INTENT I: EXPENSES
   // =========================================================================
   if (q.includes('expense') || q.includes('expenses') || q.includes('cost') || q.includes('spending')) {
     const opTotalToday = todayExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -372,7 +401,7 @@ export const getKVCMResponse = (query, state, expenseState) => {
     if (allExpenses.length === 0 && allPurchases.length === 0) {
       return {
         icon: DollarSign,
-        text: `💸 Expenses & Cost Overview\n\nNo expense or purchase records logged yet. Head to the Expenses page from the sidebar to record operating costs (Rent, Utilities, Supplies) and Purchase & Stock In for ingredient purchases. 📊`
+        text: `💸 Expenses & Cost Overview for ${branchName}\n\nNo expense or purchase records logged yet. Head to the Expenses page to record operating costs (Rent, Utilities, Supplies) and Purchase & Stock In for ingredient purchases.`
       };
     }
 
@@ -388,18 +417,18 @@ export const getKVCMResponse = (query, state, expenseState) => {
 
     return {
       icon: DollarSign,
-      text: `💸 Today's Expense Breakdown\n\nTotal Recorded Outflow Today: ₹${combinedToday.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📋 Category Details:\n${breakdownText || '• No expense entries recorded for today.'}\n\nTrack all operational outlays in the Expenses page to keep your profit margins healthy! 📊`
+      text: `💸 Today's Expense Breakdown for ${branchName}\n\nTotal Recorded Outflow Today: ₹${combinedToday.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n\n📋 Category Details:\n${breakdownText || '• No expense entries recorded for today.'}`
     };
   }
 
   // =========================================================================
-  // INTENT I: PURCHASE / STOCK IN
+  // INTENT J: PURCHASE / STOCK IN
   // =========================================================================
   if (q.includes('purchase') || q.includes('stock in') || q.includes('supplier')) {
     const purchaseTotal = todayPurchases.reduce((sum, p) => sum + (p.totalAmount || p.grandTotal || 0), 0);
     return {
       icon: Truck,
-      text: `🚛 Purchase & Stock In\n\nToday's Invoices: ${todayPurchases.length} invoice(s)\nTotal Spend Today: ₹${purchaseTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}\n\nAll recorded stock purchases automatically update real-time inventory and feed into verified cost calculations! 📦`
+      text: `🚛 Purchase & Stock In for ${branchName}\n\nToday's Invoices: ${todayPurchases.length} invoice(s)\nTotal Spend Today: ₹${purchaseTotal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}\n\nAll recorded stock purchases automatically update real-time inventory and feed into verified cost calculations! 📦`
     };
   }
 
@@ -408,9 +437,10 @@ export const getKVCMResponse = (query, state, expenseState) => {
   // =========================================================================
   return {
     icon: Coffee,
-    text: `☕ Hello! I'm KVCM Assistant — your verified café operations & analytics assistant.\n\nI can calculate and report live data for:\n• 📊 Verified Profit & Loss (Revenue - Recorded Costs)\n• 📈 Individual Product Sales & 7-Day Trends\n• 🏆 Top-Selling Products & Customer Preferences\n• 💰 Today's Gross & Net Sales (POS vs Online)\n• 🧾 GST / Tax Breakdowns (CGST & SGST)\n• 📦 Real-Time Inventory & Low Stock Alerts\n• 💸 Operating Expenses & Supplier Stock In\n\nTap a quick question below or ask me any question! 😊`
+    text: `☕ Hello! I'm KVCM Assistant for ${branchName} — your verified café operations & analytics assistant.\n\nI can calculate and report live data for:\n• 📊 Verified Profit & Loss (Revenue - Recorded Costs)\n• 📈 Individual Product Sales & 7-Day Trends\n• 🏆 Top-Selling Products & Customer Preferences\n• 💰 Today's Gross & Net Sales (POS vs Online)\n• 🧾 GST / Tax Breakdowns (CGST & SGST)\n• 📦 Real-Time Inventory & Low Stock Alerts\n• 💸 Operating Expenses & Supplier Stock In\n\nTap a quick question below or ask me any question! 😊`
   };
 };
+
 
 // ─── Quick Question Config ─────────────────────────────────────────────────────
 const QUICK_QUESTIONS = [
@@ -496,7 +526,7 @@ export default function KVCMAssistantView({ selectedBranch }) {
       } else {
         const state = inventoryStore.getState();
         const expenseState = expenseStore.getState();
-        const fallbackResponse = getKVCMResponse(queryText, state, expenseState);
+        const fallbackResponse = getKVCMResponse(queryText, state, expenseState, selectedBranch);
         const botMsg = {
           id: `bot-${Date.now()}`,
           sender: 'bot',
@@ -509,7 +539,7 @@ export default function KVCMAssistantView({ selectedBranch }) {
     } catch {
       const state = inventoryStore.getState();
       const expenseState = expenseStore.getState();
-      const fallbackResponse = getKVCMResponse(queryText, state, expenseState);
+      const fallbackResponse = getKVCMResponse(queryText, state, expenseState, selectedBranch);
       const botMsg = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
