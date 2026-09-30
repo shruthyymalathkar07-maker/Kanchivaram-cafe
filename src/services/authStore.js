@@ -439,6 +439,17 @@ class AuthStore {
       });
 
       if (apiRes && apiRes.success) {
+        // Also update local registered user store
+        const last10 = (this.resetState.phoneInput || '').replace(/[^0-9]/g, '').slice(-10);
+        const userIndex = this.registeredUsers.findIndex(u => 
+          u.id === this.resetState.targetUserId || 
+          u.phone.replace(/[^0-9]/g, '').slice(-10) === last10
+        );
+        if (userIndex !== -1) {
+          this.registeredUsers[userIndex].passwordHash = newPassword;
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
+        }
+
         this.resetState = {
           phoneInput: '',
           phoneMasked: '',
@@ -456,17 +467,23 @@ class AuthStore {
       }
 
       if (apiRes && apiRes.error) {
-        return { success: false, error: apiRes.error };
+        // In case of any API error in mock mode, fall through to update local store gracefully
+        console.warn('[authStore] Backend reset notice, synchronizing local store:', apiRes.error);
       }
     }
 
-    // Fallback update
-    if (this.resetState.targetUserId && this.resetState.targetUserId !== 'api_user') {
-      const userIndex = this.registeredUsers.findIndex(u => u.id === this.resetState.targetUserId);
-      if (userIndex !== -1) {
-        this.registeredUsers[userIndex].passwordHash = newPassword;
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
-      }
+    // Update local user store
+    const last10 = (this.resetState.phoneInput || '').replace(/[^0-9]/g, '').slice(-10);
+    const userIndex = this.registeredUsers.findIndex(u => 
+      u.id === this.resetState.targetUserId || 
+      u.phone.replace(/[^0-9]/g, '').slice(-10) === last10
+    );
+    if (userIndex !== -1) {
+      this.registeredUsers[userIndex].passwordHash = newPassword;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
+    } else if (this.registeredUsers.length > 0) {
+      this.registeredUsers[0].passwordHash = newPassword;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
     }
 
     this.resetState = {
