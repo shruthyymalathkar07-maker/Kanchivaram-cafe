@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, 
   Plus, 
@@ -674,7 +675,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       {/* RECALL HELD BILLS MODAL                                                   */}
       {/* ========================================================================= */}
-      {isHeldBillsOpen && (
+      {isHeldBillsOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-md w-full text-[#11291f] shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-[#cabb9e]">
@@ -708,13 +709,14 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* BILL COMPLETED SUCCESS OVERLAY MODAL                                      */}
       {/* ========================================================================= */}
-      {completedSale && (
+      {completedSale && typeof document !== 'undefined' && createPortal(
         <div 
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -761,7 +763,8 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

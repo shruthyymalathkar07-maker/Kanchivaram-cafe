@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Truck, 
   PlusCircle, 
@@ -853,7 +854,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
       </div>
 
       {/* ADD / EDIT MULTI-ITEM PURCHASE MODAL */}
-      {isAddModalOpen && (
+      {isAddModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
           <div className="bg-[#fbf8f3] w-full max-w-3xl rounded-2xl border-2 border-[#cabb9e] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
@@ -1172,11 +1173,12 @@ export default function PurchaseStockInView({ selectedBranch }) {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* CONFIRM DELETE MODAL WITH SAFE STOCK REVERSAL */}
-      {deletingPurchaseId && (
+      {deletingPurchaseId && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-4">
           <div className="bg-[#fbf8f3] max-w-md w-full p-5 rounded-2xl border-2 border-[#cabb9e] shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-red-700">
@@ -1209,7 +1211,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

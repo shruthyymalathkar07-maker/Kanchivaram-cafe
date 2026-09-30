@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Package, 
   PackagePlus, 
@@ -1110,7 +1111,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
       {/* ========================================================================= */}
       {/* MODAL 1: PURCHASE / STOCK IN FORM MODAL                                   */}
       {/* ========================================================================= */}
-      {isStockInModalOpen && (
+      {isStockInModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-4">
           <div className="bg-[#fbf8f3] w-full max-w-lg rounded-2xl border-2 border-[#cabb9e] shadow-2xl overflow-hidden animate-fadeIn">
             
@@ -1287,13 +1288,14 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 2: USAGE / STOCK OUT FORM MODAL                                     */}
       {/* ========================================================================= */}
-      {isStockOutModalOpen && (
+      {isStockOutModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 modal-backdrop-overlay flex items-center justify-center p-4">
           <div className="bg-[#fbf8f3] w-full max-w-md rounded-2xl border-2 border-[#cabb9e] shadow-2xl overflow-hidden animate-fadeIn">
             
@@ -1390,13 +1392,14 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 7. MODAL: EDIT MINIMUM STOCK THRESHOLD                                   */}
       {/* ========================================================================= */}
-      {isThresholdModalOpen && thresholdItem && (
+      {isThresholdModalOpen && thresholdItem && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 modal-backdrop-overlay flex items-center justify-center p-3 z-50 animate-fadeIn">
           <div className="bg-[#fdfbf7] w-full max-w-md rounded-2xl border-2 border-[#cabb9e] shadow-2xl p-4 sm:p-5 space-y-4 animate-fadeIn">
             
@@ -1490,7 +1493,8 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

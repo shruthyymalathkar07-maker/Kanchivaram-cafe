@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   DollarSign, 
   PlusCircle, 
@@ -641,7 +642,7 @@ export default function ExpensesView({ selectedBranch }) {
       {/* ========================================================================= */}
       {/* 4. MODAL: EDIT EXPENSE RECORD                                             */}
       {/* ========================================================================= */}
-      {editingExpense && (
+      {editingExpense && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <form onSubmit={handleSaveEdit} className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl">
             
@@ -738,13 +739,14 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 5. MODAL: CONFIRM DELETE                                                  */}
       {/* ========================================================================= */}
-      {deletingId && (
+      {deletingId && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#fdfbf7] border-2 border-red-800 rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl">
             
@@ -775,7 +777,8 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

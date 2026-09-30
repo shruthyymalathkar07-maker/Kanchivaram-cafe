@@ -302,13 +302,12 @@ input::-webkit-credentials-auto-fill-button {
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: none;
   }
 }
 
 .animate-module-slide-forward {
-  animation: moduleSlideForward 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
+  animation: moduleSlideForward 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Backward Navigation between Modules (250-350ms fade + reverse subtle slide from left) */
@@ -319,13 +318,12 @@ input::-webkit-credentials-auto-fill-button {
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: none;
   }
 }
 
 .animate-module-slide-backward {
-  animation: moduleSlideBackward 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
+  animation: moduleSlideBackward 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {

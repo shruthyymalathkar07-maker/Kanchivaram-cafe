@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   TrendingUp, 
@@ -87,7 +88,9 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const posTaxGst = posGstAmount;
   const onlineTaxGst = onlineGstAmount;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
       <div className="relative w-full max-w-3xl bg-[#fdfbf7] text-[#11291f] rounded-3xl border-2 border-[#d4af37] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col font-sans">
         
@@ -607,7 +610,8 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

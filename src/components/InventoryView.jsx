@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Plus, AlertTriangle, CheckCircle, ArrowLeft, RefreshCw, Filter, PackageCheck, Truck } from 'lucide-react';
 import { initialInventory } from '../data/mockData';
 
@@ -277,7 +278,7 @@ export default function InventoryView({ onBackToHome }) {
       </div>
 
       {/* Receive Stock Modal */}
-      {showAddStockModal && selectedItem && (
+      {showAddStockModal && selectedItem && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <div className="bg-[#122a20] text-slate-100 w-full max-w-md rounded-3xl border border-[#27523f] shadow-2xl p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-[#27523f] pb-3">
@@ -350,7 +351,8 @@ export default function InventoryView({ onBackToHome }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

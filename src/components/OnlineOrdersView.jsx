@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Bike, 
   ShoppingBag, 
@@ -492,7 +493,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
       {/* ========================================================================= */}
       {/* 5. ORDER DETAIL MODAL DIALOG (STATE 2 ITEM VIEW)                          */}
       {/* ========================================================================= */}
-      {activeOrderDetail && (
+      {activeOrderDetail && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 modal-backdrop-overlay flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-[#fdfbf7] rounded-3xl border border-[#cabb9e] shadow-2xl max-w-lg w-full p-6 space-y-4 relative overflow-hidden">
             
@@ -572,7 +573,8 @@ export default function OnlineOrdersView({ selectedBranch }) {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   UserCheck, 
   Plus, 
@@ -447,7 +448,7 @@ export default function StaffView({ selectedBranch }) {
       </div>
 
       {/* ADD STAFF MODAL */}
-      {isAddModalOpen && (
+      {isAddModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
           <form onSubmit={handleAddStaff} className="bg-[#fdfbf7] border-2 border-[#d4af37] rounded-2xl p-5 max-w-sm w-full space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2.5 border-b border-[#cabb9e]">
@@ -572,7 +573,8 @@ export default function StaffView({ selectedBranch }) {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
