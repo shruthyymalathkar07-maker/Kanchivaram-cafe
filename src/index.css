@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html, body, #root {
+    background-color: #f8f6f0;
+    color: #0f172a;
+  }
+}
+
 @layer utilities {
   /* Genuine 6-Sided Hexagon Clip Paths */
   .clip-hexagon-flat {

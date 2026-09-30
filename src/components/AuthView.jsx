@@ -46,7 +46,6 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
   // Branch Selection State
   const [selectedBranchId, setSelectedBranchId] = useState(CAFÉ_BRANCHES[0].id);
-  const [isExitingBranch, setIsExitingBranch] = useState(false);
 
   // Error & Feedback Message States
   const [errorMessage, setErrorMessage] = useState(null);
@@ -244,14 +243,10 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
 
   // 6. HANDLE BRANCH SELECTION SUBMIT & SMOOTH EXIT
   const handleSelectBranch = (branchObj) => {
-    if (isExitingBranch) return;
-    setIsExitingBranch(true);
-    setTimeout(() => {
-      authStore.selectBranch(branchObj);
-      if (onAuthSuccess) {
-        onAuthSuccess(authStore.getState());
-      }
-    }, 180);
+    authStore.selectBranch(branchObj);
+    if (onAuthSuccess) {
+      onAuthSuccess(authStore.getState());
+    }
   };
 
   const handleBranchSelectSubmit = (e) => {
@@ -307,7 +302,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
   };
 
   return (
-    <div className={`min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe ${isExitingBranch ? 'animate-branch-select-exit' : ''}`}>
+    <div className="min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe">
       
       {/* ========================================================================= */}
       {/* 1. TOP HEADER ROW (BRANDING, "THE BREWING JOURNEY" & MICRO-BRANDING)       */}
