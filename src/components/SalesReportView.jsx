@@ -468,7 +468,7 @@ export default function SalesReportView({ selectedBranch }) {
           <div className="hidden md:block overflow-x-auto rounded-xl border border-[#ded4c5]">
             <table className="w-full text-center text-xs border-collapse">
               <thead>
-                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[13px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap">
+                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap">
                   <th className="py-2.5 px-3 text-center font-semibold">DATE & TIME</th>
                   <th className="py-2.5 px-3 text-center font-semibold">BILL / REF #</th>
                   <th className="py-2.5 px-3 text-center font-semibold">CHANNEL</th>
@@ -503,37 +503,37 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 text-[14px] font-medium text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 text-[12px] font-medium text-[#11291f] text-center">
                           {formatTxDateTime(tx)}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[14px] text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 font-medium text-[12px] text-[#11291f] text-center">
                           {tx.billNumber || tx.id}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[14px] text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 font-medium text-[12px] text-[#11291f] text-center">
                           {tx.channel || 'In-Store POS'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#11291f] text-xs font-medium rounded-md uppercase">
+                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[11px] font-medium rounded-md uppercase">
                             {tx.paymentMethod || 'CASH'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[14px] text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-[#11291f]">
                           ₹{gSales.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[14px] text-rose-700">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-rose-700">
                           {disc > 0 ? `-₹${disc.toFixed(2)}` : '₹0.00'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[14px] text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-[#11291f]">
                           ₹{taxAmt.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[14px] text-amber-800">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-amber-800">
                           ₹{gst.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[14px] text-[#0f3823]">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-[#0f3823]">
                           ₹{net.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="inline-block px-3.5 py-1 bg-[#0f3823] text-[#4ade80] text-[10px] font-semibold rounded-full shadow-2xs uppercase tracking-wider">
+                          <span className="inline-block px-3.5 py-1 bg-[#0f3823] text-[#4ade80] text-[9.5px] font-semibold rounded-full shadow-2xs uppercase tracking-wider">
                             Completed
                           </span>
                         </td>

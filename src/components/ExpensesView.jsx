@@ -554,7 +554,7 @@ export default function ExpensesView({ selectedBranch }) {
           <div className="overflow-x-auto overflow-y-auto no-scrollbar rounded-xl border border-[#ded4c5] max-h-[420px]">
             <table className="w-full text-center text-xs border-collapse">
               <thead>
-                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[13px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
+                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
                   <th className="py-2.5 px-3 text-center font-semibold">DATE</th>
                   <th className="py-2.5 px-3 text-center font-semibold">DESCRIPTION</th>
                   <th className="py-2.5 px-3 text-center font-semibold">CATEGORY</th>
@@ -585,24 +585,24 @@ export default function ExpensesView({ selectedBranch }) {
                   filteredExpenses.map((item) => (
                     <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                       
-                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[14px] text-center">
+                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
                         {item.displayDate}
                       </td>
 
-                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[14px] text-center">
+                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
                         <div>{item.description}</div>
-                        {item.notes && <span className="text-xs text-[#547363] font-normal block">{item.notes}</span>}
+                        {item.notes && <span className="text-[11px] text-[#547363] font-normal block">{item.notes}</span>}
                       </td>
 
                       <td className="py-2.5 px-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 text-xs font-medium text-[#11291f] rounded-md text-center ${
+                        <span className={`inline-block px-2 py-0.5 text-[11px] font-medium text-[#11291f] rounded-md text-center ${
                           item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                         }`}>
                           {item.category}
                         </span>
                       </td>
 
-                      <td className="py-2.5 px-3 text-center font-medium text-[14px] text-red-700">
+                      <td className="py-2.5 px-3 text-center font-medium text-[12px] text-red-700">
                         ₹{(parseFloat(item.amount) || 0).toFixed(2)}
                       </td>
 

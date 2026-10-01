@@ -190,9 +190,9 @@ export default function InventoryView({ onBackToHome }) {
       {/* Main Stock Movement Table */}
       <div className="bg-[#163529] rounded-3xl border border-[#27523f] shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-[14px]">
+          <table className="w-full text-left border-collapse text-[12px]">
             <thead>
-              <tr className="bg-[#0f231a] text-[#a4c5b5] uppercase font-semibold text-[13px] border-b border-[#27523f]">
+              <tr className="bg-[#0f231a] text-[#a4c5b5] uppercase font-semibold text-[11px] border-b border-[#27523f]">
                 <th className="py-4 px-5">PRODUCT NAME</th>
                 <th className="py-4 px-4">CATEGORY</th>
                 <th className="py-4 px-4 text-right">OPENING STOCK</th>
@@ -205,7 +205,7 @@ export default function InventoryView({ onBackToHome }) {
                 <th className="py-4 px-4 text-center">ACTION</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e4838] text-[14px] text-slate-200 font-medium">
+            <tbody className="divide-y divide-[#1e4838] text-[12px] text-slate-200 font-medium">
               {filteredItems.map((item) => (
                 <tr 
                   key={item.id}
@@ -213,7 +213,7 @@ export default function InventoryView({ onBackToHome }) {
                     item.isLow ? 'bg-red-950/20' : ''
                   }`}
                 >
-                  <td className="py-3.5 px-5 font-medium text-[14px] text-white">
+                  <td className="py-3.5 px-5 font-medium text-[12px] text-white">
                     <div className="flex items-center gap-2">
                       <span>{item.name}</span>
                     </div>

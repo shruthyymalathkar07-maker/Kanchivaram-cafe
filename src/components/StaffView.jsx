@@ -299,7 +299,7 @@ export default function StaffView({ selectedBranch }) {
         <div className="hidden md:block bg-[#fdfbf7] rounded-2xl border border-[#cabb9e] shadow-sm overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[13px] font-semibold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
+              <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-semibold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
                 <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">STAFF NAME</th>
                 <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">ROLE / DESIGNATION</th>
                 <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">SHIFT SCHEDULE</th>
@@ -309,7 +309,7 @@ export default function StaffView({ selectedBranch }) {
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className={`text-[14px] ${filteredStaff.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
+            <tbody className={`text-[12px] ${filteredStaff.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
               {filteredStaff.length === 0 ? (
                 <tr className="w-full my-auto">
                   <td colSpan="7" className="py-8 px-4 text-center bg-[#fdfbf7] w-full block">
@@ -336,11 +336,11 @@ export default function StaffView({ selectedBranch }) {
               ) : (
                 filteredStaff.map((staff) => (
                   <tr key={staff.id} className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center">
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">{staff.name}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">{staff.role}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">{staff.shift}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">{staff.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">{staff.pay}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">{staff.name}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">{staff.role}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">{staff.shift}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">{staff.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">{staff.pay}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <span className={`px-2 py-0.5 text-[9.5px] font-black rounded-full border shadow-2xs ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'}`}>
                         {staff.status}

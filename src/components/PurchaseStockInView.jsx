@@ -637,7 +637,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
           <div className="hidden md:block bg-[#fdfbf7] rounded-xl border border-[#cabb9e] overflow-hidden shadow-xs w-full overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
-                <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[13px] font-semibold uppercase tracking-wider`}>
+                <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-semibold uppercase tracking-wider`}>
                   <th className="py-3 px-4 w-[16%] whitespace-nowrap">DATE & INVOICE REF</th>
                   <th className="py-3 px-4 w-[18%] text-center whitespace-nowrap">SUPPLIER</th>
                   <th className="py-3 px-4 w-[36%] text-center whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
@@ -646,7 +646,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   <th className="py-3 px-4 w-[6%] text-center whitespace-nowrap">ACTIONS</th>
                 </tr>
               </thead>
-              <tbody className={`text-[14px] ${filteredPurchases.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
+              <tbody className={`text-[12px] ${filteredPurchases.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
                 {filteredPurchases.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="py-8 px-4 text-center bg-[#fdfbf7]">
@@ -674,24 +674,24 @@ export default function PurchaseStockInView({ selectedBranch }) {
                     <tr key={purchase.id} className="hover:bg-[#fbf8f3] transition-colors">
                       {/* Date & Invoice */}
                       <td className="py-3 px-4 align-top w-[16%]">
-                        <div className="font-medium text-[#11291f] text-[14px] break-words">{purchase.invoiceRef}</div>
-                        <div className="text-xs text-[#547363] font-normal flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                        <div className="font-medium text-[#11291f] text-[12px] break-words">{purchase.invoiceRef}</div>
+                        <div className="text-[11px] text-[#547363] font-normal flex items-center gap-1 mt-0.5 whitespace-nowrap">
                           <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span className="text-[#547363]">{purchase.date}</span>
                         </div>
                         {purchase.notes && (
-                          <div className="text-xs text-[#547363] italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words font-normal">
+                          <div className="text-[11px] text-[#547363] italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words font-normal">
                             "{purchase.notes}"
                           </div>
                         )}
                       </td>
                       {/* Supplier */}
                       <td className="py-3 px-4 align-top w-[18%] text-center">
-                        <div className="font-medium text-[14px] text-[#11291f] flex items-center justify-center gap-1.5 text-center">
+                        <div className="font-medium text-[12px] text-[#11291f] flex items-center justify-center gap-1.5 text-center">
                           <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span className="break-words leading-tight">{purchase.supplier}</span>
                         </div>
-                        <div className="text-xs text-[#547363] font-normal mt-1 flex items-center justify-center gap-1">
+                        <div className="text-[11px] text-[#547363] font-normal mt-1 flex items-center justify-center gap-1">
                           <span>Category:</span>
                           <span className="text-[#11291f] font-medium">{purchase.category || 'Raw Ingredients'}</span>
                         </div>
@@ -706,19 +706,19 @@ export default function PurchaseStockInView({ selectedBranch }) {
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <Package className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                                <span className="font-medium text-[#11291f] text-[14px] leading-snug">{item.itemName}</span>
-                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#11291f] text-[11px] font-medium rounded-md shrink-0">
+                                <span className="font-medium text-[#11291f] text-[12px] leading-snug">{item.itemName}</span>
+                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#11291f] text-[10px] font-medium rounded-md shrink-0">
                                   {item.category}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 text-right shrink-0">
-                                <span className="font-medium text-emerald-700 text-[14px] whitespace-nowrap">
+                                <span className="font-medium text-emerald-700 text-[12px] whitespace-nowrap">
                                   +{item.qty} {item.unit}
                                 </span>
-                                <span className="text-xs text-[#547363] font-normal whitespace-nowrap">
+                                <span className="text-[11px] text-[#547363] font-normal whitespace-nowrap">
                                   ₹{item.pricePerUnit}/{item.unit}
                                 </span>
-                                <span className="font-medium text-[14px] text-[#11291f] whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
+                                <span className="font-medium text-[12px] text-[#11291f] whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
                                   ₹{(item.total || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
@@ -728,10 +728,10 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       </td>
                       {/* Total Invoice Amount */}
                       <td className="py-3 px-4 align-top text-center w-[14%]">
-                        <div className="font-medium text-[14px] text-[#11291f] whitespace-nowrap text-center">
+                        <div className="font-medium text-[12px] text-[#11291f] whitespace-nowrap text-center">
                           ₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}
                         </div>
-                        <div className="text-xs text-[#547363] font-normal mt-0.5 whitespace-nowrap text-center">
+                        <div className="text-[11px] text-[#547363] font-normal mt-0.5 whitespace-nowrap text-center">
                           {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''} total
                         </div>
                       </td>

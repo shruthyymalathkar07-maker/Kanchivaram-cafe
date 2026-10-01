@@ -293,7 +293,7 @@ export default function CustomersView({ selectedBranch }) {
         <div className="hidden md:block bg-[#fdfbf7] rounded-2xl border border-[#cabb9e] shadow-sm overflow-x-auto w-full">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[13px] font-semibold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
+              <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-semibold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">CUSTOMER NAME</th>
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">PHONE NUMBER</th>
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">TOTAL ORDERS</th>
@@ -303,7 +303,7 @@ export default function CustomersView({ selectedBranch }) {
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className={`text-[14px] ${filteredCustomers.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
+            <tbody className={`text-[12px] ${filteredCustomers.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
               {filteredCustomers.length === 0 ? (
                 <tr className="w-full my-auto">
                   <td colSpan="7" className="pt-0 pb-8 px-4 text-center bg-[#fdfbf7] w-full block">
@@ -338,19 +338,19 @@ export default function CustomersView({ selectedBranch }) {
                     onClick={() => setSelectedCustomerForHistory(cust)}
                     className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center cursor-pointer group"
                   >
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] flex items-center gap-2">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] flex items-center gap-2">
                       <div className={`w-7 h-7 rounded-full ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'} font-semibold text-xs flex items-center justify-center border shrink-0`}>
                         {cust.name ? cust.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'C'}
                       </div>
-                      <span className="text-[#11291f] font-medium text-[14px] truncate">{cust.name}</span>
+                      <span className="text-[#11291f] font-medium text-[12px] truncate">{cust.name}</span>
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f]">{cust.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f]">{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f]">{cust.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f]">{cust.visits || 0} Orders</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[14px] text-[#11291f] text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
-                    <td className="py-3 px-4 col-span-1 font-medium text-[14px] text-[#11291f] text-center truncate">{cust.lastVisit || 'N/A'}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
+                    <td className="py-3 px-4 col-span-1 font-medium text-[12px] text-[#11291f] text-center truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {

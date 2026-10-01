@@ -187,8 +187,8 @@ export default function NetSalesModal({ isOpen, onClose }) {
               📊 Total Taxes & Discounts Audit
             </h3>
             <div className="overflow-x-auto rounded-xl border border-[#cabb9e]">
-              <table className="w-full text-left text-[14px] text-[#11291f]">
-                <thead className="bg-[#ebdcc8] text-[#11291f] uppercase font-semibold text-[13px]">
+              <table className="w-full text-left text-[12px] text-[#11291f]">
+                <thead className="bg-[#ebdcc8] text-[#11291f] uppercase font-semibold text-[11px]">
                   <tr>
                     <th className="py-2.5 px-3">CHANNEL</th>
                     <th className="py-2.5 px-3">GROSS SALES</th>
@@ -197,7 +197,7 @@ export default function NetSalesModal({ isOpen, onClose }) {
                     <th className="py-2.5 px-3">NET REALIZED</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#cabb9e]/50 font-medium text-[14px]">
+                <tbody className="divide-y divide-[#cabb9e]/50 font-medium text-[12px]">
                   <tr>
                     <td className="py-2.5 px-3 font-medium text-[#11291f]">POS Store Counters</td>
                     <td className="py-2.5 px-3 font-medium text-[#11291f]">₹12,000.00</td>
