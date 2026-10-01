@@ -583,7 +583,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search invoice, supplier, item..."
+              placeholder="Search invoice #, supplier, item..."
               className={`w-full pl-10 pr-4 py-1.5 bg-[#f0ebd9] border border-[#cabb9e] rounded-xl text-xs text-[#0f231a] placeholder-[#385344] focus:outline-none focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]/40' : 'focus:ring-[#0f3823]/40'} font-extrabold shadow-inner transition-all`}
             />
             {searchQuery && (
@@ -675,9 +675,9 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       {/* Date & Invoice */}
                       <td className="py-3 px-4 align-top w-[16%]">
                         <div className="font-extrabold text-[#11291f] font-mono text-xs break-words">{purchase.invoiceRef}</div>
-                        <div className="text-xs text-[#11291f] font-bold flex items-center gap-1.5 mt-1 whitespace-nowrap">
-                          <Calendar className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                          <span className="font-bold">{purchase.date}</span>
+                        <div className="text-[11px] text-[#547363] font-medium flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                          <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
+                          <span>{purchase.date}</span>
                         </div>
                         {purchase.notes && (
                           <div className="text-[10px] text-[#786c58] italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words">
@@ -685,17 +685,14 @@ export default function PurchaseStockInView({ selectedBranch }) {
                           </div>
                         )}
                       </td>
-                      {/* Supplier & Category */}
+                      {/* Supplier */}
                       <td className="py-3 px-4 align-top w-[18%]">
-                        <div className="font-extrabold text-[#11291f] flex items-center gap-1.5 text-xs">
-                          <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
+                        <div className="font-bold text-[#11291f] flex items-start gap-1.5">
+                          <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0 mt-0.5`} />
                           <span className="break-words leading-tight">{purchase.supplier}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <span className="text-[10.5px] text-[#375244] font-bold">Category:</span>
-                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#123624] text-[10.5px] font-bold rounded-md border border-[#cabb9e]">
-                            {purchase.category || 'Raw Ingredients'}
-                          </span>
+                        <div className="text-[10px] text-[#547363] font-semibold mt-1">
+                          Category: <span className="font-bold text-[#11291f]">{purchase.category || 'Raw Ingredients'}</span>
                         </div>
                       </td>
                       {/* Purchased Items List */}
@@ -709,18 +706,18 @@ export default function PurchaseStockInView({ selectedBranch }) {
                               <div className="flex items-center gap-2 min-w-0">
                                 <Package className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                                 <span className="font-extrabold text-[#11291f] text-xs leading-snug">{item.itemName}</span>
-                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#123624] text-[10.5px] font-bold rounded-md border border-[#cabb9e] shrink-0">
+                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[10px] font-bold rounded-md shrink-0">
                                   {item.category}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2.5 text-right shrink-0">
+                              <div className="flex items-center gap-3 text-right shrink-0">
                                 <span className={`font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-mono text-xs whitespace-nowrap`}>
                                   +{item.qty} {item.unit}
                                 </span>
-                                <span className="text-[11px] font-bold text-[#11291f] font-mono whitespace-nowrap bg-[#ebdcc8]/40 px-1.5 py-0.5 rounded border border-[#cabb9e]/50">
+                                <span className="text-[11px] text-[#547363] font-mono whitespace-nowrap">
                                   ₹{item.pricePerUnit}/{item.unit}
                                 </span>
-                                <span className="font-black font-mono text-xs text-[#11291f] whitespace-nowrap bg-[#ebdcc8]/60 px-2 py-0.5 rounded border border-[#cabb9e]/80">
+                                <span className="font-black font-mono text-xs text-[#11291f] whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
                                   ₹{(item.total || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
