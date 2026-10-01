@@ -588,7 +588,7 @@ export default function ExpensesView({ selectedBranch }) {
                     <th className="py-2.5 px-3 text-center font-semibold">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">
+                <tbody className="divide-y divide-[#ded4c5] bg-white text-black font-medium whitespace-nowrap">
                   {filteredExpenses.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="py-8 px-4 text-center bg-[#fdfbf7]">
@@ -598,7 +598,7 @@ export default function ExpensesView({ selectedBranch }) {
                             alt="Managing Café Expenses Illustration"
                             className="w-full max-w-sm h-auto max-h-56 object-contain relative z-10 block mx-auto"
                           />
-                          <h4 className="text-base sm:text-lg font-serif font-semibold text-[#11291f] tracking-wide">
+                          <h4 className="text-base sm:text-lg font-serif font-semibold text-black tracking-wide">
                             No expense records yet
                           </h4>
                           <p className="text-xs sm:text-sm font-normal text-[#547363] leading-relaxed">
@@ -611,17 +611,17 @@ export default function ExpensesView({ selectedBranch }) {
                     filteredExpenses.map((item) => (
                       <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                         
-                        <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
+                        <td className="py-2.5 px-3 font-medium text-black text-[12px] text-center">
                           {item.displayDate}
                         </td>
 
-                        <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
+                        <td className="py-2.5 px-3 font-medium text-black text-[12px] text-center">
                           <div>{item.description}</div>
                           {item.notes && <span className="text-[11px] text-[#547363] font-normal block">{item.notes}</span>}
                         </td>
 
                         <td className="py-2.5 px-3 text-center">
-                          <span className={`inline-block px-2 py-0.5 text-[11px] font-medium text-[#11291f] rounded-md text-center ${
+                          <span className={`inline-block px-2 py-0.5 text-[11px] font-medium text-black rounded-md text-center ${
                             item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                           }`}>
                             {item.category}

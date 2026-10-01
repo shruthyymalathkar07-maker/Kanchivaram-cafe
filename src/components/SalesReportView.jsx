@@ -481,12 +481,12 @@ export default function SalesReportView({ selectedBranch }) {
                   <th className="py-2.5 px-3 text-center font-semibold">STATUS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">
+              <tbody className="divide-y divide-[#ded4c5] bg-white text-black font-medium whitespace-nowrap">
                 {filteredTransactions.length === 0 ? (
                   <tr>
                     <td colSpan="10" className="py-12 px-4 text-center bg-[#fdfbf7]">
                       <div className="text-center space-y-1.5 max-w-sm mx-auto">
-                        <h4 className="text-base font-serif font-semibold text-[#11291f]">No transactions yet</h4>
+                        <h4 className="text-base font-serif font-semibold text-black">No transactions yet</h4>
                         <p className="text-xs font-normal text-[#547363] leading-relaxed">
                           Completed POS bills and online orders will appear here automatically.
                         </p>
@@ -503,27 +503,27 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 text-[12px] font-medium text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 text-[12px] font-medium text-black text-center">
                           {formatTxDateTime(tx)}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[12px] text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 font-medium text-[12px] text-black text-center">
                           {tx.billNumber || tx.id}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[12px] text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 font-medium text-[12px] text-black text-center">
                           {tx.channel || 'In-Store POS'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[11px] font-medium rounded-md uppercase">
+                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[11px] font-medium rounded-md uppercase">
                             {tx.paymentMethod || 'CASH'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-black">
                           ₹{gSales.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center font-medium text-[12px] text-rose-700">
                           {disc > 0 ? `-₹${disc.toFixed(2)}` : '₹0.00'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-black">
                           ₹{taxAmt.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center font-medium text-[12px] text-amber-800">
@@ -549,7 +549,7 @@ export default function SalesReportView({ selectedBranch }) {
           <div className="md:hidden space-y-3">
             {filteredTransactions.length === 0 ? (
               <div className="bg-white rounded-xl border border-[#cabb9e] p-6 text-center shadow-xs">
-                <h4 className="text-base font-serif font-black text-[#11291f]">No transactions yet</h4>
+                <h4 className="text-base font-serif font-black text-black">No transactions yet</h4>
                 <p className="text-xs text-[#547363] mt-1 font-medium">
                   Completed bills and online orders will appear here.
                 </p>
@@ -570,11 +570,11 @@ export default function SalesReportView({ selectedBranch }) {
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-[#ebdcc8] pb-1.5 text-xs">
                       <div>
-                        <span className="font-medium text-[12px] text-[#11291f] block">{tx.billNumber || tx.id}</span>
+                        <span className="font-medium text-[12px] text-black block">{tx.billNumber || tx.id}</span>
                         <span className="text-[11px] text-[#557361] font-normal">{formatTxDateTime(tx)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[10px] font-medium rounded uppercase">
+                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[10px] font-medium rounded uppercase">
                           {tx.paymentMethod || 'CASH'}
                         </span>
                         <span className="px-2 py-0.5 bg-[#0f3823] text-[#4ade80] text-[9px] font-semibold rounded-full uppercase">
@@ -587,7 +587,7 @@ export default function SalesReportView({ selectedBranch }) {
                     <div className="grid grid-cols-3 gap-1.5 bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 text-xs">
                       <div>
                         <span className="text-[10px] text-[#547363] uppercase font-semibold block">Taxable</span>
-                        <span className="font-medium text-[12px] text-[#11291f]">₹{taxAmt.toFixed(2)}</span>
+                        <span className="font-medium text-[12px] text-black">₹{taxAmt.toFixed(2)}</span>
                       </div>
                       <div className="text-center">
                         <span className="text-[10px] text-amber-900 uppercase font-semibold block">GST 5%</span>

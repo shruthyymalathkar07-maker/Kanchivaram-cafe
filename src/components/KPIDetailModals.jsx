@@ -565,7 +565,7 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                         <th className="py-2 px-3 text-right font-semibold">Net Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#ded4c5] bg-white font-medium text-[#11291f]">
+                    <tbody className="divide-y divide-[#ded4c5] bg-white font-medium text-black">
                       {taxFilteredSales.length === 0 ? (
                         <tr>
                           <td colSpan="7" className="py-6 text-center text-xs font-normal text-[#547363]">
@@ -579,15 +579,15 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                           const tTaxable = Math.max(0, tNet - tGst);
                           return (
                             <tr key={t.id} className="hover:bg-[#fbf8f3] transition-colors">
-                              <td className="py-2 px-3 font-medium text-[11px] text-[#11291f]">
+                              <td className="py-2 px-3 font-medium text-[11px] text-black">
                                 {t.date} <span className="text-[#547363] text-[10px] font-normal">({t.billNumber || t.id})</span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10px] font-medium text-[#11291f] rounded">
+                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10px] font-medium text-black rounded">
                                   {t.channel || 'POS'}
                                 </span>
                               </td>
-                              <td className="py-2 px-3 text-right font-medium text-[#11291f]">₹{tTaxable.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-black">₹{tTaxable.toFixed(2)}</td>
                               <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
                               <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
                               <td className="py-2 px-3 text-right font-medium text-amber-900">₹{tGst.toFixed(2)}</td>

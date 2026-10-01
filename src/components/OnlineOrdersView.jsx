@@ -390,7 +390,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
 
                     {/* Customer & Address Details */}
                     <div className="space-y-0.5">
-                      <h4 className="font-extrabold text-[#11291f] text-sm group-hover:text-[#0f3823] transition-colors">
+                      <h4 className="font-extrabold text-black text-sm group-hover:text-[#0f3823] transition-colors">
                         {order.customer || 'Guest Customer'}
                       </h4>
                       <p className="text-xs text-[#547363] font-mono font-medium">
@@ -406,7 +406,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
                       <p className="text-[9.5px] uppercase font-black text-[#547363] tracking-wider mb-0.5">
                         Items Ordered:
                       </p>
-                      <p className="font-bold text-[#11291f] line-clamp-2">
+                      <p className="font-bold text-black line-clamp-2">
                         {order.items}
                       </p>
                     </div>
@@ -414,7 +414,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
                     {/* Amount & Time */}
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-[11px] font-bold text-[#547363]">Grand Total</span>
-                      <span className="font-black text-base font-mono text-[#11291f]">
+                      <span className="font-black text-base font-mono text-black">
                         ₹{Number(order.total || 0).toFixed(2)}
                       </span>
                     </div>

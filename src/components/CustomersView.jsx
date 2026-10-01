@@ -338,19 +338,19 @@ export default function CustomersView({ selectedBranch }) {
                     onClick={() => setSelectedCustomerForHistory(cust)}
                     className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center cursor-pointer group"
                   >
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] flex items-center gap-2">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black flex items-center gap-2">
                       <div className={`w-7 h-7 rounded-full ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'} font-semibold text-xs flex items-center justify-center border shrink-0`}>
                         {cust.name ? cust.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'C'}
                       </div>
-                      <span className="text-[#11291f] font-medium text-[12px] truncate">{cust.name}</span>
+                      <span className="text-black font-medium text-[12px] truncate">{cust.name}</span>
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f]">{cust.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f]">{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black">{cust.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black">{cust.visits || 0} Orders</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-[#11291f] text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
-                    <td className="py-3 px-4 col-span-1 font-medium text-[12px] text-[#11291f] text-center truncate">{cust.lastVisit || 'N/A'}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
+                    <td className="py-3 px-4 col-span-1 font-medium text-[12px] text-black text-center truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {
@@ -407,18 +407,18 @@ export default function CustomersView({ selectedBranch }) {
                       {cust.name ? cust.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'C'}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-semibold text-[#11291f] leading-snug break-words">
+                      <h4 className="text-sm font-semibold text-black leading-snug break-words">
                         {cust.name}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[12px] font-medium text-[#11291f] flex items-center gap-1">
+                        <span className="text-[12px] font-medium text-black flex items-center gap-1">
                           <Phone className="w-3 h-3 text-[#547363]" />
                           {cust.phone}
                         </span>
                         <span className={`px-1.5 py-0.2 text-[9px] font-semibold rounded-sm border uppercase ${
                           cust.tier === 'VIP'
                             ? 'bg-[#d4af37]/20 text-[#8c6b12] border-[#d4af37]'
-                            : 'bg-[#ebdcc8] text-[#547363] border-[#cabb9e]'
+                            : 'bg-[#ebdcc8] text-black border-[#cabb9e]'
                         }`}>
                           {cust.tier || 'Regular'}
                         </span>
@@ -451,25 +451,25 @@ export default function CustomersView({ selectedBranch }) {
                 <div className="grid grid-cols-2 gap-2 bg-[#ebdcc8]/30 p-2.5 rounded-xl border border-[#cabb9e]/50 text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Total Orders</span>
-                    <span className="font-medium text-[12px] text-[#11291f]">
+                    <span className="font-medium text-[12px] text-black">
                       {cust.visits || 0} {(cust.visits === 1) ? 'Bill' : 'Bills'}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Total Spent</span>
-                    <span className="font-medium text-[12px] text-[#11291f]">
+                    <span className="font-medium text-[12px] text-black">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Favourite Item</span>
-                    <span className="font-medium text-[#11291f] break-words text-[12px] block">
+                    <span className="font-medium text-black break-words text-[12px] block">
                       {cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Last Purchase</span>
-                    <span className="font-medium text-[#11291f] text-[12px] block">
+                    <span className="font-medium text-black text-[12px] block">
                       {cust.lastVisit || 'No purchases yet'}
                     </span>
                   </div>
