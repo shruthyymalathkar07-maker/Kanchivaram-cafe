@@ -944,31 +944,31 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
         {/* DESKTOP STOCK MOVEMENT TABLE: STRICTLY FROZEN (md:block) */}
         <div className="hidden md:block overflow-x-auto rounded-xl border border-[#ded4c5]">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-center text-xs border-collapse">
             <thead>
               <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e]">
-                <th className="py-2.5 px-3">Date &amp; Time</th>
-                <th className="py-2.5 px-3">Item Name</th>
+                <th className="py-2.5 px-3 text-center">Date &amp; Time</th>
+                <th className="py-2.5 px-3 text-center">Item Name</th>
                 <th className="py-2.5 px-3 text-center">Movement Type</th>
-                <th className="py-2.5 px-3 text-right">Quantity</th>
+                <th className="py-2.5 px-3 text-center">Quantity</th>
                 <th className="py-2.5 px-3 text-center">Unit</th>
-                <th className="py-2.5 px-3">Source / Reason</th>
-                <th className="py-2.5 px-3">Supplier / Ref #</th>
-                <th className="py-2.5 px-3 text-right font-black">Stock After</th>
+                <th className="py-2.5 px-3 text-center">Source / Reason</th>
+                <th className="py-2.5 px-3 text-center">Supplier / Ref #</th>
+                <th className="py-2.5 px-3 text-center font-black">Stock After</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium">
               {currentDataState === 'LOADING' ? (
                 [1, 2, 3].map(idx => (
                   <tr key={idx} className="animate-pulse">
-                    <td className="py-2 px-3"><div className="h-3 w-20 bg-[#ebe0cb] rounded" /></td>
-                    <td className="py-2 px-3"><div className="h-3 w-28 bg-[#ebdcc8] rounded" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-20 bg-[#ebe0cb] rounded mx-auto" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-28 bg-[#ebdcc8] rounded mx-auto" /></td>
                     <td className="py-2 px-3 text-center"><div className="h-4 w-16 bg-emerald-100 rounded-md mx-auto" /></td>
-                    <td className="py-2 px-3 text-right"><div className="h-3 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-10 bg-[#ebe0cb] rounded mx-auto" /></td>
                     <td className="py-2 px-3 text-center"><div className="h-3 w-8 bg-[#ebe0cb] rounded mx-auto" /></td>
-                    <td className="py-2 px-3"><div className="h-3 w-24 bg-[#ebdcc8] rounded" /></td>
-                    <td className="py-2 px-3"><div className="h-3 w-20 bg-[#ebe0cb] rounded" /></td>
-                    <td className="py-2 px-3 text-right"><div className="h-3 w-12 bg-[#ebdcc8] rounded ml-auto" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-24 bg-[#ebdcc8] rounded mx-auto" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-20 bg-[#ebe0cb] rounded mx-auto" /></td>
+                    <td className="py-2 px-3 text-center"><div className="h-3 w-12 bg-[#ebdcc8] rounded mx-auto" /></td>
                   </tr>
                 ))
               ) : currentDataState === 'EMPTY' || filteredLedger.length === 0 ? (
@@ -983,45 +983,47 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
                   return (
                     <tr key={entry.id} className="hover:bg-[#fbf8f3] transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-[#557361] text-[11px]">
-                        {entry.date} <span className="text-[#719985]">{entry.time}</span>
+                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
+                        {entry.date} <span className="text-[#11291f]">{entry.time}</span>
                       </td>
 
-                      <td className="py-2 px-3 font-extrabold text-[#11291f]">
+                      <td className="py-2 px-3 font-medium text-[#11291f] text-center">
                         {entry.itemName}
                       </td>
 
                       <td className="py-2 px-3 text-center">
                         {isStockIn ? (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold text-[10px] rounded-md border border-emerald-300">
+                          <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold text-[10px] rounded-md border border-emerald-300">
                             + Stock In
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-red-100 text-red-800 font-extrabold text-[10px] rounded-md border border-red-300">
+                          <span className="inline-block px-2.5 py-0.5 bg-red-100 text-red-800 font-extrabold text-[10px] rounded-md border border-red-300">
                             - Stock Out
                           </span>
                         )}
                       </td>
 
-                      <td className={`py-2 px-3 text-right font-mono font-black text-sm ${
-                        isStockIn ? 'text-emerald-700' : 'text-red-700'
-                      }`}>
-                        {isStockIn ? '+' : '-'}{entry.qty}
+                      <td className="py-2 px-3 text-center">
+                        <span className={`inline-block font-mono font-black text-sm text-center ${
+                          isStockIn ? 'text-emerald-700' : 'text-red-700'
+                        }`}>
+                          {isStockIn ? '+' : '-'}{entry.qty}
+                        </span>
                       </td>
 
-                      <td className="py-2 px-3 text-center text-[#557361] font-bold">
+                      <td className="py-2 px-3 text-center text-[#11291f] font-medium">
                         {entry.unit}
                       </td>
 
-                      <td className="py-2 px-3 text-[#11291f] font-semibold">
+                      <td className="py-2 px-3 text-[#11291f] font-medium text-center">
                         {entry.source}
                       </td>
 
-                      <td className="py-2 px-3 font-mono text-[#557361] text-[11px]">
-                        {entry.ref} {entry.supplier !== '-' && <span className="text-[#11291f] font-sans font-bold">({entry.supplier})</span>}
+                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
+                        {entry.ref} {entry.supplier !== '-' && <span className="text-[#11291f] font-sans font-medium">({entry.supplier})</span>}
                       </td>
 
-                      <td className="py-2 px-3 text-right font-mono font-black text-sm text-[#0f3823]">
+                      <td className="py-2 px-3 text-center font-mono font-black text-sm text-[#0f3823]">
                         {entry.remainingAfter}
                       </td>
                     </tr>
