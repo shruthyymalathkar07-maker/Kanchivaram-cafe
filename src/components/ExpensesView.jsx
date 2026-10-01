@@ -48,6 +48,7 @@ export default function ExpensesView({ selectedBranch }) {
   const [dateFilter, setDateFilter] = useState('ALL'); // ALL, TODAY, THIS_MONTH
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const categoryScrollRef = React.useRef(null);
+  const tableScrollRef = React.useRef(null);
 
   const scrollCategoryLeft = () => {
     if (categoryScrollRef.current) {
@@ -58,6 +59,18 @@ export default function ExpensesView({ selectedBranch }) {
   const scrollCategoryRight = () => {
     if (categoryScrollRef.current) {
       categoryScrollRef.current.scrollBy({ left: 140, behavior: 'smooth' });
+    }
+  };
+
+  const scrollTableLeft = () => {
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollBy({ left: -180, behavior: 'smooth' });
+    }
+  };
+
+  const scrollTableRight = () => {
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollBy({ left: 180, behavior: 'smooth' });
     }
   };
 
@@ -550,88 +563,111 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
           </div>
 
-          {/* Ledger Table */}
-          <div className="overflow-x-auto overflow-y-auto no-scrollbar rounded-xl border border-[#ded4c5] max-h-[420px]">
-            <table className="w-full text-center text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
-                  <th className="py-2.5 px-3 text-center font-semibold">DATE</th>
-                  <th className="py-2.5 px-3 text-center font-semibold">DESCRIPTION</th>
-                  <th className="py-2.5 px-3 text-center font-semibold">CATEGORY</th>
-                  <th className="py-2.5 px-3 text-center font-semibold">AMOUNT (₹)</th>
-                  <th className="py-2.5 px-3 text-center font-semibold">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">
-                {filteredExpenses.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="py-8 px-4 text-center bg-[#fdfbf7]">
-                      <div className="flex flex-col items-center justify-center text-center space-y-2 max-w-lg mx-auto">
-                        <img
-                          src="/expense_empty_illustration.png"
-                          alt="Managing Café Expenses Illustration"
-                          className="w-full max-w-sm h-auto max-h-56 object-contain relative z-10 block mx-auto"
-                        />
-                        <h4 className="text-base sm:text-lg font-serif font-semibold text-[#11291f] tracking-wide">
-                          No expense records yet
-                        </h4>
-                        <p className="text-xs sm:text-sm font-normal text-[#547363] leading-relaxed">
-                          Start recording your café's operating expenses to track spending and manage costs.
-                        </p>
-                      </div>
-                    </td>
+          {/* Ledger Table with Horizontal Scroll Navigation */}
+          <div className="relative flex items-center gap-1 w-full min-w-0">
+            <button
+              type="button"
+              onClick={scrollTableLeft}
+              className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebe0cb] rounded-lg border border-[#cabb9e] bg-[#fdfbf7] shrink-0 cursor-pointer shadow-2xs`}
+              title="Scroll Table Left"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <div 
+              ref={tableScrollRef}
+              className="overflow-x-auto overflow-y-auto no-scrollbar rounded-xl border border-[#ded4c5] max-h-[420px] w-full scroll-smooth"
+            >
+              <table className="w-full min-w-[560px] text-center text-xs border-collapse">
+                <thead>
+                  <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
+                    <th className="py-2.5 px-3 text-center font-semibold">DATE</th>
+                    <th className="py-2.5 px-3 text-center font-semibold">DESCRIPTION</th>
+                    <th className="py-2.5 px-3 text-center font-semibold">CATEGORY</th>
+                    <th className="py-2.5 px-3 text-center font-semibold">AMOUNT (₹)</th>
+                    <th className="py-2.5 px-3 text-center font-semibold">ACTIONS</th>
                   </tr>
-                ) : (
-                  filteredExpenses.map((item) => (
-                    <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
-                      
-                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
-                        {item.displayDate}
-                      </td>
-
-                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
-                        <div>{item.description}</div>
-                        {item.notes && <span className="text-[11px] text-[#547363] font-normal block">{item.notes}</span>}
-                      </td>
-
-                      <td className="py-2.5 px-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 text-[11px] font-medium text-[#11291f] rounded-md text-center ${
-                          item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
-                        }`}>
-                          {item.category}
-                        </span>
-                      </td>
-
-                      <td className="py-2.5 px-3 text-center font-medium text-[12px] text-red-700">
-                        ₹{(parseFloat(item.amount) || 0).toFixed(2)}
-                      </td>
-
-                      {/* Action Buttons: Edit & Delete */}
-                      <td className="py-2.5 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebdcc8] rounded-md transition-colors cursor-pointer`}
-                            title={item.isStockIn ? "Managed in Purchase / Stock In" : "Edit Expense"}
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            onClick={() => setDeletingId(item.id)}
-                            className="p-1 text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
-                            title={item.isStockIn ? "Managed in Purchase / Stock In" : "Delete Expense"}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                </thead>
+                <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">
+                  {filteredExpenses.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="py-8 px-4 text-center bg-[#fdfbf7]">
+                        <div className="flex flex-col items-center justify-center text-center space-y-2 max-w-lg mx-auto">
+                          <img
+                            src="/expense_empty_illustration.png"
+                            alt="Managing Café Expenses Illustration"
+                            className="w-full max-w-sm h-auto max-h-56 object-contain relative z-10 block mx-auto"
+                          />
+                          <h4 className="text-base sm:text-lg font-serif font-semibold text-[#11291f] tracking-wide">
+                            No expense records yet
+                          </h4>
+                          <p className="text-xs sm:text-sm font-normal text-[#547363] leading-relaxed">
+                            Start recording your café's operating expenses to track spending and manage costs.
+                          </p>
                         </div>
                       </td>
-
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredExpenses.map((item) => (
+                      <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
+                        
+                        <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
+                          {item.displayDate}
+                        </td>
+
+                        <td className="py-2.5 px-3 font-medium text-[#11291f] text-[12px] text-center">
+                          <div>{item.description}</div>
+                          {item.notes && <span className="text-[11px] text-[#547363] font-normal block">{item.notes}</span>}
+                        </td>
+
+                        <td className="py-2.5 px-3 text-center">
+                          <span className={`inline-block px-2 py-0.5 text-[11px] font-medium text-[#11291f] rounded-md text-center ${
+                            item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
+                          }`}>
+                            {item.category}
+                          </span>
+                        </td>
+
+                        <td className="py-2.5 px-3 text-center font-medium text-[12px] text-red-700">
+                          ₹{(parseFloat(item.amount) || 0).toFixed(2)}
+                        </td>
+
+                        {/* Action Buttons: Edit & Delete */}
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEdit(item)}
+                              className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebdcc8] rounded-md transition-colors cursor-pointer`}
+                              title={item.isStockIn ? "Managed in Purchase / Stock In" : "Edit Expense"}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => setDeletingId(item.id)}
+                              className="p-1 text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                              title={item.isStockIn ? "Managed in Purchase / Stock In" : "Delete Expense"}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              type="button"
+              onClick={scrollTableRight}
+              className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebe0cb] rounded-lg border border-[#cabb9e] bg-[#fdfbf7] shrink-0 cursor-pointer shadow-2xs`}
+              title="Scroll Table Right"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
         </div>
