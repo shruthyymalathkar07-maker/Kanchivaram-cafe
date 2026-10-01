@@ -825,21 +825,21 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     {/* Header: Name + Category + Status + Action */}
                     <div className="flex items-start justify-between gap-2 border-b border-[#ebdcc8] pb-2">
                       <div>
-                        <h4 className="text-xs font-normal text-[#11291f] leading-tight">{item.name}</h4>
+                        <h4 className="text-[12px] font-medium text-[#11291f] leading-tight">{item.name}</h4>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[9.5px] font-semibold rounded">
+                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#11291f] text-[10px] font-medium rounded">
                             {item.category}
                           </span>
                           {isCritical ? (
-                            <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-600 text-white text-[9px] font-black rounded-full uppercase tracking-wide">
+                            <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-600 text-white text-[9px] font-semibold rounded-full uppercase tracking-wide">
                               Critical
                             </span>
                           ) : isLow ? (
-                            <span className="inline-flex items-center justify-center px-2 py-0.5 bg-[#d4af37] text-[#0d2b1d] text-[9px] font-black rounded-full uppercase tracking-wide">
+                            <span className="inline-flex items-center justify-center px-2 py-0.5 bg-[#d4af37] text-[#0d2b1d] text-[9px] font-semibold rounded-full uppercase tracking-wide">
                               Low Limit
                             </span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center px-2 py-0.5 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[9px] font-black rounded-full uppercase tracking-wide`}>
+                            <span className={`inline-flex items-center justify-center px-2 py-0.5 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[9px] font-semibold rounded-full uppercase tracking-wide`}>
                               Healthy
                             </span>
                           )}
@@ -854,7 +854,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           setSupplierInput(item.supplier || '');
                           setIsStockInModalOpen(true);
                         }}
-                        className={`px-2.5 py-1.5 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F]' : 'bg-[#103825] hover:bg-[#0a2618]'} text-white text-[10.5px] font-bold rounded-lg transition-all shadow-xs shrink-0`}
+                        className={`px-2.5 py-1.5 ${isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F]' : 'bg-[#103825] hover:bg-[#0a2618]'} text-white text-[11px] font-semibold rounded-lg transition-all shadow-xs shrink-0`}
                       >
                         + Stock In
                       </button>
@@ -863,29 +863,29 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     {/* Stock Metrics Grid */}
                     <div className="grid grid-cols-3 gap-2 bg-[#ebdcc8]/30 p-2.5 rounded-xl border border-[#cabb9e]/50 text-xs">
                       <div>
-                        <span className="text-[9px] uppercase font-bold text-[#547363] block">Opening</span>
-                        <span className="font-mono font-bold text-[#11291f]">{item.openingStock} {item.unit}</span>
+                        <span className="text-[10px] uppercase font-semibold text-[#547363] block">Opening</span>
+                        <span className="font-medium text-[12px] text-[#11291f]">{item.openingStock} {item.unit}</span>
                       </div>
                       <div className="text-center">
-                        <span className="text-[9px] uppercase font-bold text-emerald-700 block">Stock In (+)</span>
-                        <span className="font-mono font-extrabold text-emerald-700">+{item.stockIn}</span>
+                        <span className="text-[10px] uppercase font-semibold text-emerald-700 block">Stock In (+)</span>
+                        <span className="font-medium text-[12px] text-emerald-700">+{item.stockIn}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[9px] uppercase font-bold text-red-700 block">Stock Out (-)</span>
-                        <span className="font-mono font-extrabold text-red-700">-{item.stockOut}</span>
+                        <span className="text-[10px] uppercase font-semibold text-red-700 block">Stock Out (-)</span>
+                        <span className="font-medium text-[12px] text-red-700">-{item.stockOut}</span>
                       </div>
                       <div className="col-span-2 pt-1 border-t border-[#cabb9e]/40">
-                        <span className="text-[9px] uppercase font-black text-[#547363] block">Remaining Stock</span>
-                        <span className={`font-mono font-black text-sm ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>
+                        <span className="text-[10px] uppercase font-semibold text-[#547363] block">Remaining Stock</span>
+                        <span className="font-medium text-[12px] text-[#11291f]">
                           {item.remainingStock} {item.unit}
                         </span>
                       </div>
                       <div className="text-right pt-1 border-t border-[#cabb9e]/40">
-                        <span className="text-[9px] uppercase font-bold text-[#547363] block">Min Threshold</span>
+                        <span className="text-[10px] uppercase font-semibold text-[#547363] block">Min Threshold</span>
                         <button
                           type="button"
                           onClick={() => handleOpenThresholdModal(item)}
-                          className="inline-flex items-center gap-1 font-mono font-medium text-[#547363] hover:text-[#11291f] cursor-pointer"
+                          className="inline-flex items-center gap-1 font-medium text-[12px] text-[#547363] hover:text-[#11291f] cursor-pointer"
                         >
                           <span>{item.minThreshold} {item.unit}</span>
                           <Edit2 className="w-2.5 h-2.5 opacity-60" />
@@ -1063,20 +1063,20 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                   {/* Top Header: Item Name & Movement Badge */}
                   <div className="flex items-start justify-between gap-2 border-b border-[#ebdcc8] pb-2">
                     <div>
-                      <h4 className="font-serif font-black text-sm text-[#11291f] leading-tight">
+                      <h4 className="font-semibold text-[12px] text-[#11291f] leading-tight">
                         {entry.itemName}
                       </h4>
-                      <p className="text-[10px] font-mono text-[#557361] mt-0.5">
+                      <p className="text-[11px] text-[#557361] mt-0.5 font-normal">
                         {entry.date} • {entry.time}
                       </p>
                     </div>
                     <div>
                       {isStockIn ? (
-                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold text-[10px] rounded-md border border-emerald-300 inline-block">
+                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold text-[10px] rounded-md border border-emerald-300 inline-block">
                           + Stock In
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 bg-red-100 text-red-800 font-extrabold text-[10px] rounded-md border border-red-300 inline-block">
+                        <span className="px-2.5 py-0.5 bg-red-100 text-red-800 font-semibold text-[10px] rounded-md border border-red-300 inline-block">
                           - Stock Out
                         </span>
                       )}
@@ -1086,30 +1086,30 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                   {/* Movement Details Grid */}
                   <div className="grid grid-cols-3 gap-2 bg-[#ebdcc8]/30 p-2.5 rounded-xl border border-[#cabb9e]/50 text-xs">
                     <div>
-                      <span className="text-[9px] uppercase font-bold text-[#547363] block">Quantity</span>
-                      <span className={`font-mono font-black text-sm ${isStockIn ? 'text-emerald-700' : 'text-red-700'}`}>
+                      <span className="text-[10px] uppercase font-semibold text-[#547363] block">Quantity</span>
+                      <span className={`font-medium text-[12px] ${isStockIn ? 'text-emerald-700' : 'text-red-700'}`}>
                         {isStockIn ? '+' : '-'}{entry.qty} {entry.unit}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[9px] uppercase font-bold text-[#547363] block">Source / Reason</span>
-                      <span className="font-bold text-[#11291f] text-[11px] block truncate" title={entry.source}>
+                      <span className="text-[10px] uppercase font-semibold text-[#547363] block">Source / Reason</span>
+                      <span className="font-medium text-[#11291f] text-[12px] block truncate" title={entry.source}>
                         {entry.source}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[9px] uppercase font-bold text-[#547363] block">Stock After</span>
-                      <span className={`font-mono font-black text-sm ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>
+                      <span className="text-[10px] uppercase font-semibold text-[#547363] block">Stock After</span>
+                      <span className="font-medium text-[12px] text-[#11291f]">
                         {entry.remainingAfter} {entry.unit}
                       </span>
                     </div>
                   </div>
 
                   {/* Ref & Supplier */}
-                  <div className="flex items-center justify-between text-[10.5px] text-[#557361] pt-0.5">
-                    <span>Ref: <strong className="font-mono text-[#11291f]">{entry.ref}</strong></span>
+                  <div className="flex items-center justify-between text-[11px] text-[#557361] pt-0.5">
+                    <span>Ref: <strong className="font-medium text-[#11291f]">{entry.ref}</strong></span>
                     {entry.supplier && entry.supplier !== '-' && (
-                      <span className="font-medium text-[#11291f]">Supplier: <strong>{entry.supplier}</strong></span>
+                      <span className="font-normal text-[#11291f]">Supplier: <strong className="font-medium">{entry.supplier}</strong></span>
                     )}
                   </div>
                 </div>

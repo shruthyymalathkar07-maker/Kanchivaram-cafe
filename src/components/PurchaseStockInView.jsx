@@ -794,16 +794,16 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   <div className="flex items-start justify-between gap-2 border-b border-[#ebdcc8] pb-2">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-black text-xs text-[#11291f]">{purchase.invoiceRef}</span>
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[9px] font-extrabold rounded-full border border-emerald-300">
+                        <span className="font-medium text-[12px] text-[#11291f]">{purchase.invoiceRef}</span>
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[9px] font-semibold rounded-full border border-emerald-300">
                           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> Synced
                         </span>
                       </div>
-                      <div className="text-[11px] font-bold text-[#11291f] flex items-center gap-1 mt-1">
+                      <div className="text-[12px] font-medium text-[#11291f] flex items-center gap-1 mt-1">
                         <Building2 className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
                         <span>{purchase.supplier}</span>
                       </div>
-                      <div className="text-[10px] text-[#547363] font-medium flex items-center gap-1 mt-0.5">
+                      <div className="text-[11px] text-[#547363] font-normal flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3 text-[#87a997]" />
                         <span>{purchase.date}</span>
                       </div>
@@ -829,16 +829,16 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
                   {/* Purchased Items List */}
                   <div className="space-y-1.5">
-                    <span className="text-[9.5px] uppercase font-bold text-[#547363] block">Purchased Items ({purchase.items.length})</span>
+                    <span className="text-[10px] uppercase font-semibold text-[#547363] block">Purchased Items ({purchase.items.length})</span>
                     {purchase.items.map((item, idx) => (
                       <div key={idx} className="bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 flex items-center justify-between text-xs">
                         <div className="min-w-0">
-                          <p className="font-extrabold text-[#11291f] truncate leading-tight">{item.itemName}</p>
-                          <p className="text-[10px] text-[#547363] font-mono mt-0.5">@ ₹{item.pricePerUnit}/{item.unit}</p>
+                          <p className="font-medium text-[#11291f] text-[12px] truncate leading-tight">{item.itemName}</p>
+                          <p className="text-[11px] text-[#547363] font-normal mt-0.5">@ ₹{item.pricePerUnit}/{item.unit}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className={`font-mono font-black ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>+{item.qty} {item.unit}</span>
-                          <span className="text-[10.5px] font-mono font-bold text-[#11291f] block">₹{item.total.toLocaleString('en-IN')}</span>
+                          <span className="font-medium text-emerald-700 text-[12px]">+{item.qty} {item.unit}</span>
+                          <span className="text-[12px] font-medium text-[#11291f] block">₹{item.total.toLocaleString('en-IN')}</span>
                         </div>
                       </div>
                     ))}
@@ -846,8 +846,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
 
                   {/* Footer Total */}
                   <div className="flex items-center justify-between pt-1 border-t border-[#ebdcc8] text-xs">
-                    <span className="font-bold text-[#547363]">Total Invoice Value</span>
-                    <span className="font-mono font-black text-sm text-[#11291f]">₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}</span>
+                    <span className="font-semibold text-[10px] uppercase text-[#547363]">Total Invoice Value</span>
+                    <span className="font-medium text-[12px] text-[#11291f]">₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               ))

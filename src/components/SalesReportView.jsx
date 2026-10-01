@@ -570,14 +570,14 @@ export default function SalesReportView({ selectedBranch }) {
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-[#ebdcc8] pb-1.5 text-xs">
                       <div>
-                        <span className="font-mono font-black text-[#0f3823] block">{tx.billNumber || tx.id}</span>
-                        <span className="text-[10px] text-[#557361] font-mono">{formatTxDateTime(tx)}</span>
+                        <span className="font-medium text-[12px] text-[#11291f] block">{tx.billNumber || tx.id}</span>
+                        <span className="text-[11px] text-[#557361] font-normal">{formatTxDateTime(tx)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#122c20] text-[9.5px] font-extrabold rounded uppercase">
+                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[10px] font-medium rounded uppercase">
                           {tx.paymentMethod || 'CASH'}
                         </span>
-                        <span className="px-2 py-0.5 bg-[#0f3823] text-[#4ade80] text-[9px] font-black rounded-full uppercase">
+                        <span className="px-2 py-0.5 bg-[#0f3823] text-[#4ade80] text-[9px] font-semibold rounded-full uppercase">
                           Done
                         </span>
                       </div>
@@ -586,16 +586,16 @@ export default function SalesReportView({ selectedBranch }) {
                     {/* Breakdown Grid */}
                     <div className="grid grid-cols-3 gap-1.5 bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 text-xs">
                       <div>
-                        <span className="text-[9px] text-[#547363] uppercase font-bold block">Taxable</span>
-                        <span className="font-mono font-bold text-[#11291f]">₹{taxAmt.toFixed(2)}</span>
+                        <span className="text-[10px] text-[#547363] uppercase font-semibold block">Taxable</span>
+                        <span className="font-medium text-[12px] text-[#11291f]">₹{taxAmt.toFixed(2)}</span>
                       </div>
                       <div className="text-center">
-                        <span className="text-[9px] text-amber-900 uppercase font-bold block">GST 5%</span>
-                        <span className="font-mono font-bold text-amber-800">₹{gst.toFixed(2)}</span>
+                        <span className="text-[10px] text-amber-900 uppercase font-semibold block">GST 5%</span>
+                        <span className="font-medium text-[12px] text-amber-800">₹{gst.toFixed(2)}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[9px] text-[#0f3823] uppercase font-bold block">Net Total</span>
-                        <span className="font-mono font-black text-[#0f3823]">₹{net.toFixed(2)}</span>
+                        <span className="text-[10px] text-[#0f3823] uppercase font-semibold block">Net Total</span>
+                        <span className="font-medium text-[12px] text-[#0f3823]">₹{net.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
