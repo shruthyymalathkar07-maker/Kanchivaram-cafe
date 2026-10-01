@@ -48,7 +48,6 @@ export default function ExpensesView({ selectedBranch }) {
   const [dateFilter, setDateFilter] = useState('ALL'); // ALL, TODAY, THIS_MONTH
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const categoryScrollRef = React.useRef(null);
-  const tableScrollRef = React.useRef(null);
 
   const scrollCategoryLeft = () => {
     if (categoryScrollRef.current) {
@@ -59,18 +58,6 @@ export default function ExpensesView({ selectedBranch }) {
   const scrollCategoryRight = () => {
     if (categoryScrollRef.current) {
       categoryScrollRef.current.scrollBy({ left: 140, behavior: 'smooth' });
-    }
-  };
-
-  const scrollTableLeft = () => {
-    if (tableScrollRef.current) {
-      tableScrollRef.current.scrollBy({ left: -180, behavior: 'smooth' });
-    }
-  };
-
-  const scrollTableRight = () => {
-    if (tableScrollRef.current) {
-      tableScrollRef.current.scrollBy({ left: 180, behavior: 'smooth' });
     }
   };
 
@@ -563,32 +550,20 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
           </div>
 
-          {/* Ledger Table with Horizontal Scroll Navigation */}
-          <div className="relative flex items-center gap-1 w-full min-w-0">
-            <button
-              type="button"
-              onClick={scrollTableLeft}
-              className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebe0cb] rounded-lg border border-[#cabb9e] bg-[#fdfbf7] shrink-0 cursor-pointer shadow-2xs`}
-              title="Scroll Table Left"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-
-            <div 
-              ref={tableScrollRef}
-              className="overflow-x-auto overflow-y-auto no-scrollbar rounded-xl border border-[#ded4c5] max-h-[420px] w-full scroll-smooth"
-            >
-              <table className="w-full min-w-[560px] text-center text-xs border-collapse">
+          {/* Ledger Table - Fully fits visible container */}
+          <div className="w-full rounded-xl border border-[#ded4c5] overflow-hidden bg-white shadow-2xs">
+            <div className="overflow-y-auto max-h-[420px] w-full">
+              <table className="w-full text-center text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
-                    <th className="py-2.5 px-3 text-center font-semibold">DATE</th>
-                    <th className="py-2.5 px-3 text-center font-semibold">DESCRIPTION</th>
-                    <th className="py-2.5 px-3 text-center font-semibold">CATEGORY</th>
-                    <th className="py-2.5 px-3 text-center font-semibold">AMOUNT (₹)</th>
-                    <th className="py-2.5 px-3 text-center font-semibold">ACTIONS</th>
+                  <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] sticky top-0 z-10">
+                    <th className="py-2.5 px-2 text-center font-semibold w-[18%]">DATE</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[36%]">DESCRIPTION</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[22%]">CATEGORY</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[14%]">AMOUNT (₹)</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[10%]">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#ded4c5] bg-white text-black font-medium whitespace-nowrap">
+                <tbody className="divide-y divide-[#ded4c5] bg-white text-black font-medium">
                   {filteredExpenses.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="py-8 px-4 text-center bg-[#fdfbf7]">
@@ -611,16 +586,16 @@ export default function ExpensesView({ selectedBranch }) {
                     filteredExpenses.map((item) => (
                       <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                         
-                        <td className="py-2.5 px-3 font-semibold text-black text-[12.5px] text-center">
+                        <td className="py-2.5 px-2 font-semibold text-black text-[12.5px] text-center whitespace-nowrap">
                           {item.displayDate}
                         </td>
 
-                        <td className="py-2.5 px-3 font-semibold text-black text-[12.5px] text-center">
-                          <div>{item.description}</div>
-                          {item.notes && <span className="text-[11.5px] text-[#547363] font-normal block">{item.notes}</span>}
+                        <td className="py-2.5 px-2 font-semibold text-black text-[12.5px] text-center">
+                          <div className="leading-snug break-words">{item.description}</div>
+                          {item.notes && <span className="text-[11.5px] text-[#547363] font-normal block leading-tight mt-0.5">{item.notes}</span>}
                         </td>
 
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-2.5 px-2 text-center">
                           <span className={`inline-block px-2 py-0.5 text-[11.5px] font-semibold text-black rounded-md text-center ${
                             item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                           }`}>
@@ -628,12 +603,12 @@ export default function ExpensesView({ selectedBranch }) {
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-red-700">
+                        <td className="py-2.5 px-2 text-center font-semibold text-[12.5px] text-red-700 whitespace-nowrap">
                           ₹{(parseFloat(item.amount) || 0).toFixed(2)}
                         </td>
 
                         {/* Action Buttons: Edit & Delete */}
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-2.5 px-2 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => handleOpenEdit(item)}
@@ -659,15 +634,6 @@ export default function ExpensesView({ selectedBranch }) {
                 </tbody>
               </table>
             </div>
-
-            <button
-              type="button"
-              onClick={scrollTableRight}
-              className={`p-1 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} hover:bg-[#ebe0cb] rounded-lg border border-[#cabb9e] bg-[#fdfbf7] shrink-0 cursor-pointer shadow-2xs`}
-              title="Scroll Table Right"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
           </div>
 
         </div>
