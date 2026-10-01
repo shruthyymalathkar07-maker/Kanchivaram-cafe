@@ -469,16 +469,16 @@ export default function SalesReportView({ selectedBranch }) {
             <table className="w-full text-center text-xs border-collapse">
               <thead>
                 <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap">
-                  <th className="py-2.5 px-3 text-center">DATE & TIME</th>
-                  <th className="py-2.5 px-3 text-center">BILL / REF #</th>
-                  <th className="py-2.5 px-3 text-center">CHANNEL</th>
-                  <th className="py-2.5 px-3 text-center">PAYMENT</th>
-                  <th className="py-2.5 px-3 text-center">GROSS SALES (₹)</th>
-                  <th className="py-2.5 px-3 text-center text-rose-800">DISCOUNT (₹)</th>
+                  <th className="py-2.5 px-3 text-center font-black">DATE & TIME</th>
+                  <th className="py-2.5 px-3 text-center font-black">BILL / REF #</th>
+                  <th className="py-2.5 px-3 text-center font-black">CHANNEL</th>
+                  <th className="py-2.5 px-3 text-center font-black">PAYMENT</th>
+                  <th className="py-2.5 px-3 text-center font-black">GROSS SALES (₹)</th>
+                  <th className="py-2.5 px-3 text-center text-rose-800 font-black">DISCOUNT (₹)</th>
                   <th className="py-2.5 px-3 text-center font-black">TAXABLE (₹)</th>
                   <th className="py-2.5 px-3 text-center text-amber-900 font-black">GST 5% (₹)</th>
                   <th className="py-2.5 px-3 text-center font-black text-[#0f3823]">NET AMOUNT (₹)</th>
-                  <th className="py-2.5 px-3 text-center">STATUS</th>
+                  <th className="py-2.5 px-3 text-center font-black">STATUS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">

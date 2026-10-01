@@ -338,19 +338,19 @@ export default function CustomersView({ selectedBranch }) {
                     onClick={() => setSelectedCustomerForHistory(cust)}
                     className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center cursor-pointer group"
                   >
-                    <td className="py-3 px-4 col-span-2 font-extrabold text-[#11291f] flex items-center gap-2">
+                    <td className="py-3 px-4 col-span-2 font-normal text-black flex items-center gap-2">
                       <div className={`w-7 h-7 rounded-full ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'} font-black text-xs flex items-center justify-center border shrink-0`}>
                         {cust.name ? cust.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'C'}
                       </div>
-                      <span className={`${isBrownBranch ? 'group-hover:text-[#7A4325]' : 'group-hover:text-[#0f3823]'} transition-colors truncate`}>{cust.name}</span>
+                      <span className="text-black font-normal truncate">{cust.name}</span>
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-bold text-[#11291f]">{cust.phone}</td>
-                    <td className={`py-3 px-4 col-span-2 font-bold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-black text-[#11291f] text-center">
+                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black">{cust.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black">{cust.visits || 0} Orders</td>
+                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 text-xs font-medium text-[#11291f] text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
-                    <td className="py-3 px-4 col-span-1 text-xs font-medium text-[#11291f] text-center truncate">{cust.lastVisit || 'N/A'}</td>
+                    <td className="py-3 px-4 col-span-2 text-xs font-normal text-black text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
+                    <td className="py-3 px-4 col-span-1 text-xs font-normal text-black text-center truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {
