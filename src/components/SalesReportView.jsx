@@ -76,6 +76,23 @@ export default function SalesReportView({ selectedBranch }) {
 
   const periodSales = sales.length > 0 ? sales : (reportStats?.recentTransactions || []);
 
+  // Format accurate transaction date & time from actual DB timestamp (Asia/Kolkata / IST)
+  const formatTxDateTime = (tx) => {
+    if (tx.createdAt) {
+      try {
+        const d = new Date(tx.createdAt);
+        if (!isNaN(d.getTime())) {
+          const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+          const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
+          return `${dateStr} at ${timeStr}`;
+        }
+      } catch (_) {}
+    }
+    const dStr = tx.date || tx.dateIso || 'Today';
+    const tStr = tx.time ? ` at ${tx.time}` : '';
+    return `${dStr}${tStr}`;
+  };
+
   // Dynamic Sales & Tax Calculations
   const grossSales = periodSales.reduce((sum, s) => {
     const lineTotalSum = (s.items || []).reduce((acc, i) => acc + (i.total || ((i.qty || 1) * (i.price || 0))), 0);
@@ -414,7 +431,7 @@ export default function SalesReportView({ selectedBranch }) {
           
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-[#0f3823]" />
-            <h3 className="font-serif font-black text-sm text-[#11291f]">
+            <h3 className="font-serif font-black text-sm text-[#11291f] tracking-normal">
               Tax & GST Audit Ledger ({period.toUpperCase()})
             </h3>
             <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] rounded-full text-[10px] font-bold">
@@ -449,18 +466,18 @@ export default function SalesReportView({ selectedBranch }) {
         <div>
           {/* DESKTOP TABLE: STRICTLY FROZEN & UNCHANGED (md:block) */}
           <div className="hidden md:block overflow-x-auto rounded-xl border border-[#ded4c5]">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-center text-xs border-collapse">
               <thead>
                 <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap">
-                  <th className="py-2.5 px-3">DATE & TIME</th>
-                  <th className="py-2.5 px-3">BILL / REF #</th>
-                  <th className="py-2.5 px-3">CHANNEL</th>
+                  <th className="py-2.5 px-3 text-center">DATE & TIME</th>
+                  <th className="py-2.5 px-3 text-center">BILL / REF #</th>
+                  <th className="py-2.5 px-3 text-center">CHANNEL</th>
                   <th className="py-2.5 px-3 text-center">PAYMENT</th>
-                  <th className="py-2.5 px-3 text-right">GROSS SALES (₹)</th>
-                  <th className="py-2.5 px-3 text-right text-rose-800">DISCOUNT (₹)</th>
-                  <th className="py-2.5 px-3 text-right font-black">TAXABLE (₹)</th>
-                  <th className="py-2.5 px-3 text-right text-amber-900 font-black">GST 5% (₹)</th>
-                  <th className="py-2.5 px-3 text-right font-black text-[#0f3823]">NET AMOUNT (₹)</th>
+                  <th className="py-2.5 px-3 text-center">GROSS SALES (₹)</th>
+                  <th className="py-2.5 px-3 text-center text-rose-800">DISCOUNT (₹)</th>
+                  <th className="py-2.5 px-3 text-center font-black">TAXABLE (₹)</th>
+                  <th className="py-2.5 px-3 text-center text-amber-900 font-black">GST 5% (₹)</th>
+                  <th className="py-2.5 px-3 text-center font-black text-[#0f3823]">NET AMOUNT (₹)</th>
                   <th className="py-2.5 px-3 text-center">STATUS</th>
                 </tr>
               </thead>
@@ -486,13 +503,13 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 font-mono font-bold text-[#557361] text-[11px]">
-                          {tx.date} {tx.time ? `at ${tx.time}` : ''}
+                        <td className="py-2.5 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
+                          {formatTxDateTime(tx)}
                         </td>
-                        <td className="py-2.5 px-3 font-mono font-black text-[#0f3823]">
+                        <td className="py-2.5 px-3 font-mono font-black text-[#0f3823] text-center">
                           {tx.billNumber || tx.id}
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-[#11291f]">
+                        <td className="py-2.5 px-3 font-bold text-[#11291f] text-center">
                           {tx.channel || 'In-Store POS'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
@@ -500,23 +517,23 @@ export default function SalesReportView({ selectedBranch }) {
                             {tx.paymentMethod || 'CASH'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-mono font-bold text-[#11291f]">
                           ₹{gSales.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
+                        <td className="py-2.5 px-3 text-center font-mono font-bold text-rose-700">
                           {disc > 0 ? `-₹${disc.toFixed(2)}` : '₹0.00'}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-black text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-mono font-black text-[#11291f]">
                           ₹{taxAmt.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-black text-amber-800">
+                        <td className="py-2.5 px-3 text-center font-mono font-black text-amber-800">
                           ₹{gst.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-black text-sm text-[#0f3823]">
+                        <td className="py-2.5 px-3 text-center font-mono font-black text-sm text-[#0f3823]">
                           ₹{net.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 bg-[#0f3823] text-[#4ade80] text-[9.5px] font-black rounded-full shadow-2xs uppercase">
+                          <span className="inline-block px-3.5 py-1 bg-[#0f3823] text-[#4ade80] text-[9.5px] font-black rounded-full shadow-2xs uppercase tracking-wider">
                             Completed
                           </span>
                         </td>
@@ -554,7 +571,7 @@ export default function SalesReportView({ selectedBranch }) {
                     <div className="flex items-center justify-between border-b border-[#ebdcc8] pb-1.5 text-xs">
                       <div>
                         <span className="font-mono font-black text-[#0f3823] block">{tx.billNumber || tx.id}</span>
-                        <span className="text-[10px] text-[#557361] font-mono">{tx.date} {tx.time ? `• ${tx.time}` : ''}</span>
+                        <span className="text-[10px] text-[#557361] font-mono">{formatTxDateTime(tx)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#122c20] text-[9.5px] font-extrabold rounded uppercase">

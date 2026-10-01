@@ -297,9 +297,9 @@ export default function CustomersView({ selectedBranch }) {
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">CUSTOMER NAME</th>
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">PHONE NUMBER</th>
                 <th className="py-3 px-4 col-span-2 whitespace-nowrap">TOTAL ORDERS</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">TOTAL SPENT (₹)</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">FAVOURITE ITEM</th>
-                <th className="py-3 px-4 col-span-1 whitespace-nowrap">LAST PURCHASE</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">TOTAL SPENT (₹)</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">FAVOURITE ITEM</th>
+                <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">LAST PURCHASE</th>
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
               </tr>
             </thead>
@@ -346,11 +346,11 @@ export default function CustomersView({ selectedBranch }) {
                     </td>
                     <td className="py-3 px-4 col-span-2 font-mono font-bold text-[#11291f]">{cust.phone}</td>
                     <td className={`py-3 px-4 col-span-2 font-bold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-black text-[#11291f]">
+                    <td className="py-3 px-4 col-span-2 font-mono font-black text-[#11291f] text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-semibold text-[#547363] truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
-                    <td className="py-3 px-4 col-span-1 font-medium text-[#547363] text-[11px] truncate">{cust.lastVisit || 'N/A'}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[#11291f] text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
+                    <td className="py-3 px-4 col-span-1 font-medium text-[#11291f] text-[11px] text-center truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {

@@ -300,11 +300,11 @@ export default function StaffView({ selectedBranch }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-extrabold uppercase tracking-wider grid grid-cols-12 gap-2 items-center`}>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">STAFF NAME</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">ROLE / DESIGNATION</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">SHIFT SCHEDULE</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">CONTACT PHONE</th>
-                <th className="py-3 px-4 col-span-2 whitespace-nowrap">MONTHLY SALARY</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">STAFF NAME</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">ROLE / DESIGNATION</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">SHIFT SCHEDULE</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">CONTACT PHONE</th>
+                <th className="py-3 px-4 col-span-2 text-center whitespace-nowrap">MONTHLY SALARY</th>
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">STATUS</th>
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
               </tr>
@@ -336,17 +336,17 @@ export default function StaffView({ selectedBranch }) {
               ) : (
                 filteredStaff.map((staff) => (
                   <tr key={staff.id} className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center">
-                    <td className="py-3 px-4 col-span-2 font-extrabold text-[#11291f]">{staff.name}</td>
-                    <td className={`py-3 px-4 col-span-2 font-bold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>{staff.role}</td>
-                    <td className="py-3 px-4 col-span-2 font-semibold text-[#547363]">{staff.shift}</td>
-                    <td className="py-3 px-4 col-span-2 font-mono text-[#11291f]">{staff.phone}</td>
-                    <td className={`py-3 px-4 col-span-2 font-mono font-black ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>{staff.pay}</td>
-                    <td className="py-3 px-4 col-span-1 text-center">
+                    <td className="py-3 px-4 col-span-2 font-extrabold text-[#11291f] text-center">{staff.name}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[#11291f] text-center">{staff.role}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[#11291f] text-center">{staff.shift}</td>
+                    <td className="py-3 px-4 col-span-2 font-mono font-medium text-[#11291f] text-center">{staff.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-mono font-medium text-[#11291f] text-center">{staff.pay}</td>
+                    <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <span className={`px-2 py-0.5 text-[9.5px] font-black rounded-full border shadow-2xs ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'}`}>
                         {staff.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 col-span-1 text-center">
+                    <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <button
                         onClick={() => handleDeleteStaff(staff.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"

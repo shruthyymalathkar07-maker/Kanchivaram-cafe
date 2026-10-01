@@ -1718,8 +1718,8 @@ export function createApiRouter(io: SocketServer) {
 
         const formattedSales = sales.map(s => ({
           ...s,
-          date: s.dateIso || (s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : todayIso),
-          time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+          date: s.dateIso || (s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : todayIso),
+          time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : ''
         }));
 
         return res.json({
