@@ -524,16 +524,16 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className={`${isBrownBranch ? 'bg-[#3E2312] text-[#E8D8C2]' : 'bg-[#ebdcc8] text-[#11291f]'} font-black uppercase text-[11px] tracking-wider border-b border-[#cabb9e]`}>
-                  <th className="py-3 px-3.5">ITEM / PRODUCT NAME</th>
-                  <th className="py-3 px-3 text-center">CATEGORY</th>
-                  <th className="py-3 px-3 text-right">OPENING</th>
-                  <th className="py-3 px-3 text-right">STOCK IN (+)</th>
-                  <th className="py-3 px-3 text-right">STOCK OUT (-)</th>
-                  <th className="py-3 px-3 text-right">REMAINING</th>
-                  <th className="py-3 px-3 text-center">UNIT</th>
-                  <th className="py-3 px-3 text-right">MIN THRESHOLD</th>
-                  <th className="py-3 px-3 text-center">STATUS</th>
-                  <th className="py-3 px-3 text-center">QUICK ACTION</th>
+                  <th className="py-3 px-3.5 w-[24%]">ITEM / PRODUCT NAME</th>
+                  <th className="py-3 px-2 text-center w-[13%]">CATEGORY</th>
+                  <th className="py-3 px-2.5 text-right w-[8%]">OPENING</th>
+                  <th className="py-3 px-2.5 text-right w-[8%]">STOCK IN (+)</th>
+                  <th className="py-3 px-2.5 text-right w-[8%]">STOCK OUT (-)</th>
+                  <th className="py-3 px-2.5 text-center w-[9%]">REMAINING</th>
+                  <th className="py-3 px-2.5 text-center w-[7%]">UNIT</th>
+                  <th className="py-3 px-2.5 text-center w-[9%]">MIN THRESHOLD</th>
+                  <th className="py-3 px-2.5 text-center w-[11%]">STATUS</th>
+                  <th className="py-3 px-2.5 text-center w-[11%]">QUICK ACTION</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ded4c5] bg-white font-medium text-[#122c20]">
@@ -545,15 +545,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 [1, 2, 3, 4, 5].map(idx => (
                   <tr key={idx} className="animate-pulse">
                     <td className="py-3 px-3"><div className="h-4 w-32 bg-[#ebe0cb] rounded" /></td>
-                    <td className="py-3 px-3 text-center"><div className="h-4 w-20 bg-[#ebdcc8] rounded mx-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-emerald-100 rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-red-100 rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-14 bg-[#ebdcc8] rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-center"><div className="h-4 w-8 bg-[#ebe0cb] rounded mx-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-center"><div className="h-4 w-16 bg-[#ebdcc8] rounded-full mx-auto" /></td>
-                    <td className="py-3 px-3 text-center"><div className="h-6 w-20 bg-[#103825]/30 rounded-lg mx-auto" /></td>
+                    <td className="py-3 px-2 text-center"><div className="h-4 w-20 bg-[#ebdcc8] rounded mx-auto" /></td>
+                    <td className="py-3 px-2.5 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
+                    <td className="py-3 px-2.5 text-right"><div className="h-4 w-12 bg-emerald-100 rounded ml-auto" /></td>
+                    <td className="py-3 px-2.5 text-right"><div className="h-4 w-12 bg-red-100 rounded ml-auto" /></td>
+                    <td className="py-3 px-2.5 text-center"><div className="h-4 w-14 bg-[#ebdcc8] rounded mx-auto" /></td>
+                    <td className="py-3 px-2.5 text-center"><div className="h-4 w-8 bg-[#ebe0cb] rounded mx-auto" /></td>
+                    <td className="py-3 px-2.5 text-center"><div className="h-4 w-10 bg-[#ebe0cb] rounded mx-auto" /></td>
+                    <td className="py-3 px-2.5 text-center"><div className="h-4 w-16 bg-[#ebdcc8] rounded-full mx-auto" /></td>
+                    <td className="py-3 px-2.5 text-center"><div className="h-6 w-20 bg-[#103825]/30 rounded-lg mx-auto" /></td>
                   </tr>
                 ))
               )}
@@ -690,38 +690,38 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           {item.name}
                         </td>
 
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-2.5 px-2 text-center">
                           <span className="inline-block px-2.5 py-0.5 bg-[#ebe0cb] text-[#456351] text-xs font-semibold rounded-md text-center">
                             {item.category}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-mono text-xs text-[#557361] font-semibold">
+                        <td className="py-2.5 px-2.5 text-right font-mono text-xs text-[#557361] font-semibold">
                           {item.openingStock}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-mono text-xs font-bold text-emerald-700">
+                        <td className="py-2.5 px-2.5 text-right font-mono text-xs font-bold text-emerald-700">
                           +{item.stockIn}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-mono text-xs font-bold text-red-700">
+                        <td className="py-2.5 px-2.5 text-right font-mono text-xs font-bold text-red-700">
                           -{item.stockOut}
                         </td>
 
                         {/* Remaining Stock = Opening + Stock In - Stock Out */}
-                        <td className={`py-2.5 px-3 text-right font-mono text-xs font-bold ${isBrownBranch ? 'text-[#542A16]' : 'text-[#0f3823]'}`}>
+                        <td className={`py-2.5 px-2.5 text-center font-mono text-xs font-bold ${isBrownBranch ? 'text-[#542A16]' : 'text-[#0f3823]'}`}>
                           {item.remainingStock}
                         </td>
 
-                        <td className="py-2.5 px-3 text-center text-xs text-[#557361] font-medium">
+                        <td className="py-2.5 px-2.5 text-center text-xs text-[#557361] font-medium">
                           {item.unit}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right font-mono text-xs text-[#557361] font-semibold">
+                        <td className="py-2.5 px-2.5 text-center font-mono text-xs text-[#557361] font-semibold">
                           <button
                             type="button"
                             onClick={() => handleOpenThresholdModal(item)}
-                            className="inline-flex items-center gap-1 hover:text-[#11291f] hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group"
+                            className="inline-flex items-center justify-center gap-1 hover:text-[#11291f] hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group"
                             title="Click to edit minimum stock threshold"
                           >
                             <span>{item.minThreshold}</span>
@@ -983,8 +983,11 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
                   return (
                     <tr key={entry.id} className="hover:bg-[#fbf8f3] transition-colors">
-                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
-                        {entry.date} <span className="text-[#11291f]">{entry.time}</span>
+                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center whitespace-nowrap">
+                        <div className="inline-flex items-center justify-center gap-1.5 tabular-nums">
+                          <span>{entry.date}</span>
+                          {entry.time && <span className="text-[#11291f]">{entry.time}</span>}
+                        </div>
                       </td>
 
                       <td className="py-2 px-3 font-medium text-[#11291f] text-center">
@@ -1011,16 +1014,21 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         </span>
                       </td>
 
-                      <td className="py-2 px-3 text-center text-[#11291f] font-medium">
-                        {entry.unit}
+                      <td className="py-2 px-3 text-center text-[#11291f] font-medium whitespace-nowrap">
+                        <span className="inline-block text-center">{entry.unit}</span>
                       </td>
 
                       <td className="py-2 px-3 text-[#11291f] font-medium text-center">
                         {entry.source}
                       </td>
 
-                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
-                        {entry.ref} {entry.supplier !== '-' && <span className="text-[#11291f] font-sans font-medium">({entry.supplier})</span>}
+                      <td className="py-2 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center whitespace-nowrap">
+                        <div className="inline-flex items-center justify-center gap-1 text-center">
+                          <span>{entry.ref}</span>
+                          {entry.supplier && entry.supplier !== '-' && (
+                            <span className="text-[#11291f] font-sans font-medium">({entry.supplier})</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-2 px-3 text-center font-mono font-black text-sm text-[#0f3823]">

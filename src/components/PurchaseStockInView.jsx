@@ -583,7 +583,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search invoice #, supplier, item..."
+              placeholder="Search invoice, supplier, item..."
               className={`w-full pl-10 pr-4 py-1.5 bg-[#f0ebd9] border border-[#cabb9e] rounded-xl text-xs text-[#0f231a] placeholder-[#385344] focus:outline-none focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]/40' : 'focus:ring-[#0f3823]/40'} font-extrabold shadow-inner transition-all`}
             />
             {searchQuery && (
