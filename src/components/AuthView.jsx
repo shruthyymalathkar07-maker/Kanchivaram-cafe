@@ -324,20 +324,20 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     <div className="min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe">
       
       {/* 1. TOP HEADER ROW (BRANDING, "THE BREWING JOURNEY" & MICRO-BRANDING)       */}
-      <div className="w-full flex items-center justify-between md:grid md:grid-cols-3 z-20 pt-1 pb-3 md:pt-0 md:pb-1.5 border-b border-[#E8DCC8] shrink-0 relative min-h-[56px] md:min-h-[54px] gap-1.5 min-[360px]:gap-2">
+      <div className="w-full flex items-center justify-between md:grid md:grid-cols-3 z-20 pt-1.5 pb-3.5 md:pt-0 md:pb-1.5 border-b border-[#E8DCC8] shrink-0 relative min-h-[62px] md:min-h-[54px] gap-1.5 min-[360px]:gap-2">
         
         {/* TOP LEFT BRANDING - ENHANCED VERTICAL PRESENCE */}
         <div className="flex items-center gap-2 sm:gap-3 justify-self-start min-w-0 shrink">
           <img 
             src="/login_logo_emblem.png" 
             alt="Kanchivaram Café Emblem" 
-            className="w-8 h-8 min-[360px]:w-8.5 min-[360px]:h-8.5 min-[380px]:w-9 min-[380px]:h-9 sm:w-10 sm:h-8 object-contain drop-shadow-xs shrink-0"
+            className="w-8.5 h-8.5 min-[360px]:w-9 min-[360px]:h-9 min-[380px]:w-10 min-[380px]:h-10 sm:w-10 sm:h-8 object-contain drop-shadow-xs shrink-0"
           />
           <div className="min-w-0 flex flex-col justify-center">
-            <h1 className="text-[13.5px] min-[360px]:text-[14px] min-[380px]:text-[14.5px] sm:text-base md:text-lg font-serif font-black text-[#0D3B2E] tracking-tight leading-normal whitespace-nowrap">
+            <h1 className="text-[13.5px] min-[360px]:text-[14px] min-[380px]:text-[14.5px] sm:text-base md:text-lg font-serif font-black text-[#0D3B2E] tracking-tight leading-snug whitespace-nowrap">
               Kanchivaram Café
             </h1>
-            <p className="text-[8.5px] min-[360px]:text-[9px] min-[380px]:text-[9.5px] md:text-[11px] font-serif text-[#5A321F] font-bold flex items-center gap-0.5 min-[360px]:gap-1 mt-0.5 whitespace-nowrap leading-normal">
+            <p className="text-[8.5px] min-[360px]:text-[9px] min-[380px]:text-[9.5px] md:text-[11px] font-serif text-[#5A321F] font-bold flex items-center gap-0.5 min-[360px]:gap-1 mt-1 whitespace-nowrap leading-snug">
               <span>📍</span> <span>Kanchipuram, Tamil Nadu</span>
             </p>
           </div>
@@ -372,11 +372,11 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
         {/* TOP RIGHT MICRO BRANDING */}
         <div className="flex flex-col items-end justify-self-end text-right shrink-0 pl-1">
           {/* Mobile representation (< md) */}
-          <div className="md:hidden flex flex-col items-end justify-center py-0.5">
-            <span className="text-[7.5px] min-[340px]:text-[8px] min-[380px]:text-[8.5px] min-[400px]:text-[9px] font-mono tracking-tight font-extrabold text-[#5A321F] uppercase whitespace-nowrap leading-normal">
+          <div className="md:hidden flex flex-col items-end justify-center py-1">
+            <span className="text-[7.5px] min-[340px]:text-[8px] min-[380px]:text-[8.5px] min-[400px]:text-[9px] font-mono tracking-tight font-extrabold text-[#5A321F] uppercase whitespace-nowrap leading-snug">
               CAFÉ • PEOPLE • POSSIBILITIES
             </span>
-            <div className="w-6.5 min-[375px]:w-7.5 h-0.5 bg-[#C69A4B] rounded-full mt-1.5"></div>
+            <div className="w-6.5 min-[375px]:w-7.5 h-0.5 bg-[#C69A4B] rounded-full mt-2"></div>
           </div>
 
           {/* Desktop representation (>= md: 100% frozen) */}
