@@ -429,12 +429,12 @@ export default function SalesReportView({ selectedBranch }) {
         {/* Table Filter Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
           
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-[#0f3823]" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <CheckCircle className="w-4 h-4 text-[#0f3823] shrink-0" />
             <h3 className="font-serif font-black text-sm text-[#11291f] tracking-normal">
               Tax & GST Audit Ledger ({period.toUpperCase()})
             </h3>
-            <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] rounded-full text-[10px] font-bold">
+            <span className="inline-flex items-center justify-center px-2.5 py-0.5 bg-[#ebe0cb] text-[#456351] rounded-full text-[10px] sm:text-[10.5px] font-bold leading-normal whitespace-nowrap shrink-0 text-center">
               {filteredTransactions.length} records
             </span>
           </div>

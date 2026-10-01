@@ -323,23 +323,21 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
   return (
     <div className="min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe">
       
-      {/* ========================================================================= */}
       {/* 1. TOP HEADER ROW (BRANDING, "THE BREWING JOURNEY" & MICRO-BRANDING)       */}
-      {/* ========================================================================= */}
-      <div className="w-full flex items-center justify-between md:grid md:grid-cols-3 z-20 pb-2.5 md:pb-1.5 border-b border-[#E8DCC8] shrink-0 relative min-h-[48px] sm:min-h-[54px] gap-2">
+      <div className="w-full flex items-center justify-between md:grid md:grid-cols-3 z-20 pb-2.5 md:pb-1.5 border-b border-[#E8DCC8] shrink-0 relative min-h-[48px] sm:min-h-[54px] gap-1 min-[360px]:gap-2">
         
         {/* TOP LEFT BRANDING */}
-        <div className="flex items-center gap-2 sm:gap-3 justify-self-start min-w-0 shrink-0">
+        <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-3 justify-self-start min-w-0 shrink">
           <img 
             src="/login_logo_emblem.png" 
             alt="Kanchivaram Café Emblem" 
-            className="w-8 h-6.5 min-[380px]:w-9 min-[380px]:h-7.5 sm:w-10 sm:h-8 object-contain drop-shadow-xs shrink-0"
+            className="w-7 h-6 min-[360px]:w-8 min-[360px]:h-6.5 min-[380px]:w-9 min-[380px]:h-7.5 sm:w-10 sm:h-8 object-contain drop-shadow-xs shrink-0"
           />
           <div className="min-w-0">
-            <h1 className="text-[13px] min-[380px]:text-[14px] sm:text-base md:text-lg font-serif font-black text-[#0D3B2E] tracking-tight leading-tight whitespace-nowrap">
+            <h1 className="text-xs min-[360px]:text-[13px] min-[380px]:text-[14px] sm:text-base md:text-lg font-serif font-black text-[#0D3B2E] tracking-tight leading-tight whitespace-nowrap">
               Kanchivaram Café
             </h1>
-            <p className="text-[8.5px] min-[380px]:text-[9.5px] md:text-[11px] font-serif text-[#5A321F] font-bold flex items-center gap-1 mt-0.5 whitespace-nowrap">
+            <p className="text-[7.5px] min-[360px]:text-[8.5px] min-[380px]:text-[9.5px] md:text-[11px] font-serif text-[#5A321F] font-bold flex items-center gap-0.5 min-[360px]:gap-1 mt-0.5 whitespace-nowrap">
               <span>📍</span> <span>Kanchipuram, Tamil Nadu</span>
             </p>
           </div>
@@ -372,13 +370,13 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
         </div>
 
         {/* TOP RIGHT MICRO BRANDING */}
-        <div className="flex flex-col items-end justify-self-end text-right shrink-0 pl-1.5">
+        <div className="flex flex-col items-end justify-self-end text-right shrink-0 pl-1">
           {/* Mobile representation (< md) */}
           <div className="md:hidden flex flex-col items-end">
-            <span className="text-[7.5px] min-[375px]:text-[8px] min-[400px]:text-[9px] font-mono tracking-tight min-[375px]:tracking-wider font-extrabold text-[#5A321F] uppercase whitespace-nowrap leading-tight">
+            <span className="text-[6.5px] min-[340px]:text-[7.5px] min-[380px]:text-[8px] min-[400px]:text-[9px] font-mono tracking-tighter min-[360px]:tracking-tight min-[375px]:tracking-wider font-extrabold text-[#5A321F] uppercase whitespace-nowrap leading-tight">
               CAFÉ • PEOPLE • POSSIBILITIES
             </span>
-            <div className="w-7 min-[375px]:w-8 h-0.5 bg-[#C69A4B] rounded-full mt-1"></div>
+            <div className="w-6 min-[375px]:w-8 h-0.5 bg-[#C69A4B] rounded-full mt-1"></div>
           </div>
 
           {/* Desktop representation (>= md: 100% frozen) */}
@@ -513,7 +511,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
                       <h3 className="text-xl sm:text-2xl font-serif font-black text-[#0D3B2E]">
                         Kanchivaram Café
                       </h3>
-                      <span className="text-[11px] font-bold text-white bg-[#0D3B2E] px-3 py-1 rounded-full border border-[#C69A4B]/30 shadow-xs">
+                      <span className="inline-flex items-center justify-center text-[11px] font-bold text-white bg-[#0D3B2E] px-3.5 py-1 rounded-full border border-[#C69A4B]/30 shadow-xs text-center leading-normal shrink-0">
                         Main Branch
                       </span>
                     </div>
@@ -577,7 +575,7 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
                       <h3 className="text-xl sm:text-2xl font-serif font-black text-[#542A16]">
                         Kanchivaram Café
                       </h3>
-                      <span className="text-[11px] font-bold text-white bg-[#542A16] px-3 py-1 rounded-full border border-[#C69A4B]/30 shadow-xs">
+                      <span className="inline-flex items-center justify-center text-[11px] font-bold text-white bg-[#542A16] px-3.5 py-1 rounded-full border border-[#C69A4B]/30 shadow-xs text-center leading-normal shrink-0">
                         City Branch
                       </span>
                     </div>

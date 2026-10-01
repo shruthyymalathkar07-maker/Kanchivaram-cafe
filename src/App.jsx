@@ -237,11 +237,11 @@ export default function App() {
             
             {/* VIEW 1: HOME DASHBOARD */}
             {activeTab === 'home' && (
-              <div className="space-y-2.5 flex-1 flex flex-col">
+              <div className="space-y-3 flex-1 flex flex-col pt-0.5">
                 
                 {/* Greeting Banner */}
-                <div className="space-y-2 shrink-0">
-                  <div className="relative overflow-hidden bg-[#ebdcc8] text-[#122c20] rounded-2xl p-3.5 shadow-sm border border-[#cabb9e] flex flex-col md:flex-row md:items-center justify-between gap-2 min-h-[56px]">
+                <div className="space-y-2.5 shrink-0">
+                  <div className="relative overflow-hidden bg-[#ebdcc8] text-[#122c20] rounded-2xl p-3.5 sm:p-4 shadow-sm border border-[#cabb9e] flex flex-col md:flex-row md:items-center justify-between gap-2 min-h-[56px]">
                     <div className="space-y-0.5 z-10">
                       <h2 className="text-lg sm:text-xl font-extrabold font-sans text-[#11291f] flex items-center gap-2">
                         Good Morning, Shruthy! <span className="text-base">☕</span>
@@ -259,11 +259,11 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Quick Action Buttons Row */}
-                  <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Quick Action Buttons Row: Tax next to Receive Stock */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 py-0.5">
                     <button
                       onClick={() => handleTabChange('pos')}
-                      className={`flex items-center gap-2 px-4 py-1.5 text-white font-black text-xs rounded-full shadow-md transition-all cursor-pointer border ${
+                      className={`flex items-center gap-2 px-4 py-1.5 text-white font-black text-xs rounded-full shadow-md transition-all cursor-pointer border shrink-0 ${
                         isBrownBranch 
                           ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' 
                           : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'
@@ -275,15 +275,23 @@ export default function App() {
 
                     <button
                       onClick={() => handleTabChange('inventory')}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer shrink-0"
                     >
                       <PackagePlus className="w-3.5 h-3.5 text-[#122c20]" />
                       <span>Receive Stock</span>
                     </button>
 
                     <button
+                      onClick={() => setActiveModal('TAX_AUDIT')}
+                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer shrink-0"
+                    >
+                      <Receipt className="w-3.5 h-3.5 text-[#122c20]" />
+                      <span>Tax</span>
+                    </button>
+
+                    <button
                       onClick={() => handleTabChange('online-orders')}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer shrink-0"
                     >
                       <ShoppingBag className="w-3.5 h-3.5 text-[#122c20]" />
                       <span>Online Orders</span>
@@ -291,18 +299,10 @@ export default function App() {
 
                     <button
                       onClick={() => setActiveModal('TOTAL_SALES')}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer shrink-0"
                     >
                       <BarChart2 className="w-3.5 h-3.5 text-[#122c20]" />
                       <span>Sales Audit</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveModal('TAX_AUDIT')}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full shadow-xs border border-[#cabb9e] transition-all cursor-pointer"
-                    >
-                      <Receipt className="w-3.5 h-3.5 text-[#122c20]" />
-                      <span>Tax</span>
                     </button>
                   </div>
                 </div>

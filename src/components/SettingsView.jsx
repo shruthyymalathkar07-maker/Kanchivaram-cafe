@@ -113,40 +113,43 @@ export default function SettingsView({ selectedBranch }) {
       </div>
 
       {/* Settings Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#cabb9e] pb-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 border-b border-[#cabb9e] pb-2 overflow-x-auto no-scrollbar w-full">
         <button
+          type="button"
           onClick={() => setActiveTab('store')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
             activeTab === 'store'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
           }`}
         >
-          <Building2 className="w-4 h-4" />
+          <Building2 className="w-4 h-4 shrink-0" />
           <span>Store Information</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('tax')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
             activeTab === 'tax'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
           }`}
         >
-          <Receipt className="w-4 h-4" />
+          <Receipt className="w-4 h-4 shrink-0" />
           <span>Tax &amp; Billing Rates</span>
         </button>
 
         <button
+          type="button"
           onClick={() => setActiveTab('printer')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
             activeTab === 'printer'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
           }`}
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-4 h-4 shrink-0" />
           <span>Thermal Printer Setup</span>
         </button>
       </div>

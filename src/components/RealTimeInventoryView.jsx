@@ -345,16 +345,16 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
           </div>
         </div>
 
-        {/* Row 2: Status Badge */}
-        <div className="flex items-center pt-0.5">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black uppercase rounded-full border shadow-2xs ${
+        {/* Row 2: Status Badge (Centered horizontally above action buttons) */}
+        <div className="flex items-center justify-center w-full pt-0.5 text-center">
+          <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase rounded-full border shadow-2xs ${
             currentDataState === 'EMPTY' ? 'bg-amber-100 text-amber-900 border-amber-300' :
             currentDataState === 'LOADING' ? 'bg-blue-100 text-blue-900 border-blue-300 animate-pulse' :
             currentDataState === 'ERROR' ? 'bg-red-100 text-red-900 border-red-300' :
             isBrownBranch ? 'bg-[#542A16] text-[#C69A4B] border-[#7A4325]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'
           }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current inline-block" />
-            <span>{currentDataState === 'EMPTY' ? 'State: Empty (0 Records)' :
+            <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+            <span className="whitespace-nowrap">{currentDataState === 'EMPTY' ? 'State: Empty (0 Records)' :
                    currentDataState === 'LOADING' ? 'State: Fetching Data...' :
                    currentDataState === 'ERROR' ? 'State: Connection Error' :
                    'STATE: LIVE REAL-TIME DATA'}</span>

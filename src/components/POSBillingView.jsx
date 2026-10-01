@@ -358,32 +358,32 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
           <div className="pt-2 flex flex-wrap items-center justify-between gap-2 shrink-0 border-t border-[#cabb9e]/60">
             
             {/* Quick Actions Pills */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-black text-[#11291f] uppercase tracking-wider pr-1">Quick Actions</span>
+            <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <span className="text-xs font-black text-[#11291f] uppercase tracking-wider pr-1 shrink-0">Quick Actions</span>
               <button 
                 onClick={handleHoldBill}
-                className="px-3 py-1 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-3 py-1.5 h-8 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal"
               >
                 Hold Bill ({heldBills.length})
               </button>
 
               <button 
                 onClick={() => setIsHeldBillsOpen(true)}
-                className="px-3 py-1 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-3 py-1.5 h-8 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal"
               >
                 Recall Bill
               </button>
 
               <button 
                 onClick={handleApplyDiscountPrompt}
-                className="px-3 py-1 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-3 py-1.5 h-8 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal"
               >
                 Apply Discount
               </button>
 
               <button 
                 onClick={handleAddNotePrompt}
-                className="px-3 py-1 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center px-3 py-1.5 h-8 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] font-black text-xs rounded-full border border-[#cabb9e] shadow-2xs transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal"
               >
                 Add Note {orderNote ? '✓' : ''}
               </button>
