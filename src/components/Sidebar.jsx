@@ -120,7 +120,7 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
         </div>
 
         {/* Navigation Menu Items (3D Water-Layer Capsule Pills with clean wavy boundary margin) */}
-        <nav className="space-y-1.5 py-1.5 flex flex-col shrink-0 w-[94%] sm:w-[92%]">
+        <nav className="space-y-2 sm:space-y-2.5 py-2 flex flex-col shrink-0 w-[94%] sm:w-[92%]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -128,7 +128,7 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full h-9 sm:h-10 flex items-center justify-between px-3.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer relative overflow-hidden group shrink-0 ${
+                className={`w-full h-10 sm:h-10.5 lg:h-11 flex items-center justify-between px-3.5 sm:px-4 rounded-full text-xs sm:text-[12.5px] font-bold transition-all duration-200 cursor-pointer relative overflow-hidden group shrink-0 ${
                   isActive
                     ? isBrownBranch
                       ? 'bg-gradient-to-r from-[#542A16] via-[#6e371d] to-[#452212] text-white border border-[#C69A4B]/60 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_4px_14px_rgba(84,42,22,0.5)] ring-1 ring-[#C69A4B]/40 font-extrabold'
@@ -146,14 +146,14 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
                 }`} />
 
                 <div className="flex items-center gap-2.5 z-10">
-                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors ${
+                  <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 transition-colors ${
                     isActive 
                       ? 'text-white drop-shadow-xs' 
                       : isBrownBranch 
                         ? 'text-[#E8D8C2] group-hover:text-white' 
                         : 'text-[#8ecbb0] group-hover:text-white'
                   }`} />
-                  <span className="truncate tracking-wide text-[11px] sm:text-xs">{item.label}</span>
+                  <span className="truncate tracking-wide text-xs sm:text-[12.5px]">{item.label}</span>
                 </div>
 
                 {item.badge && (
