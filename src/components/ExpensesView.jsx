@@ -585,24 +585,24 @@ export default function ExpensesView({ selectedBranch }) {
                   filteredExpenses.map((item) => (
                     <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                       
-                      <td className="py-2.5 px-3 font-mono font-bold text-[#557361] text-[11px] text-center">
+                      <td className="py-2.5 px-3 font-normal text-black text-[11px] text-center">
                         {item.displayDate}
                       </td>
 
-                      <td className="py-2.5 px-3 font-extrabold text-[#11291f] text-center">
+                      <td className="py-2.5 px-3 font-normal text-black text-center">
                         <div>{item.description}</div>
-                        {item.notes && <span className="text-[9.5px] text-[#719985] font-bold block">{item.notes}</span>}
+                        {item.notes && <span className="text-[9.5px] text-black font-normal block">{item.notes}</span>}
                       </td>
 
                       <td className="py-2.5 px-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 text-[10px] font-extrabold rounded-md text-center ${
-                          item.isStockIn ? `bg-[#d4af37]/30 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}` : 'bg-[#ebe0cb] text-[#456351]'
+                        <span className={`inline-block px-2 py-0.5 text-[10px] font-normal text-black rounded-md text-center ${
+                          item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                         }`}>
                           {item.category}
                         </span>
                       </td>
 
-                      <td className="py-2.5 px-3 text-center font-mono font-black text-sm text-rose-700">
+                      <td className="py-2.5 px-3 text-center font-normal text-sm text-black">
                         ₹{(parseFloat(item.amount) || 0).toFixed(2)}
                       </td>
 

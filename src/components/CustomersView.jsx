@@ -344,9 +344,9 @@ export default function CustomersView({ selectedBranch }) {
                       </div>
                       <span className="text-black font-normal truncate">{cust.name}</span>
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black">{cust.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black">{cust.phone}</td>
                     <td className="py-3 px-4 col-span-2 font-normal text-black">{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="py-3 px-4 col-span-2 text-xs font-normal text-black text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>

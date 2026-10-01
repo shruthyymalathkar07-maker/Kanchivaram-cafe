@@ -339,8 +339,8 @@ export default function StaffView({ selectedBranch }) {
                     <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.name}</td>
                     <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.role}</td>
                     <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.shift}</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">{staff.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">{staff.pay}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.pay}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <span className={`px-2 py-0.5 text-[9.5px] font-black rounded-full border shadow-2xs ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'}`}>
                         {staff.status}

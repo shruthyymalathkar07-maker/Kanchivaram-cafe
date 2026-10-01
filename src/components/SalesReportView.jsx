@@ -503,33 +503,33 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 text-xs font-medium text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 text-xs font-normal text-black text-center">
                           {formatTxDateTime(tx)}
                         </td>
-                        <td className="py-2.5 px-3 font-mono font-black text-[#0f3823] text-center">
+                        <td className="py-2.5 px-3 font-normal text-black text-center">
                           {tx.billNumber || tx.id}
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-[#11291f] text-center">
+                        <td className="py-2.5 px-3 font-normal text-black text-center">
                           {tx.channel || 'In-Store POS'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-[#122c20] text-[10px] font-extrabold rounded-md uppercase">
+                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[10px] font-normal rounded-md uppercase">
                             {tx.paymentMethod || 'CASH'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-normal text-black">
                           ₹{gSales.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-rose-700">
+                        <td className="py-2.5 px-3 text-center font-normal text-black">
                           {disc > 0 ? `-₹${disc.toFixed(2)}` : '₹0.00'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-black text-[#11291f]">
+                        <td className="py-2.5 px-3 text-center font-normal text-black">
                           ₹{taxAmt.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-black text-amber-800">
+                        <td className="py-2.5 px-3 text-center font-normal text-black">
                           ₹{gst.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-black text-sm text-[#0f3823]">
+                        <td className="py-2.5 px-3 text-center font-normal text-sm text-black">
                           ₹{net.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
