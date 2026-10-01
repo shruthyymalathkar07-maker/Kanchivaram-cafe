@@ -35,6 +35,7 @@ import SettingsView from './components/SettingsView';
 import KVCMAssistantView from './components/KVCMAssistantView';
 import MobileNav from './components/MobileNav';
 import AuthView from './components/AuthView';
+import BranchHeroReveal from './components/BranchHeroReveal';
 
 import { inventoryStore } from './services/inventoryStore';
 import { authStore } from './services/authStore';
@@ -237,8 +238,19 @@ export default function App() {
             
             {/* VIEW 1: HOME DASHBOARD */}
             {activeTab === 'home' && (
-              <div className="space-y-2.5 flex-1 flex flex-col">
+              <div className="space-y-3 flex-1 flex flex-col">
                 
+                {/* Dynamic Arched-to-Fullscreen Branch Hero Reveal */}
+                <BranchHeroReveal
+                  branchName={selectedBranch?.name || (isBrownBranch ? 'City Branch' : 'Main Branch')}
+                  branchCode={selectedBranch?.code || (isBrownBranch ? 'KVCM-CITY' : 'KVCM-MAIN')}
+                  tagline={isBrownBranch ? 'Modern Dining, Quick Bites & Special Masala Chai' : 'Heritage South Indian Dining, Filter Coffee & Pure Ghee Delicacies'}
+                  locationText={selectedBranch?.address || (isBrownBranch ? '45 Bypass Road, City Center' : '12 Temple Street, Kanchipuram')}
+                  heroImage={isBrownBranch ? 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1600&q=85' : 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=1600&q=85'}
+                  isBrownBranch={isBrownBranch}
+                  onQuickAction={(tab) => handleTabChange(tab)}
+                />
+
                 {/* Greeting Banner */}
                 <div className="space-y-2 shrink-0">
                   <div className="relative overflow-hidden bg-[#ebdcc8] text-[#122c20] rounded-2xl p-3.5 shadow-sm border border-[#cabb9e] flex flex-col md:flex-row md:items-center justify-between gap-2 min-h-[56px]">
