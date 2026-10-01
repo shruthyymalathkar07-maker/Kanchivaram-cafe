@@ -579,19 +579,19 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                           const tTaxable = Math.max(0, tNet - tGst);
                           return (
                             <tr key={t.id} className="hover:bg-[#fbf8f3] transition-colors">
-                              <td className="py-2 px-3 font-medium text-[11px] text-black">
-                                {t.date} <span className="text-[#547363] text-[10px] font-normal">({t.billNumber || t.id})</span>
+                              <td className="py-2 px-3 font-medium text-[11.5px] text-black">
+                                {t.date} <span className="text-[#547363] text-[10.5px] font-normal">({t.billNumber || t.id})</span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10px] font-medium text-black rounded">
+                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10.5px] font-medium text-black rounded">
                                   {t.channel || 'POS'}
                                 </span>
                               </td>
-                              <td className="py-2 px-3 text-right font-medium text-black">₹{tTaxable.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-medium text-amber-900">₹{tGst.toFixed(2)}</td>
-                              <td className={`py-2 px-3 text-right font-medium ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>₹{tNet.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[11.5px] text-black">₹{tTaxable.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[11.5px] text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[11.5px] text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[11.5px] text-amber-900">₹{tGst.toFixed(2)}</td>
+                              <td className={`py-2 px-3 text-right font-medium text-[11.5px] ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>₹{tNet.toFixed(2)}</td>
                             </tr>
                           );
                         })

@@ -303,7 +303,7 @@ export default function CustomersView({ selectedBranch }) {
                 <th className="py-3 px-4 col-span-1 text-center whitespace-nowrap">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className={`text-[12px] ${filteredCustomers.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
+            <tbody className={`text-[12.5px] ${filteredCustomers.length > 0 ? 'divide-y divide-[#f0e8dc]' : ''}`}>
               {filteredCustomers.length === 0 ? (
                 <tr className="w-full my-auto">
                   <td colSpan="7" className="pt-0 pb-8 px-4 text-center bg-[#fdfbf7] w-full block">
@@ -338,19 +338,19 @@ export default function CustomersView({ selectedBranch }) {
                     onClick={() => setSelectedCustomerForHistory(cust)}
                     className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center cursor-pointer group"
                   >
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black flex items-center gap-2">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black flex items-center gap-2">
                       <div className={`w-7 h-7 rounded-full ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'} font-semibold text-xs flex items-center justify-center border shrink-0`}>
                         {cust.name ? cust.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'C'}
                       </div>
-                      <span className="text-black font-medium text-[12px] truncate">{cust.name}</span>
+                      <span className="text-black font-medium text-[12.5px] truncate">{cust.name}</span>
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black">{cust.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black">{cust.visits || 0} Orders</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black text-center">
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black">{cust.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black">{cust.visits || 0} Orders</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12px] text-black text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
-                    <td className="py-3 px-4 col-span-1 font-medium text-[12px] text-black text-center truncate">{cust.lastVisit || 'N/A'}</td>
+                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
+                    <td className="py-3 px-4 col-span-1 font-medium text-[12.5px] text-black text-center truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
                         onClick={(e) => {
@@ -411,7 +411,7 @@ export default function CustomersView({ selectedBranch }) {
                         {cust.name}
                       </h4>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[12px] font-medium text-black flex items-center gap-1">
+                        <span className="text-[12.5px] font-medium text-black flex items-center gap-1">
                           <Phone className="w-3 h-3 text-[#547363]" />
                           {cust.phone}
                         </span>
@@ -451,25 +451,25 @@ export default function CustomersView({ selectedBranch }) {
                 <div className="grid grid-cols-2 gap-2 bg-[#ebdcc8]/30 p-2.5 rounded-xl border border-[#cabb9e]/50 text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Total Orders</span>
-                    <span className="font-medium text-[12px] text-black">
+                    <span className="font-medium text-[12.5px] text-black">
                       {cust.visits || 0} {(cust.visits === 1) ? 'Bill' : 'Bills'}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Total Spent</span>
-                    <span className="font-medium text-[12px] text-black">
+                    <span className="font-medium text-[12.5px] text-black">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Favourite Item</span>
-                    <span className="font-medium text-black break-words text-[12px] block">
+                    <span className="font-medium text-black break-words text-[12.5px] block">
                       {cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Last Purchase</span>
-                    <span className="font-medium text-black text-[12px] block">
+                    <span className="font-medium text-black text-[12.5px] block">
                       {cust.lastVisit || 'No purchases yet'}
                     </span>
                   </div>
