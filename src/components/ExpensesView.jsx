@@ -111,16 +111,20 @@ export default function ExpensesView({ selectedBranch }) {
   }, []);
 
   // Map Stock-In Purchases from Purchase Module automatically as "Raw Ingredients (Stock In)"
-  const stockInExpenses = (inventoryState.purchases || []).map(p => ({
-    id: `stock-${p.id}`,
-    description: `${p.items?.[0]?.itemName || 'Raw Ingredients Purchase'} (${p.invoiceRef || p.supplier})`,
-    category: 'Raw Ingredients (Stock In)',
-    amount: p.totalAmount || 0,
-    date: p.dateIso || new Date().toISOString().split('T')[0],
-    displayDate: p.date || p.dateIso,
-    notes: `Auto-linked from Purchase / Stock In (${p.supplier || 'Supplier'})`,
-    isStockIn: true
-  }));
+  const stockInExpenses = (inventoryState.purchases || []).map(p => {
+    const itemNames = (p.items || []).map(i => i.itemName).filter(Boolean).join(', ');
+    const desc = itemNames || p.items?.[0]?.itemName || 'Raw Ingredients Purchase';
+    return {
+      id: `stock-${p.id}`,
+      description: desc,
+      category: 'Raw Ingredients (Stock In)',
+      amount: p.totalAmount || 0,
+      date: p.dateIso || new Date().toISOString().split('T')[0],
+      displayDate: p.date || p.dateIso,
+      notes: '',
+      isStockIn: true
+    };
+  });
 
   // Combine manual operating expenses + auto-linked Stock In purchases
   const combinedExpenses = [...(expenseState.expenses || []), ...stockInExpenses].sort((a, b) => 
