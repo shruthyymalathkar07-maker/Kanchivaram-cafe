@@ -503,7 +503,7 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 font-mono font-medium text-[#11291f] text-[11px] text-center">
+                        <td className="py-2.5 px-3 text-xs font-medium text-[#11291f] text-center">
                           {formatTxDateTime(tx)}
                         </td>
                         <td className="py-2.5 px-3 font-mono font-black text-[#0f3823] text-center">
