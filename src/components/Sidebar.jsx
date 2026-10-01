@@ -46,7 +46,7 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
           isBrownBranch 
             ? 'from-[#3E2312] via-[#2D190D] to-[#1E0F07]' 
             : 'from-[#073d2a] via-[#053323] to-[#032418]'
-        } text-[#e2ede7] h-screen sticky top-0 p-3 sm:p-3.5 pr-4 sm:pr-5 flex-col justify-between shrink-0 shadow-2xl z-20 relative select-none overflow-y-auto no-scrollbar transition-colors duration-500`}
+        } text-[#e2ede7] h-screen sticky top-0 pl-3.5 sm:pl-4 pr-6 sm:pr-7 lg:pr-8 pt-3 pb-3 flex-col justify-between shrink-0 shadow-2xl z-20 relative select-none overflow-y-auto no-scrollbar transition-colors duration-500`}
         style={{ clipPath: 'url(#sidebarOrganicWaveClip)' }}
       >
         {/* Right Wavy Edge Outer Border Overlay */}
@@ -119,8 +119,8 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
 
         </div>
 
-        {/* Navigation Menu Items (3D Water-Layer Capsule Pills) */}
-        <nav className="space-y-1.5 py-1.5 flex flex-col shrink-0">
+        {/* Navigation Menu Items (3D Water-Layer Capsule Pills with clean wavy boundary margin) */}
+        <nav className="space-y-1.5 py-1.5 flex flex-col shrink-0 w-[94%] sm:w-[92%]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
