@@ -345,24 +345,8 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
           </div>
         </div>
 
-        {/* Row 2: Status Badge (Centered horizontally above action buttons) */}
-        <div className="flex items-center justify-center w-full pt-0.5 text-center">
-          <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase rounded-full border shadow-2xs ${
-            currentDataState === 'EMPTY' ? 'bg-amber-100 text-amber-900 border-amber-300' :
-            currentDataState === 'LOADING' ? 'bg-blue-100 text-blue-900 border-blue-300 animate-pulse' :
-            currentDataState === 'ERROR' ? 'bg-red-100 text-red-900 border-red-300' :
-            isBrownBranch ? 'bg-[#542A16] text-[#C69A4B] border-[#7A4325]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
-            <span className="whitespace-nowrap">{currentDataState === 'EMPTY' ? 'State: Empty (0 Records)' :
-                   currentDataState === 'LOADING' ? 'State: Fetching Data...' :
-                   currentDataState === 'ERROR' ? 'State: Connection Error' :
-                   'STATE: LIVE REAL-TIME DATA'}</span>
-          </span>
-        </div>
-
-        {/* Row 3: Action Buttons (Two Clean, Tap-Friendly Buttons) */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        {/* Row 2: Action Buttons (Two Clean, Tap-Friendly Buttons Side-by-Side) */}
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
           <button
             onClick={() => onNavigate ? onNavigate('purchase') : setIsStockInModalOpen(true)}
             className={`flex items-center justify-center gap-1.5 py-2 px-2 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-98 cursor-pointer border ${
@@ -380,6 +364,22 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
             <PackageMinus className="w-3.5 h-3.5 text-red-200" />
             <span className="whitespace-nowrap">- Usage / Stock Out</span>
           </button>
+        </div>
+
+        {/* Row 3: Status Badge (Centered Horizontally Directly Below Action Buttons) */}
+        <div className="flex items-center justify-center w-full pt-0.5 text-center">
+          <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase rounded-full border shadow-2xs ${
+            currentDataState === 'EMPTY' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+            currentDataState === 'LOADING' ? 'bg-blue-100 text-blue-900 border-blue-300 animate-pulse' :
+            currentDataState === 'ERROR' ? 'bg-red-100 text-red-900 border-red-300' :
+            isBrownBranch ? 'bg-[#542A16] text-[#C69A4B] border-[#7A4325]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'
+          }`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current inline-block shrink-0" />
+            <span className="whitespace-nowrap">{currentDataState === 'EMPTY' ? 'State: Empty (0 Records)' :
+                   currentDataState === 'LOADING' ? 'State: Fetching Data...' :
+                   currentDataState === 'ERROR' ? 'State: Connection Error' :
+                   'STATE: LIVE REAL-TIME DATA'}</span>
+          </span>
         </div>
 
       </div>
