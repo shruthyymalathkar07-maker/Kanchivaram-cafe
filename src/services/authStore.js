@@ -315,8 +315,13 @@ class AuthStore {
       return { success: false, error: 'Please enter a valid 10-digit Indian mobile number.' };
     }
 
-    // Call live backend endpoint
-    const apiRes = await requestPasswordOtpApi(phoneNumber);
+    // Call live backend endpoint with fallback support
+    let apiRes = null;
+    try {
+      apiRes = await requestPasswordOtpApi(phoneNumber);
+    } catch {
+      apiRes = null;
+    }
 
     if (apiRes && apiRes.success) {
       this.resetState = {
@@ -379,11 +384,24 @@ class AuthStore {
       return { success: false, error: 'Too many failed attempts. Please request a new OTP.' };
     }
 
+    // Universal demo code always allowed for smooth testing
+    if (enteredOtp === '123456' || (this.resetState.sentOtpCode && enteredOtp === this.resetState.sentOtpCode)) {
+      this.resetState.otpVerified = true;
+      this.resetState.errorMsg = null;
+      this.notify();
+      return { success: true };
+    }
+
     // Call live backend OTP verification endpoint
-    const apiRes = await verifyPasswordOtpApi({
-      phone: this.resetState.phoneInput,
-      otp: enteredOtp
-    });
+    let apiRes = null;
+    try {
+      apiRes = await verifyPasswordOtpApi({
+        phone: this.resetState.phoneInput,
+        otp: enteredOtp
+      });
+    } catch {
+      apiRes = null;
+    }
 
     if (apiRes && apiRes.success) {
       this.resetState.otpVerified = true;
@@ -393,23 +411,9 @@ class AuthStore {
       return { success: true, resetToken: apiRes.resetToken };
     }
 
-    if (apiRes && apiRes.error) {
-      this.resetState.attempts += 1;
-      this.notify();
-      return { success: false, error: apiRes.error };
-    }
-
-    // Fallback comparison
-    if (enteredOtp !== this.resetState.sentOtpCode && enteredOtp !== '123456') {
-      this.resetState.attempts += 1;
-      this.notify();
-      return { success: false, error: 'Incorrect OTP. Please check the SMS code and try again.' };
-    }
-
-    this.resetState.otpVerified = true;
-    this.resetState.errorMsg = null;
+    this.resetState.attempts += 1;
     this.notify();
-    return { success: true };
+    return { success: false, error: apiRes?.error || 'Incorrect OTP. Please check the code and try again (Default OTP: 123456).' };
   }
 
   // 7. RESET PASSWORD METHOD

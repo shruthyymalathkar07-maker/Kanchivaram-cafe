@@ -452,42 +452,54 @@ export async function logoutUserApi() {
 
 export async function requestPasswordOtpApi(phone) {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/request-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
+      body: JSON.stringify({ phone }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     return await res.json();
   } catch (err) {
-    console.warn('[API] Request OTP network error:', err.message);
+    console.warn('[API] Request OTP network notice (using fallback):', err.message);
     return null;
   }
 }
 
 export async function verifyPasswordOtpApi({ phone, otp }) {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, otp })
+      body: JSON.stringify({ phone, otp }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     return await res.json();
   } catch (err) {
-    console.warn('[API] Verify OTP network error:', err.message);
+    console.warn('[API] Verify OTP network notice (using fallback):', err.message);
     return null;
   }
 }
 
 export async function resetPasswordApi({ resetToken, newPassword, confirmPassword }) {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resetToken, newPassword, confirmPassword })
+      body: JSON.stringify({ resetToken, newPassword, confirmPassword }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     return await res.json();
   } catch (err) {
-    console.warn('[API] Reset password network error:', err.message);
+    console.warn('[API] Reset password network notice (using fallback):', err.message);
     return null;
   }
 }
