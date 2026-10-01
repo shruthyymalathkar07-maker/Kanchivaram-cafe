@@ -190,22 +190,22 @@ export default function InventoryView({ onBackToHome }) {
       {/* Main Stock Movement Table */}
       <div className="bg-[#163529] rounded-3xl border border-[#27523f] shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-[14px]">
             <thead>
-              <tr className="bg-[#0f231a] text-[#a4c5b5] text-xs uppercase font-semibold border-b border-[#27523f]">
-                <th className="py-4 px-5">Product Name</th>
-                <th className="py-4 px-4">Category</th>
-                <th className="py-4 px-4 text-right">Opening Stock</th>
-                <th className="py-4 px-4 text-right">Stock Received</th>
-                <th className="py-4 px-4 text-right text-[#d9a752]">Total Available</th>
-                <th className="py-4 px-4 text-right text-amber-400">Sold / Used</th>
-                <th className="py-4 px-4 text-right text-[#4ade80] font-bold">Remaining Stock</th>
-                <th className="py-4 px-4 text-right">Min Threshold</th>
-                <th className="py-4 px-5 text-center">Status</th>
-                <th className="py-4 px-4 text-center">Action</th>
+              <tr className="bg-[#0f231a] text-[#a4c5b5] uppercase font-semibold text-[13px] border-b border-[#27523f]">
+                <th className="py-4 px-5">PRODUCT NAME</th>
+                <th className="py-4 px-4">CATEGORY</th>
+                <th className="py-4 px-4 text-right">OPENING STOCK</th>
+                <th className="py-4 px-4 text-right">STOCK RECEIVED</th>
+                <th className="py-4 px-4 text-right text-[#d9a752]">TOTAL AVAILABLE</th>
+                <th className="py-4 px-4 text-right text-amber-400">SOLD / USED</th>
+                <th className="py-4 px-4 text-right text-[#4ade80]">REMAINING STOCK</th>
+                <th className="py-4 px-4 text-right">MIN THRESHOLD</th>
+                <th className="py-4 px-5 text-center">STATUS</th>
+                <th className="py-4 px-4 text-center">ACTION</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e4838] text-sm text-slate-200">
+            <tbody className="divide-y divide-[#1e4838] text-[14px] text-slate-200 font-medium">
               {filteredItems.map((item) => (
                 <tr 
                   key={item.id}
@@ -213,40 +213,40 @@ export default function InventoryView({ onBackToHome }) {
                     item.isLow ? 'bg-red-950/20' : ''
                   }`}
                 >
-                  <td className="py-3.5 px-5 font-bold text-white">
+                  <td className="py-3.5 px-5 font-medium text-[14px] text-white">
                     <div className="flex items-center gap-2">
                       <span>{item.name}</span>
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 text-xs text-[#86b09c]">
+                  <td className="py-3.5 px-4 text-xs font-normal text-[#86b09c]">
                     <span className="px-2.5 py-1 rounded-full bg-[#0f231a] border border-[#27523f]">
                       {item.category}
                     </span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-[#a4c5b5]">
-                    {item.openingStock} <span className="text-[11px] text-[#6e9684]">{item.unit}</span>
+                  <td className="py-3.5 px-4 text-right font-medium text-[#a4c5b5]">
+                    {item.openingStock} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-[#4ade80] font-semibold">
-                    +{item.received} <span className="text-[11px] text-[#6e9684]">{item.unit}</span>
+                  <td className="py-3.5 px-4 text-right font-medium text-emerald-400">
+                    +{item.received} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-[#d9a752] font-semibold">
-                    {item.totalAvailable} <span className="text-[11px] text-[#6e9684]">{item.unit}</span>
+                  <td className="py-3.5 px-4 text-right font-medium text-[#d9a752]">
+                    {item.totalAvailable} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-amber-300 font-semibold">
-                    {item.soldUsed} <span className="text-[11px] text-[#6e9684]">{item.unit}</span>
+                  <td className="py-3.5 px-4 text-right font-medium text-rose-400">
+                    {item.soldUsed} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-lg font-extrabold text-[#4ade80]">
+                  <td className="py-3.5 px-4 text-right font-medium text-[#4ade80]">
                     {item.remainingStock} <span className="text-xs text-[#a4c5b5] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-mono text-[#a4c5b5]">
-                    {item.minThreshold} <span className="text-[11px] text-[#6e9684]">{item.unit}</span>
+                  <td className="py-3.5 px-4 text-right font-medium text-[#a4c5b5]">
+                    {item.minThreshold} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
                   <td className="py-3.5 px-5 text-center">

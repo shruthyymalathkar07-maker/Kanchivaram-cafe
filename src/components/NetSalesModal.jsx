@@ -187,44 +187,44 @@ export default function NetSalesModal({ isOpen, onClose }) {
               📊 Total Taxes & Discounts Audit
             </h3>
             <div className="overflow-x-auto rounded-xl border border-[#cabb9e]">
-              <table className="w-full text-left text-xs text-[#11291f]">
-                <thead className="bg-[#ebdcc8] text-[#11291f] uppercase font-black text-[10px]">
+              <table className="w-full text-left text-[14px] text-[#11291f]">
+                <thead className="bg-[#ebdcc8] text-[#11291f] uppercase font-semibold text-[13px]">
                   <tr>
-                    <th className="py-2.5 px-3">Channel</th>
-                    <th className="py-2.5 px-3">Gross Sales</th>
-                    <th className="py-2.5 px-3">Taxes Collected</th>
-                    <th className="py-2.5 px-3">Discounts Allowed</th>
-                    <th className="py-2.5 px-3">Net Realized</th>
+                    <th className="py-2.5 px-3">CHANNEL</th>
+                    <th className="py-2.5 px-3">GROSS SALES</th>
+                    <th className="py-2.5 px-3">TAXES COLLECTED</th>
+                    <th className="py-2.5 px-3">DISCOUNTS ALLOWED</th>
+                    <th className="py-2.5 px-3">NET REALIZED</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#cabb9e]/50 font-medium">
+                <tbody className="divide-y divide-[#cabb9e]/50 font-medium text-[14px]">
                   <tr>
-                    <td className="py-2.5 px-3 font-extrabold text-[#11291f]">POS Store Counters</td>
-                    <td className="py-2.5 px-3 font-mono">₹12,000.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹600.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹650.00</td>
-                    <td className="py-2.5 px-3 font-mono text-[#0f3823] font-black">₹11,950.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">POS Store Counters</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹12,000.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹600.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹650.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹11,950.00</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-extrabold text-[#11291f]">Swiggy Delivery</td>
-                    <td className="py-2.5 px-3 font-mono">₹3,850.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹192.50</td>
-                    <td className="py-2.5 px-3 font-mono">₹350.00</td>
-                    <td className="py-2.5 px-3 font-mono text-[#0f3823] font-black">₹2,614.50</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">Swiggy Delivery</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹3,850.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹192.50</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹350.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹2,614.50</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-extrabold text-[#11291f]">Zomato Delivery</td>
-                    <td className="py-2.5 px-3 font-mono">₹2,600.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹130.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹220.00</td>
-                    <td className="py-2.5 px-3 font-mono text-[#0f3823] font-black">₹1,782.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">Zomato Delivery</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹2,600.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹130.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹220.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹1,782.00</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-extrabold text-[#11291f]">Magicpin / Ondoor</td>
-                    <td className="py-2.5 px-3 font-mono">₹1,200.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹60.00</td>
-                    <td className="py-2.5 px-3 font-mono">₹100.00</td>
-                    <td className="py-2.5 px-3 font-mono text-[#0f3823] font-black">₹896.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">Magicpin / Ondoor</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹1,200.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹60.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#11291f]">₹100.00</td>
+                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹896.00</td>
                   </tr>
                 </tbody>
               </table>

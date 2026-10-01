@@ -523,7 +523,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
           <div className="hidden md:block overflow-x-auto rounded-xl border border-[#ded4c5]">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className={`${isBrownBranch ? 'bg-[#3E2312] text-[#E8D8C2]' : 'bg-[#ebdcc8] text-[#11291f]'} font-black uppercase text-[11px] tracking-wider border-b border-[#cabb9e]`}>
+                <tr className={`${isBrownBranch ? 'bg-[#3E2312] text-[#E8D8C2]' : 'bg-[#ebdcc8] text-[#11291f]'} font-semibold uppercase text-[13px] tracking-wider border-b border-[#cabb9e]`}>
                   <th className="py-3 px-3.5">ITEM / PRODUCT NAME</th>
                   <th className="py-3 px-3 text-center">CATEGORY</th>
                   <th className="py-3 px-3 text-right">OPENING</th>
@@ -685,39 +685,39 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           isCritical ? 'bg-red-50/70' : isLow ? 'bg-amber-50/70' : ''
                         }`}
                       >
-                        {/* Item Name: font-normal text-black */}
-                        <td className="py-2.5 px-3.5 font-normal text-[13.5px] text-black leading-snug">
+                        {/* Item Name: font-medium text-[#11291f] */}
+                        <td className="py-2.5 px-3.5 font-medium text-[14px] text-[#11291f] leading-snug">
                           {item.name}
                         </td>
 
                         <td className="py-2.5 px-3 text-center">
-                          <span className="inline-block px-2.5 py-0.5 bg-[#ebe0cb] text-black text-xs font-normal rounded-md text-center">
+                          <span className="inline-block px-2.5 py-0.5 bg-[#ebe0cb] text-[#11291f] text-xs font-medium rounded-md text-center">
                             {item.category}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-xs text-black font-normal">
+                        <td className="py-2.5 px-3 text-right text-[14px] text-[#11291f] font-medium">
                           {item.openingStock}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-xs font-normal text-black">
+                        <td className="py-2.5 px-3 text-right text-[14px] font-medium text-emerald-700">
                           +{item.stockIn}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-xs font-normal text-black">
+                        <td className="py-2.5 px-3 text-right text-[14px] font-medium text-red-700">
                           -{item.stockOut}
                         </td>
 
                         {/* Remaining Stock = Opening + Stock In - Stock Out */}
-                        <td className="py-2.5 px-3 text-right text-xs font-normal text-black">
+                        <td className="py-2.5 px-3 text-right text-[14px] font-medium text-[#11291f]">
                           {item.remainingStock}
                         </td>
 
-                        <td className="py-2.5 px-3 text-center text-xs text-black font-normal">
+                        <td className="py-2.5 px-3 text-center text-[14px] text-[#11291f] font-medium">
                           {item.unit}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-xs text-black font-normal">
+                        <td className="py-2.5 px-3 text-right text-[14px] text-[#11291f] font-medium">
                           <button
                             type="button"
                             onClick={() => handleOpenThresholdModal(item)}
@@ -946,15 +946,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
         <div className="hidden md:block overflow-x-auto rounded-xl border border-[#ded4c5]">
           <table className="w-full text-center text-xs border-collapse">
             <thead>
-              <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e]">
-                <th className="py-2.5 px-3 text-center font-black">DATE &amp; TIME</th>
-                <th className="py-2.5 px-3 text-center font-black">ITEM NAME</th>
-                <th className="py-2.5 px-3 text-center font-black">MOVEMENT TYPE</th>
-                <th className="py-2.5 px-3 text-center font-black">QUANTITY</th>
-                <th className="py-2.5 px-3 text-center font-black">UNIT</th>
-                <th className="py-2.5 px-3 text-center font-black">SOURCE / REASON</th>
-                <th className="py-2.5 px-3 text-center font-black">SUPPLIER / REF #</th>
-                <th className="py-2.5 px-3 text-center font-black">STOCK AFTER</th>
+              <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[13px] tracking-wider border-b border-[#cabb9e]">
+                <th className="py-2.5 px-3 text-center font-semibold">DATE &amp; TIME</th>
+                <th className="py-2.5 px-3 text-center font-semibold">ITEM NAME</th>
+                <th className="py-2.5 px-3 text-center font-semibold">MOVEMENT TYPE</th>
+                <th className="py-2.5 px-3 text-center font-semibold">QUANTITY</th>
+                <th className="py-2.5 px-3 text-center font-semibold">UNIT</th>
+                <th className="py-2.5 px-3 text-center font-semibold">SOURCE / REASON</th>
+                <th className="py-2.5 px-3 text-center font-semibold">SUPPLIER / REF #</th>
+                <th className="py-2.5 px-3 text-center font-semibold">STOCK AFTER</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium">
@@ -973,7 +973,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 ))
               ) : currentDataState === 'EMPTY' || filteredLedger.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-6 text-center text-xs font-bold text-[#557361] bg-[#fbf8f3]">
+                  <td colSpan="8" className="py-6 text-center text-xs font-normal text-[#557361] bg-[#fbf8f3]">
                     {currentDataState === 'EMPTY' ? 'No stock movement transactions recorded yet.' : 'No stock movements recorded for the selected filter.'}
                   </td>
                 </tr>
@@ -983,55 +983,55 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
 
                   return (
                     <tr key={entry.id} className="hover:bg-[#fbf8f3] transition-colors">
-                      <td className="py-2 px-3 font-normal text-black text-[11px] text-center whitespace-nowrap">
+                      <td className="py-2 px-3 font-medium text-[#11291f] text-[14px] text-center whitespace-nowrap">
                         <div className="inline-flex items-center justify-center gap-1.5 tabular-nums">
                           <span>{entry.date}</span>
-                          {entry.time && <span className="text-black">{entry.time}</span>}
+                          {entry.time && <span className="text-[#11291f]">{entry.time}</span>}
                         </div>
                       </td>
 
-                      <td className="py-2 px-3 font-normal text-black text-center">
+                      <td className="py-2 px-3 font-medium text-[#11291f] text-[14px] text-center">
                         {entry.itemName}
                       </td>
 
                       <td className="py-2 px-3 text-center">
                         {isStockIn ? (
-                          <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold text-[10px] rounded-md border border-emerald-300">
+                          <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold text-[10px] rounded-md border border-emerald-300">
                             + Stock In
                           </span>
                         ) : (
-                          <span className="inline-block px-2.5 py-0.5 bg-red-100 text-red-800 font-extrabold text-[10px] rounded-md border border-red-300">
+                          <span className="inline-block px-2.5 py-0.5 bg-red-100 text-red-800 font-semibold text-[10px] rounded-md border border-red-300">
                             - Stock Out
                           </span>
                         )}
                       </td>
 
                       <td className="py-2 px-3 text-center">
-                        <span className={`inline-block font-normal text-sm text-center ${
+                        <span className={`inline-block font-medium text-[14px] text-center ${
                           isStockIn ? 'text-emerald-700' : 'text-red-700'
                         }`}>
                           {isStockIn ? '+' : '-'}{entry.qty}
                         </span>
                       </td>
 
-                      <td className="py-2 px-3 text-center text-black font-normal whitespace-nowrap">
+                      <td className="py-2 px-3 text-center text-[#11291f] font-medium text-[14px] whitespace-nowrap">
                         <span className="inline-block text-center">{entry.unit}</span>
                       </td>
 
-                      <td className="py-2 px-3 text-black font-normal text-center">
+                      <td className="py-2 px-3 text-[#11291f] font-medium text-[14px] text-center">
                         {entry.source}
                       </td>
 
-                      <td className="py-2 px-3 font-normal text-black text-[11px] text-center whitespace-nowrap">
+                      <td className="py-2 px-3 font-medium text-[#11291f] text-[14px] text-center whitespace-nowrap">
                         <div className="inline-flex items-center justify-center gap-1 text-center">
                           <span>{entry.ref}</span>
                           {entry.supplier && entry.supplier !== '-' && (
-                            <span className="text-black font-normal">({entry.supplier})</span>
+                            <span className="text-[#547363] font-normal">({entry.supplier})</span>
                           )}
                         </div>
                       </td>
 
-                      <td className="py-2 px-3 text-center font-normal text-sm text-black">
+                      <td className="py-2 px-3 text-center font-medium text-[14px] text-[#11291f]">
                         {entry.remainingAfter}
                       </td>
                     </tr>

@@ -554,12 +554,12 @@ export default function ExpensesView({ selectedBranch }) {
           <div className="overflow-x-auto overflow-y-auto no-scrollbar rounded-xl border border-[#ded4c5] max-h-[420px]">
             <table className="w-full text-center text-xs border-collapse">
               <thead>
-                <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
-                  <th className="py-2.5 px-3 text-center">DATE</th>
-                  <th className="py-2.5 px-3 text-center">DESCRIPTION</th>
-                  <th className="py-2.5 px-3 text-center">CATEGORY</th>
-                  <th className="py-2.5 px-3 text-center">AMOUNT (₹)</th>
-                  <th className="py-2.5 px-3 text-center">ACTIONS</th>
+                <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[13px] tracking-wider border-b border-[#cabb9e] whitespace-nowrap sticky top-0 z-10">
+                  <th className="py-2.5 px-3 text-center font-semibold">DATE</th>
+                  <th className="py-2.5 px-3 text-center font-semibold">DESCRIPTION</th>
+                  <th className="py-2.5 px-3 text-center font-semibold">CATEGORY</th>
+                  <th className="py-2.5 px-3 text-center font-semibold">AMOUNT (₹)</th>
+                  <th className="py-2.5 px-3 text-center font-semibold">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ded4c5] bg-white text-[#122c20] font-medium whitespace-nowrap">
@@ -572,10 +572,10 @@ export default function ExpensesView({ selectedBranch }) {
                           alt="Managing Café Expenses Illustration"
                           className="w-full max-w-sm h-auto max-h-56 object-contain relative z-10 block mx-auto"
                         />
-                        <h4 className="text-base sm:text-lg font-serif font-black text-[#11291f] tracking-wide">
+                        <h4 className="text-base sm:text-lg font-serif font-semibold text-[#11291f] tracking-wide">
                           No expense records yet
                         </h4>
-                        <p className="text-xs sm:text-sm font-bold text-[#547363] leading-relaxed">
+                        <p className="text-xs sm:text-sm font-normal text-[#547363] leading-relaxed">
                           Start recording your café's operating expenses to track spending and manage costs.
                         </p>
                       </div>
@@ -585,24 +585,24 @@ export default function ExpensesView({ selectedBranch }) {
                   filteredExpenses.map((item) => (
                     <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                       
-                      <td className="py-2.5 px-3 font-normal text-black text-[11px] text-center">
+                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[14px] text-center">
                         {item.displayDate}
                       </td>
 
-                      <td className="py-2.5 px-3 font-normal text-black text-center">
+                      <td className="py-2.5 px-3 font-medium text-[#11291f] text-[14px] text-center">
                         <div>{item.description}</div>
-                        {item.notes && <span className="text-[9.5px] text-black font-normal block">{item.notes}</span>}
+                        {item.notes && <span className="text-xs text-[#547363] font-normal block">{item.notes}</span>}
                       </td>
 
                       <td className="py-2.5 px-3 text-center">
-                        <span className={`inline-block px-2 py-0.5 text-[10px] font-normal text-black rounded-md text-center ${
+                        <span className={`inline-block px-2 py-0.5 text-xs font-medium text-[#11291f] rounded-md text-center ${
                           item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                         }`}>
                           {item.category}
                         </span>
                       </td>
 
-                      <td className="py-2.5 px-3 text-center font-normal text-sm text-black">
+                      <td className="py-2.5 px-3 text-center font-medium text-[14px] text-red-700">
                         ₹{(parseFloat(item.amount) || 0).toFixed(2)}
                       </td>
 

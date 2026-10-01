@@ -60,47 +60,47 @@ export default function MenuProductsView({ selectedBranch }) {
       {/* Products Table matching Image 4 */}
       <div className="bg-white rounded-2xl border border-[#e5d8c8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-collapse text-[14px]">
             <thead>
-              <tr className="bg-[#f5efe6] text-[#547363] uppercase font-bold border-b border-[#e5d8c8]">
-                <th className="py-3.5 px-4 w-12 text-center">Item</th>
-                <th className="py-3.5 px-4">Product Name</th>
-                <th className="py-3.5 px-4">SKU / Code</th>
-                <th className="py-3.5 px-4">Category</th>
-                <th className="py-3.5 px-4 text-right">Price</th>
-                <th className="py-3.5 px-4">Tax Category</th>
-                <th className="py-3.5 px-4 text-center">Stock</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
+              <tr className="bg-[#f5efe6] text-[#11291f] uppercase font-semibold text-[13px] border-b border-[#e5d8c8]">
+                <th className="py-3.5 px-4 w-12 text-center">ITEM</th>
+                <th className="py-3.5 px-4">PRODUCT NAME</th>
+                <th className="py-3.5 px-4">SKU / CODE</th>
+                <th className="py-3.5 px-4">CATEGORY</th>
+                <th className="py-3.5 px-4 text-right">PRICE</th>
+                <th className="py-3.5 px-4">TAX CATEGORY</th>
+                <th className="py-3.5 px-4 text-center">STOCK</th>
+                <th className="py-3.5 px-4 text-center">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f0e8dc] text-[#122b20]">
+            <tbody className="divide-y divide-[#f0e8dc] text-[#11291f] font-medium text-[14px]">
               {filtered.map(item => (
                 <tr key={item.id} className="hover:bg-[#fcfaf7] transition-colors">
                   <td className="py-3 px-4 text-center">
                     <img src={item.img} alt={item.name} className="w-9 h-9 rounded-full object-cover mx-auto border border-[#ded3c4]" />
                   </td>
-                  <td className="py-3 px-4 font-extrabold text-[#122b20]">
+                  <td className="py-3 px-4 font-medium text-[14px] text-[#11291f]">
                     {item.name}
                   </td>
-                  <td className="py-3 px-4 font-mono text-[#547363] text-[11px]">
+                  <td className="py-3 px-4 text-[#547363] text-xs font-normal">
                     {item.sku}
                   </td>
-                  <td className="py-3 px-4 font-semibold text-[#547363]">
+                  <td className="py-3 px-4 font-medium text-[14px] text-[#547363]">
                     {item.category}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-extrabold text-[#122b20]">
+                  <td className="py-3 px-4 text-right font-medium text-[14px] text-[#11291f]">
                     ₹{item.price.toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-[#547363]">
-                    <span className="bg-[#f5efe6] px-2.5 py-1 rounded-full text-[10px] border border-[#e5d8c8]">
+                    <span className="bg-[#f5efe6] px-2.5 py-1 rounded-full text-xs font-normal border border-[#e5d8c8]">
                       {item.tax}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-center font-mono font-bold text-[#122b20]">
+                  <td className="py-3 px-4 text-center font-medium text-[14px] text-[#11291f]">
                     {item.stock}
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black ${isBrownBranch ? 'bg-[#f3e8d4] text-[#7A4325] border border-[#d4b896]' : 'bg-[#e2f7ed] text-[#168a53] border border-[#a3e5c4]'}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isBrownBranch ? 'bg-[#f3e8d4] text-[#7A4325] border border-[#d4b896]' : 'bg-[#e2f7ed] text-[#168a53] border border-[#a3e5c4]'}`}>
                       {item.status}
                     </span>
                   </td>

@@ -38,31 +38,31 @@ export default function DailyStockMovement({ stockMovement = [] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="text-[#83a997] border-b border-[#1f4a38] uppercase font-bold tracking-wider">
-              <th className="py-3 px-4">Item Name</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4 text-center">Opening</th>
-              <th className="py-3 px-4 text-center text-emerald-400">Stock In (+)</th>
-              <th className="py-3 px-4 text-center text-rose-400">Stock Out (-)</th>
-              <th className="py-3 px-4 text-right text-white">Remaining</th>
+            <tr className="text-[#83a997] border-b border-[#1f4a38] uppercase font-semibold text-[13px] tracking-wider">
+              <th className="py-3 px-4">ITEM NAME</th>
+              <th className="py-3 px-4">CATEGORY</th>
+              <th className="py-3 px-4 text-center">OPENING</th>
+              <th className="py-3 px-4 text-center text-emerald-400">STOCK IN (+)</th>
+              <th className="py-3 px-4 text-center text-rose-400">STOCK OUT (-)</th>
+              <th className="py-3 px-4 text-right text-white">REMAINING</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1b4231] font-semibold">
+          <tbody className="divide-y divide-[#1b4231] font-medium text-[14px]">
             {movementList.map((item) => (
               <tr key={item.id} className="hover:bg-[#183d2e] transition-colors text-slate-200">
-                <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                <td className="py-3 px-4 font-medium text-[14px] text-white flex items-center gap-2">
                   <Package className="w-4 h-4 text-[#4ade80] shrink-0" />
                   <span>{item.name}</span>
                 </td>
-                <td className="py-3 px-4 text-[#83a997]">{item.category}</td>
-                <td className="py-3 px-4 text-center font-mono">{item.openingStock} {item.unit}</td>
-                <td className="py-3 px-4 text-center font-mono text-emerald-400 font-bold">
+                <td className="py-3 px-4 font-medium text-[14px] text-[#83a997]">{item.category}</td>
+                <td className="py-3 px-4 text-center font-medium text-[14px]">{item.openingStock} {item.unit}</td>
+                <td className="py-3 px-4 text-center font-medium text-[14px] text-emerald-400">
                   +{item.stockIn} {item.unit}
                 </td>
-                <td className="py-3 px-4 text-center font-mono text-rose-400 font-bold">
+                <td className="py-3 px-4 text-center font-medium text-[14px] text-rose-400">
                   -{item.stockOut} {item.unit}
                 </td>
-                <td className="py-3 px-4 text-right font-mono font-black text-white">
+                <td className="py-3 px-4 text-right font-medium text-[14px] text-white">
                   <span className={`px-2.5 py-1 rounded-lg ${
                     item.remaining <= 3 ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-[#0d2118] text-[#4ade80] border border-[#224f3c]'
                   }`}>
