@@ -197,34 +197,34 @@ export default function NetSalesModal({ isOpen, onClose }) {
                     <th className="py-2.5 px-3">NET REALIZED</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#cabb9e]/50 font-medium text-[12.5px] text-black">
+                <tbody className="divide-y divide-[#cabb9e]/50 font-semibold text-[12.5px] text-black">
                   <tr>
-                    <td className="py-2.5 px-3 font-medium text-black">POS Store Counters</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹12,000.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹600.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹650.00</td>
-                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹11,950.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">POS Store Counters</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹12,000.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹600.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹650.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#0f3823]">₹11,950.00</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-medium text-black">Swiggy Delivery</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹3,850.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹192.50</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹350.00</td>
-                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹2,614.50</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">Swiggy Delivery</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹3,850.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹192.50</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹350.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#0f3823]">₹2,614.50</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-medium text-black">Zomato Delivery</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹2,600.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹130.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹220.00</td>
-                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹1,782.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">Zomato Delivery</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹2,600.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹130.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹220.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#0f3823]">₹1,782.00</td>
                   </tr>
                   <tr>
-                    <td className="py-2.5 px-3 font-medium text-black">Magicpin / Ondoor</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹1,200.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹60.00</td>
-                    <td className="py-2.5 px-3 font-medium text-black">₹100.00</td>
-                    <td className="py-2.5 px-3 font-medium text-[#0f3823]">₹896.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">Magicpin / Ondoor</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹1,200.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹60.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-black">₹100.00</td>
+                    <td className="py-2.5 px-3 font-semibold text-[#0f3823]">₹896.00</td>
                   </tr>
                 </tbody>
               </table>

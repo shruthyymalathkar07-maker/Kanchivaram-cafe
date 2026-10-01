@@ -73,22 +73,22 @@ export default function MenuProductsView({ selectedBranch }) {
                 <th className="py-3.5 px-4 text-center">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f0e8dc] text-black font-medium text-[12.5px]">
+            <tbody className="divide-y divide-[#f0e8dc] text-black font-semibold text-[12.5px]">
               {filtered.map(item => (
                 <tr key={item.id} className="hover:bg-[#fcfaf7] transition-colors">
                   <td className="py-3 px-4 text-center">
                     <img src={item.img} alt={item.name} className="w-9 h-9 rounded-full object-cover mx-auto border border-[#ded3c4]" />
                   </td>
-                  <td className="py-3 px-4 font-medium text-[12.5px] text-black">
+                  <td className="py-3 px-4 font-semibold text-[12.5px] text-black">
                     {item.name}
                   </td>
                   <td className="py-3 px-4 text-[#547363] text-xs font-normal">
                     {item.sku}
                   </td>
-                  <td className="py-3 px-4 font-medium text-[12.5px] text-black">
+                  <td className="py-3 px-4 font-semibold text-[12.5px] text-black">
                     {item.category}
                   </td>
-                  <td className="py-3 px-4 text-right font-medium text-[12.5px] text-black">
+                  <td className="py-3 px-4 text-right font-semibold text-[12.5px] text-black">
                     ₹{item.price.toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-black">
@@ -96,7 +96,7 @@ export default function MenuProductsView({ selectedBranch }) {
                       {item.tax}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-center font-medium text-[12.5px] text-black">
+                  <td className="py-3 px-4 text-center font-semibold text-[12.5px] text-black">
                     {item.stock}
                   </td>
                   <td className="py-3 px-4 text-center">

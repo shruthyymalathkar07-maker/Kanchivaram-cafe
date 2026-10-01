@@ -611,24 +611,24 @@ export default function ExpensesView({ selectedBranch }) {
                     filteredExpenses.map((item) => (
                       <tr key={item.id} className="hover:bg-[#fbf8f3] transition-colors">
                         
-                        <td className="py-2.5 px-3 font-medium text-black text-[12.5px] text-center">
+                        <td className="py-2.5 px-3 font-semibold text-black text-[12.5px] text-center">
                           {item.displayDate}
                         </td>
 
-                        <td className="py-2.5 px-3 font-medium text-black text-[12.5px] text-center">
+                        <td className="py-2.5 px-3 font-semibold text-black text-[12.5px] text-center">
                           <div>{item.description}</div>
                           {item.notes && <span className="text-[11.5px] text-[#547363] font-normal block">{item.notes}</span>}
                         </td>
 
                         <td className="py-2.5 px-3 text-center">
-                          <span className={`inline-block px-2 py-0.5 text-[11.5px] font-medium text-black rounded-md text-center ${
+                          <span className={`inline-block px-2 py-0.5 text-[11.5px] font-semibold text-black rounded-md text-center ${
                             item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
                           }`}>
                             {item.category}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-red-700">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-red-700">
                           ₹{(parseFloat(item.amount) || 0).toFixed(2)}
                         </td>
 

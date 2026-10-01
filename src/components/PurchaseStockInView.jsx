@@ -674,7 +674,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                     <tr key={purchase.id} className="hover:bg-[#fbf8f3] transition-colors">
                       {/* Date & Invoice */}
                       <td className="py-3 px-4 align-top w-[16%]">
-                        <div className="font-medium text-black text-[12.5px] break-words">{purchase.invoiceRef}</div>
+                        <div className="font-semibold text-black text-[12.5px] break-words">{purchase.invoiceRef}</div>
                         <div className="text-[11.5px] text-[#547363] font-normal flex items-center gap-1 mt-0.5 whitespace-nowrap">
                           <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span className="text-[#547363]">{purchase.date}</span>
@@ -687,13 +687,13 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       </td>
                       {/* Supplier */}
                       <td className="py-3 px-4 align-top w-[18%] text-center">
-                        <div className="font-medium text-[12.5px] text-black flex items-center justify-center gap-1.5 text-center">
+                        <div className="font-semibold text-[12.5px] text-black flex items-center justify-center gap-1.5 text-center">
                           <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span className="break-words leading-tight">{purchase.supplier}</span>
                         </div>
                         <div className="text-[11.5px] text-[#547363] font-normal mt-1 flex items-center justify-center gap-1">
                           <span>Category:</span>
-                          <span className="text-black font-medium">{purchase.category || 'Raw Ingredients'}</span>
+                          <span className="text-black font-semibold">{purchase.category || 'Raw Ingredients'}</span>
                         </div>
                       </td>
                       {/* Purchased Items List */}
@@ -706,19 +706,19 @@ export default function PurchaseStockInView({ selectedBranch }) {
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <Package className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                                <span className="font-medium text-black text-[12.5px] leading-snug">{item.itemName}</span>
-                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-black text-[10.5px] font-medium rounded-md shrink-0">
+                                <span className="font-semibold text-black text-[12.5px] leading-snug">{item.itemName}</span>
+                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-black text-[10.5px] font-semibold rounded-md shrink-0">
                                   {item.category}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 text-right shrink-0">
-                                <span className="font-medium text-emerald-700 text-[12.5px] whitespace-nowrap">
+                                <span className="font-semibold text-emerald-700 text-[12.5px] whitespace-nowrap">
                                   +{item.qty} {item.unit}
                                 </span>
                                 <span className="text-[11.5px] text-[#547363] font-normal whitespace-nowrap">
                                   ₹{item.pricePerUnit}/{item.unit}
                                 </span>
-                                <span className="font-medium text-[12.5px] text-black whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
+                                <span className="font-semibold text-black whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
                                   ₹{(item.total || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
@@ -728,7 +728,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       </td>
                       {/* Total Invoice Amount */}
                       <td className="py-3 px-4 align-top text-center w-[14%]">
-                        <div className="font-medium text-[12.5px] text-black whitespace-nowrap text-center">
+                        <div className="font-semibold text-[12.5px] text-black whitespace-nowrap text-center">
                           ₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}
                         </div>
                         <div className="text-[11.5px] text-[#547363] font-normal mt-0.5 whitespace-nowrap text-center">
@@ -794,12 +794,12 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   <div className="flex items-start justify-between gap-2 border-b border-[#ebdcc8] pb-2">
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-[12.5px] text-black">{purchase.invoiceRef}</span>
+                        <span className="font-semibold text-[12.5px] text-black">{purchase.invoiceRef}</span>
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50 text-emerald-800 text-[9px] font-semibold rounded-full border border-emerald-300">
                           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" /> Synced
                         </span>
                       </div>
-                      <div className="text-[12.5px] font-medium text-black flex items-center gap-1 mt-1">
+                      <div className="text-[12.5px] font-semibold text-black flex items-center gap-1 mt-1">
                         <Building2 className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
                         <span>{purchase.supplier}</span>
                       </div>
@@ -833,12 +833,12 @@ export default function PurchaseStockInView({ selectedBranch }) {
                     {purchase.items.map((item, idx) => (
                       <div key={idx} className="bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 flex items-center justify-between text-xs">
                         <div className="min-w-0">
-                          <p className="font-medium text-black text-[12.5px] truncate leading-tight">{item.itemName}</p>
+                          <p className="font-semibold text-black text-[12.5px] truncate leading-tight">{item.itemName}</p>
                           <p className="text-[11.5px] text-[#547363] font-normal mt-0.5">@ ₹{item.pricePerUnit}/{item.unit}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-medium text-emerald-700 text-[12.5px]">+{item.qty} {item.unit}</span>
-                          <span className="text-[12.5px] font-medium text-black block">₹{item.total.toLocaleString('en-IN')}</span>
+                          <span className="font-semibold text-emerald-700 text-[12.5px]">+{item.qty} {item.unit}</span>
+                          <span className="text-[12.5px] font-semibold text-black block">₹{item.total.toLocaleString('en-IN')}</span>
                         </div>
                       </div>
                     ))}
@@ -847,7 +847,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   {/* Footer Total */}
                   <div className="flex items-center justify-between pt-1 border-t border-[#ebdcc8] text-xs">
                     <span className="font-semibold text-[10px] uppercase text-[#547363]">Total Invoice Value</span>
-                    <span className="font-medium text-[12.5px] text-black">₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}</span>
+                    <span className="font-semibold text-[12.5px] text-black">₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               ))

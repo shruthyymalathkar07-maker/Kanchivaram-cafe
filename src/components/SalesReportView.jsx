@@ -503,33 +503,33 @@ export default function SalesReportView({ selectedBranch }) {
 
                     return (
                       <tr key={tx.id} className="hover:bg-[#fbf8f3] transition-colors">
-                        <td className="py-2.5 px-3 text-[12.5px] font-medium text-black text-center">
+                        <td className="py-2.5 px-3 text-[12.5px] font-semibold text-black text-center">
                           {formatTxDateTime(tx)}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[12.5px] text-black text-center">
+                        <td className="py-2.5 px-3 font-semibold text-[12.5px] text-black text-center">
                           {tx.billNumber || tx.id}
                         </td>
-                        <td className="py-2.5 px-3 font-medium text-[12.5px] text-black text-center">
+                        <td className="py-2.5 px-3 font-semibold text-[12.5px] text-black text-center">
                           {tx.channel || 'In-Store POS'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[11.5px] font-medium rounded-md uppercase">
+                          <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[11.5px] font-semibold rounded-md uppercase">
                             {tx.paymentMethod || 'CASH'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-black">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-black">
                           ₹{gSales.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-rose-700">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-rose-700">
                           {disc > 0 ? `-₹${disc.toFixed(2)}` : '₹0.00'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-black">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-black">
                           ₹{taxAmt.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-amber-800">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-amber-800">
                           ₹{gst.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-medium text-[12.5px] text-[#0f3823]">
+                        <td className="py-2.5 px-3 text-center font-semibold text-[12.5px] text-[#0f3823]">
                           ₹{net.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 text-center">
@@ -570,11 +570,11 @@ export default function SalesReportView({ selectedBranch }) {
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-[#ebdcc8] pb-1.5 text-xs">
                       <div>
-                        <span className="font-medium text-[12.5px] text-black block">{tx.billNumber || tx.id}</span>
+                        <span className="font-semibold text-[12.5px] text-black block">{tx.billNumber || tx.id}</span>
                         <span className="text-[11.5px] text-[#557361] font-normal">{formatTxDateTime(tx)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[10.5px] font-medium rounded uppercase">
+                        <span className="px-2 py-0.5 bg-[#ebdcc8] text-black text-[10.5px] font-semibold rounded uppercase">
                           {tx.paymentMethod || 'CASH'}
                         </span>
                         <span className="px-2 py-0.5 bg-[#0f3823] text-[#4ade80] text-[9px] font-semibold rounded-full uppercase">
@@ -587,15 +587,15 @@ export default function SalesReportView({ selectedBranch }) {
                     <div className="grid grid-cols-3 gap-1.5 bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 text-xs">
                       <div>
                         <span className="text-[10px] text-[#547363] uppercase font-semibold block">Taxable</span>
-                        <span className="font-medium text-[12.5px] text-black">₹{taxAmt.toFixed(2)}</span>
+                        <span className="font-semibold text-[12.5px] text-black">₹{taxAmt.toFixed(2)}</span>
                       </div>
                       <div className="text-center">
                         <span className="text-[10px] text-amber-900 uppercase font-semibold block">GST 5%</span>
-                        <span className="font-medium text-[12.5px] text-amber-800">₹{gst.toFixed(2)}</span>
+                        <span className="font-semibold text-[12.5px] text-amber-800">₹{gst.toFixed(2)}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] text-[#0f3823] uppercase font-semibold block">Net Total</span>
-                        <span className="font-medium text-[12.5px] text-[#0f3823]">₹{net.toFixed(2)}</span>
+                        <span className="font-semibold text-[12.5px] text-[#0f3823]">₹{net.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

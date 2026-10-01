@@ -205,7 +205,7 @@ export default function InventoryView({ onBackToHome }) {
                 <th className="py-4 px-4 text-center">ACTION</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e4838] text-[12.5px] text-slate-200 font-medium">
+            <tbody className="divide-y divide-[#1e4838] text-[12.5px] text-slate-200 font-semibold">
               {filteredItems.map((item) => (
                 <tr 
                   key={item.id}
@@ -213,7 +213,7 @@ export default function InventoryView({ onBackToHome }) {
                     item.isLow ? 'bg-red-950/20' : ''
                   }`}
                 >
-                  <td className="py-3.5 px-5 font-medium text-[12.5px] text-white">
+                  <td className="py-3.5 px-5 font-semibold text-[12.5px] text-white">
                     <div className="flex items-center gap-2">
                       <span>{item.name}</span>
                     </div>
@@ -225,27 +225,27 @@ export default function InventoryView({ onBackToHome }) {
                     </span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-[#a4c5b5]">
+                  <td className="py-3.5 px-4 text-right font-semibold text-[#a4c5b5]">
                     {item.openingStock} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-emerald-400">
+                  <td className="py-3.5 px-4 text-right font-semibold text-emerald-400">
                     +{item.received} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-[#d9a752]">
+                  <td className="py-3.5 px-4 text-right font-semibold text-[#d9a752]">
                     {item.totalAvailable} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-rose-400">
+                  <td className="py-3.5 px-4 text-right font-semibold text-rose-400">
                     {item.soldUsed} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-[#4ade80]">
+                  <td className="py-3.5 px-4 text-right font-semibold text-[#4ade80]">
                     {item.remainingStock} <span className="text-xs text-[#a4c5b5] font-normal">{item.unit}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 text-right font-medium text-[#a4c5b5]">
+                  <td className="py-3.5 px-4 text-right font-semibold text-[#a4c5b5]">
                     {item.minThreshold} <span className="text-xs text-[#6e9684] font-normal">{item.unit}</span>
                   </td>
 

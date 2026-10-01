@@ -336,11 +336,11 @@ export default function StaffView({ selectedBranch }) {
               ) : (
                 filteredStaff.map((staff) => (
                   <tr key={staff.id} className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center">
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">{staff.name}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">{staff.role}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">{staff.shift}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">{staff.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[12.5px] text-black text-center">{staff.pay}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[12.5px] text-black text-center">{staff.name}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[12.5px] text-black text-center">{staff.role}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[12.5px] text-black text-center">{staff.shift}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[12.5px] text-black text-center">{staff.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[12.5px] text-black text-center">{staff.pay}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <span className={`px-2 py-0.5 text-[9.5px] font-black rounded-full border shadow-2xs ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'}`}>
                         {staff.status}
@@ -392,7 +392,7 @@ export default function StaffView({ selectedBranch }) {
                     <h4 className="font-serif font-semibold text-sm text-black leading-snug break-words">
                       {staff.name}
                     </h4>
-                    <span className="inline-block text-[12.5px] font-medium text-black mt-0.5">
+                    <span className="inline-block text-[12.5px] font-semibold text-black mt-0.5">
                       {staff.role}
                     </span>
                   </div>
@@ -416,7 +416,7 @@ export default function StaffView({ selectedBranch }) {
                     <Clock className="w-3.5 h-3.5 text-[#547363] shrink-0" />
                     <span>Shift Schedule</span>
                   </div>
-                  <p className="font-medium text-[12.5px] text-black mt-1">
+                  <p className="font-semibold text-[12.5px] text-black mt-1">
                     {staff.shift}
                   </p>
                 </div>
@@ -425,7 +425,7 @@ export default function StaffView({ selectedBranch }) {
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[#ded4c5]">
                   <div>
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Monthly Pay</span>
-                    <span className="font-medium text-black text-[12.5px]">
+                    <span className="font-semibold text-black text-[12.5px]">
                       {staff.pay}
                     </span>
                   </div>
@@ -433,7 +433,7 @@ export default function StaffView({ selectedBranch }) {
                     <span className="text-[10px] uppercase font-semibold text-[#547363] block">Contact Phone</span>
                     <a
                       href={`tel:${staff.phone}`}
-                      className="font-medium text-black hover:underline flex items-center gap-1 mt-0.5 text-[12.5px]"
+                      className="font-semibold text-black hover:underline flex items-center gap-1 mt-0.5 text-[12.5px]"
                     >
                       <Phone className="w-3 h-3 text-[#547363] shrink-0" />
                       <span>{staff.phone}</span>
