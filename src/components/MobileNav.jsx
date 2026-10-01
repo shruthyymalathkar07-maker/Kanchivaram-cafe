@@ -220,8 +220,8 @@ export default function MobileNav({
             </div>
 
             {/* Navigation Items List */}
-            <div className="space-y-1.5 my-1 flex-1">
-              <span className="text-[9.5px] uppercase font-mono tracking-widest text-slate-400 px-2 block mb-1">
+            <div className="flex flex-col gap-2 my-1 flex-1">
+              <span className="text-[9.5px] uppercase font-mono tracking-widest text-slate-400 px-2 block mb-0.5">
                 Navigation Menu
               </span>
               {allNavItems.map((item) => {
@@ -231,7 +231,7 @@ export default function MobileNav({
                   <button
                     key={item.id}
                     onClick={() => handleSelectTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer relative overflow-hidden group shrink-0 ${
+                    className={`w-[91%] flex items-center justify-between px-3.5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer relative overflow-hidden group shrink-0 ${
                       isActive
                         ? isBrownBranch
                           ? 'bg-gradient-to-r from-[#542A16] via-[#6e371d] to-[#452212] text-white border border-[#C69A4B]/60 shadow-[inset_0_1.5px_2px_rgba(255,255,255,0.45),0_4px_14px_rgba(84,42,22,0.5)] ring-1 ring-[#C69A4B]/40 font-extrabold'
