@@ -639,8 +639,8 @@ export default function PurchaseStockInView({ selectedBranch }) {
               <thead>
                 <tr className={`${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white text-[11px] font-extrabold uppercase tracking-wider`}>
                   <th className="py-3 px-4 w-[16%] whitespace-nowrap">DATE & INVOICE REF</th>
-                  <th className="py-3 px-4 w-[18%] whitespace-nowrap">SUPPLIER</th>
-                  <th className="py-3 px-4 w-[36%] whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
+                  <th className="py-3 px-4 w-[18%] text-center whitespace-nowrap">SUPPLIER</th>
+                  <th className="py-3 px-4 w-[36%] text-center whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
                   <th className="py-3 px-4 w-[14%] text-center whitespace-nowrap">TOTAL INVOICE VALUE</th>
                   <th className="py-3 px-4 w-[10%] text-center whitespace-nowrap">STOCK SYNC STATUS</th>
                   <th className="py-3 px-4 w-[6%] text-center whitespace-nowrap">ACTIONS</th>
