@@ -306,8 +306,8 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
         {/* LEFT / CENTER PRODUCT GRID & QUICK ACTIONS (LG: 8 Cols / ~65%) */}
         <div className="lg:col-span-8 flex flex-col overflow-hidden space-y-2">
           
-          {/* Products Grid: 4 Columns x 3 Rows on Desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 content-start flex-1 overflow-y-auto custom-scrollbar pr-1 max-h-[460px]">
+          {/* Products Grid: Exactly 3 Products Per Row on Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 content-start flex-1 overflow-y-auto custom-scrollbar pr-1 max-h-[460px]">
             {filteredProducts.map((product) => {
               const stockQty = product.stockQuantity || 20;
               const stockColor = stockQty > 20 ? 'bg-emerald-600' : stockQty >= 10 ? 'bg-amber-500' : 'bg-red-600';

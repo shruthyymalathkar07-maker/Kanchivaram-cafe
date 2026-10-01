@@ -120,7 +120,7 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
         </div>
 
         {/* Navigation Menu Items (3D Water-Layer Capsule Pills) */}
-        <nav className="space-y-1 py-1 flex flex-col shrink-0">
+        <nav className="space-y-1.5 py-1.5 flex flex-col shrink-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

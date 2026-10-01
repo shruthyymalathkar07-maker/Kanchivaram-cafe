@@ -46,30 +46,22 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
           </div>
         </div>
 
-        {/* 2. TOP RIGHT: GOLD METALLIC RIMMED PENTAGON BADGE */}
+        {/* 2. TOP RIGHT: GOLD METALLIC RIMMED CIRCLE BADGE */}
         <div 
           onClick={() => onOpenModal && onOpenModal('TOTAL_SALES')}
-          className="relative w-full aspect-square max-w-[140px] max-h-[140px] cursor-pointer transition-all duration-300 transform hover:scale-105 group"
+          className="relative w-full aspect-square max-w-[140px] max-h-[140px] rounded-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] flex items-center justify-center shadow-lg border border-[#fff8c4] cursor-pointer transition-all duration-300 transform hover:scale-105 group"
           title="Click for Products Sold details"
         >
-          <div 
-            className="w-full h-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] flex items-center justify-center shadow-lg border border-[#fff8c4]"
-            style={{ clipPath: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)' }}
-          >
-            <div 
-              className="w-full h-full bg-gradient-to-b from-[#fdfbf7] to-[#ebdcc8] border border-[#b8860b] flex flex-col justify-center items-center text-center p-1.5"
-              style={{ clipPath: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)' }}
-            >
-              <div className="w-6 h-6 rounded-full bg-[#0f3823]/10 text-[#0f3823] flex items-center justify-center shadow-inner mb-0.5">
-                <Package className="w-3.5 h-3.5" />
-              </div>
-              <p className="text-[8.5px] font-extrabold text-[#456351] uppercase tracking-wider leading-none">
-                PRODUCTS SOLD
-              </p>
-              <h4 className="text-xl font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-                {productsSold}
-              </h4>
+          <div className="w-full h-full rounded-full bg-gradient-to-b from-[#fdfbf7] to-[#ebdcc8] border-2 border-[#b8860b] flex flex-col justify-center items-center text-center p-1.5 shadow-inner">
+            <div className="w-6 h-6 rounded-full bg-[#0f3823]/10 text-[#0f3823] flex items-center justify-center shadow-inner mb-0.5">
+              <Package className="w-3.5 h-3.5" />
             </div>
+            <p className="text-[8.5px] font-extrabold text-[#456351] uppercase tracking-wider leading-none">
+              PRODUCTS SOLD
+            </p>
+            <h4 className="text-xl font-black text-[#11291f] tracking-tight font-sans mt-0.5">
+              {productsSold}
+            </h4>
           </div>
         </div>
 
@@ -92,22 +84,30 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
           </div>
         </div>
 
-        {/* 4. BOTTOM RIGHT: GOLD METALLIC RIMMED CIRCLE BADGE */}
+        {/* 4. BOTTOM RIGHT: GOLD METALLIC RIMMED HEXAGON BADGE */}
         <div 
           onClick={() => onOpenModal && onOpenModal('CASH_COLLECTION')}
-          className="relative w-full aspect-square max-w-[140px] max-h-[140px] rounded-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] flex items-center justify-center shadow-lg border border-[#fff8c4] cursor-pointer transition-all duration-300 transform hover:scale-105 group"
+          className="relative w-full aspect-square max-w-[140px] max-h-[140px] cursor-pointer transition-all duration-300 transform hover:scale-105 group"
           title="Click for Cash Collection details"
         >
-          <div className="w-full h-full rounded-full bg-gradient-to-b from-[#fdfbf7] to-[#ebdcc8] border-2 border-[#b8860b] flex flex-col justify-center items-center text-center p-1.5 shadow-inner">
-            <div className="w-6 h-6 rounded-full bg-[#0f3823]/10 text-[#0f3823] font-extrabold text-xs flex items-center justify-center shadow-inner mb-0.5">
-              ₹
+          <div 
+            className="w-full h-full p-1.5 bg-[linear-gradient(135deg,#ffe875_0%,#d4af37_40%,#996515_70%,#e6c651_100%)] flex items-center justify-center shadow-lg border border-[#fff8c4]"
+            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+          >
+            <div 
+              className="w-full h-full bg-gradient-to-b from-[#fdfbf7] to-[#ebdcc8] border border-[#b8860b] flex flex-col justify-center items-center text-center p-1.5"
+              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+            >
+              <div className="w-6 h-6 rounded-full bg-[#0f3823]/10 text-[#0f3823] font-extrabold text-xs flex items-center justify-center shadow-inner mb-0.5">
+                ₹
+              </div>
+              <p className="text-[8.5px] font-extrabold text-[#456351] uppercase tracking-wider leading-none">
+                CASH COLLECTION
+              </p>
+              <h4 className="text-lg font-black text-[#11291f] tracking-tight font-sans mt-0.5">
+                ₹{cashCollection.toLocaleString('en-IN')}
+              </h4>
             </div>
-            <p className="text-[8.5px] font-extrabold text-[#456351] uppercase tracking-wider leading-none">
-              CASH COLLECTION
-            </p>
-            <h4 className="text-lg font-black text-[#11291f] tracking-tight font-sans mt-0.5">
-              ₹{cashCollection.toLocaleString('en-IN')}
-            </h4>
           </div>
         </div>
 
