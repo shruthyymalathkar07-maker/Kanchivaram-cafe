@@ -105,14 +105,14 @@ export default function Sidebar({ activeTab, setActiveTab, selectedBranch, onCha
             <span>Kanchivaram Café</span>
           </h1>
 
-          <div className="mt-1 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold tracking-wider text-[#d4af37] border border-[#d4af37]/40 bg-black/20 backdrop-blur-xs flex items-center gap-1">
+          <div className="mt-1 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold tracking-wider text-[#ffd700] border border-[#d4af37]/60 bg-black/30 backdrop-blur-xs flex items-center gap-1 shadow-xs">
             <span>📍</span>
             <span>{selectedBranch?.badge || 'Main Branch'}</span>
           </div>
 
           {/* Good Food Happier People Tagline */}
           <p className={`text-[10px] sm:text-[11px] font-serif italic font-medium mt-1 z-10 tracking-wide ${
-            isBrownBranch ? 'text-[#E8D8C2]' : 'text-[#9fcbb5]'
+            isBrownBranch ? 'text-[#f5ebd9]' : 'text-[#d2f0e0]'
           }`}>
             Good Food Happier People
           </p>
