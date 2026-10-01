@@ -59,27 +59,36 @@ export default function CustomersView({ selectedBranch }) {
       : (Number(cust.totalSpent) || 0);
     const visits = history.length > 0 ? history.length : (Number(cust.visits) || 0);
 
-    let favoriteItem = cust.favoriteItem;
+    let favoriteItem = null;
     if (history.length > 0) {
       const itemCounts = {};
-      history.forEach(b => {
+      const itemLastSeen = {};
+      history.forEach((b, bIdx) => {
         (b.items || []).forEach(itemObj => {
-          const iName = itemObj.name || itemObj.productName;
+          const iName = itemObj.name || itemObj.productName || itemObj.itemName;
           const iQty = parseFloat(itemObj.qty || itemObj.quantity || 1);
           if (iName) {
             itemCounts[iName] = (itemCounts[iName] || 0) + iQty;
+            if (itemLastSeen[iName] === undefined) {
+              itemLastSeen[iName] = bIdx; // Lower index = most recent transaction
+            }
           }
         });
       });
-      let topItem = favoriteItem || 'Filter Coffee';
+      let topItem = null;
       let topQty = 0;
+      let mostRecentIdx = Infinity;
       Object.entries(itemCounts).forEach(([name, count]) => {
-        if (count > topQty) {
+        const lastIdx = itemLastSeen[name] ?? Infinity;
+        if (count > topQty || (count === topQty && lastIdx < mostRecentIdx)) {
           topQty = count;
           topItem = name;
+          mostRecentIdx = lastIdx;
         }
       });
       favoriteItem = topItem;
+    } else if (cust.favoriteItem && cust.favoriteItem !== 'Filter Coffee' && cust.favoriteItem !== 'Lemon Juice') {
+      favoriteItem = cust.favoriteItem;
     }
 
     let lastVisit = cust.lastVisit;
@@ -91,7 +100,7 @@ export default function CustomersView({ selectedBranch }) {
       ...cust,
       totalSpent,
       visits,
-      favoriteItem: favoriteItem || 'Filter Coffee',
+      favoriteItem: favoriteItem || (history.length === 0 ? 'No purchases yet' : 'None'),
       lastVisit: lastVisit || 'No purchases yet',
       purchaseHistory: history
     };
@@ -340,7 +349,7 @@ export default function CustomersView({ selectedBranch }) {
                     <td className="py-3 px-4 col-span-2 font-mono font-black text-[#11291f]">
                       ₹{(cust.totalSpent || 0).toLocaleString('en-IN')}
                     </td>
-                    <td className="py-3 px-4 col-span-2 font-semibold text-[#547363] truncate">{cust.favoriteItem || 'Filter Coffee'}</td>
+                    <td className="py-3 px-4 col-span-2 font-semibold text-[#547363] truncate">{cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</td>
                     <td className="py-3 px-4 col-span-1 font-medium text-[#547363] text-[11px] truncate">{cust.lastVisit || 'N/A'}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center gap-1">
                       <button
@@ -455,7 +464,7 @@ export default function CustomersView({ selectedBranch }) {
                   <div>
                     <span className="text-[9.5px] uppercase font-bold text-[#547363] block">Favourite Item</span>
                     <span className="font-bold text-[#11291f] break-words text-[11px] block">
-                      {cust.favoriteItem || 'Filter Coffee'}
+                      {cust.favoriteItem || (cust.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}
                     </span>
                   </div>
                   <div className="text-right">
@@ -499,7 +508,7 @@ export default function CustomersView({ selectedBranch }) {
 
               <button 
                 onClick={() => setSelectedCustomerForHistory(null)} 
-                className={`p-1.5 ${isBrownBranch ? 'bg-[#7A4325] hover:bg-[#542A16]' : 'bg-[#194c31] hover:bg-[#226341]'} text-white rounded-xl transition-colors cursor-pointer`}
+                className={`p-1.5 ${isBrownBranch ? 'bg-[#7A4325]' : 'bg-[#194c31]'} hover:bg-[#226341] text-white rounded-xl transition-colors cursor-pointer`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -517,7 +526,7 @@ export default function CustomersView({ selectedBranch }) {
               </div>
               <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#cabb9e]">
                 <p className="text-[10px] font-bold text-[#547363] uppercase">Favorite Item</p>
-                <p className="font-bold text-xs text-[#0f3823] truncate">{selectedCustomerForHistory.favoriteItem || 'Filter Coffee'}</p>
+                <p className="font-bold text-xs text-[#0f3823] truncate">{selectedCustomerForHistory.favoriteItem || (selectedCustomerForHistory.purchaseHistory?.length === 0 ? 'No purchases yet' : 'None')}</p>
               </div>
             </div>
 

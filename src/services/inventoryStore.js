@@ -684,21 +684,28 @@ class InventoryStore {
 
         // Derive Favourite Item strictly from this customer's actual items
         const itemCounts = {};
-        customer.purchaseHistory.forEach(b => {
+        const itemLastSeen = {};
+        customer.purchaseHistory.forEach((b, bIdx) => {
           (b.items || []).forEach(itemObj => {
-            const iName = itemObj.name || itemObj.productName;
+            const iName = itemObj.name || itemObj.productName || itemObj.itemName;
             const iQty = parseFloat(itemObj.qty || itemObj.quantity || 1);
             if (iName) {
               itemCounts[iName] = (itemCounts[iName] || 0) + iQty;
+              if (itemLastSeen[iName] === undefined) {
+                itemLastSeen[iName] = bIdx; // Lower index = most recently purchased
+              }
             }
           });
         });
-        let topItem = items[0]?.name || customer.favoriteItem || 'Kanchivaram Filter Coffee';
+        let topItem = customer.purchaseHistory.length === 0 ? 'No purchases yet' : 'None';
         let topQty = 0;
+        let mostRecentIdx = Infinity;
         Object.entries(itemCounts).forEach(([name, count]) => {
-          if (count > topQty) {
+          const lastIdx = itemLastSeen[name] ?? Infinity;
+          if (count > topQty || (count === topQty && lastIdx < mostRecentIdx)) {
             topQty = count;
             topItem = name;
+            mostRecentIdx = lastIdx;
           }
         });
         customer.favoriteItem = topItem;
@@ -723,7 +730,7 @@ class InventoryStore {
           firstVisit: `${displayDate}, ${displayTime}`,
           lastVisit: `${displayDate}, ${displayTime}`,
           tier: grandTotal >= 10000 ? 'VIP Gold' : grandTotal >= 3000 ? 'Frequent' : 'Regular',
-          favoriteItem: items[0]?.name || 'Kanchivaram Filter Coffee',
+          favoriteItem: (items && items.length > 0) ? ([...items].sort((a, b) => (parseFloat(b.qty || b.quantity || 1) - parseFloat(a.qty || a.quantity || 1)))[0]?.name || items[0]?.name || 'None') : 'No purchases yet',
           purchaseHistory: [completedTransaction]
         };
         this.customers.unshift(newCustomer);

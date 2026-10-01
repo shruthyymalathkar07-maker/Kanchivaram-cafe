@@ -641,7 +641,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   <th className="py-3 px-4 w-[16%] whitespace-nowrap">DATE & INVOICE REF</th>
                   <th className="py-3 px-4 w-[18%] whitespace-nowrap">SUPPLIER</th>
                   <th className="py-3 px-4 w-[36%] whitespace-nowrap">PURCHASED ITEMS & QUANTITIES</th>
-                  <th className="py-3 px-4 w-[14%] text-right whitespace-nowrap">TOTAL INVOICE VALUE</th>
+                  <th className="py-3 px-4 w-[14%] text-center whitespace-nowrap">TOTAL INVOICE VALUE</th>
                   <th className="py-3 px-4 w-[10%] text-center whitespace-nowrap">STOCK SYNC STATUS</th>
                   <th className="py-3 px-4 w-[6%] text-center whitespace-nowrap">ACTIONS</th>
                 </tr>
@@ -701,21 +701,24 @@ export default function PurchaseStockInView({ selectedBranch }) {
                           {purchase.items.map((item, idx) => (
                             <div 
                               key={idx} 
-                              className="bg-[#fbf8f3] p-1.5 rounded-lg border border-[#e5d8c8] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5"
+                              className="bg-[#fbf8f3] px-3 py-2 rounded-xl border border-[#e5d8c8] flex items-center justify-between gap-3 shadow-2xs"
                             >
-                              <div className="flex items-center flex-wrap gap-1.5 min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
                                 <Package className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                                <span className="font-extrabold text-[#11291f] break-words">{item.itemName}</span>
-                                <span className="px-1.5 py-0.5 bg-[#ebdcc8] text-[#11291f] text-[9px] font-bold rounded shrink-0">
+                                <span className="font-extrabold text-[#11291f] text-xs leading-snug">{item.itemName}</span>
+                                <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[10px] font-bold rounded-md shrink-0">
                                   {item.category}
                                 </span>
                               </div>
-                              <div className="flex items-center flex-wrap gap-1 sm:text-right shrink-0">
+                              <div className="flex items-center gap-3 text-right shrink-0">
                                 <span className={`font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} font-mono text-xs whitespace-nowrap`}>
                                   +{item.qty} {item.unit}
                                 </span>
-                                <span className="text-[10px] text-[#547363] font-mono whitespace-nowrap">
-                                  (@ ₹{item.pricePerUnit}/{item.unit} = ₹{(item.total || 0).toLocaleString('en-IN')})
+                                <span className="text-[11px] text-[#547363] font-mono whitespace-nowrap">
+                                  ₹{item.pricePerUnit}/{item.unit}
+                                </span>
+                                <span className="font-black font-mono text-xs text-[#11291f] whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
+                                  ₹{(item.total || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
                             </div>
@@ -723,11 +726,11 @@ export default function PurchaseStockInView({ selectedBranch }) {
                         </div>
                       </td>
                       {/* Total Invoice Amount */}
-                      <td className="py-3 px-4 align-top text-right w-[14%]">
-                        <div className="font-black font-mono text-sm text-[#11291f] whitespace-nowrap">
+                      <td className="py-3 px-4 align-top text-center w-[14%]">
+                        <div className="font-black font-mono text-sm text-[#11291f] whitespace-nowrap text-center">
                           ₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}
                         </div>
-                        <div className="text-[10px] text-[#456351] font-bold mt-0.5 whitespace-nowrap">
+                        <div className="text-[10px] text-[#456351] font-bold mt-0.5 whitespace-nowrap text-center">
                           {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''} total
                         </div>
                       </td>

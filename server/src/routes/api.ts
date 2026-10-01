@@ -1783,17 +1783,27 @@ export function createApiRouter(io: SocketServer) {
 
           // Compute favorite item
           const itemCounts: Record<string, number> = {};
-          linkedSales.forEach(s => {
+          const itemLastSeen: Record<string, number> = {};
+          linkedSales.forEach((s, sIdx) => {
             (s.items || []).forEach(it => {
-              itemCounts[it.name] = (itemCounts[it.name] || 0) + (it.quantity || 1);
+              const iName = it.name;
+              if (iName) {
+                itemCounts[iName] = (itemCounts[iName] || 0) + (it.quantity || 1);
+                if (itemLastSeen[iName] === undefined) {
+                  itemLastSeen[iName] = sIdx; // Lower index = most recent transaction
+                }
+              }
             });
           });
-          let favoriteItem = cust.favoriteItem || 'Filter Coffee';
+          let favoriteItem = linkedSales.length === 0 ? 'No purchases yet' : 'None';
           let maxCount = 0;
+          let mostRecentIdx = Infinity;
           Object.entries(itemCounts).forEach(([name, count]) => {
-            if (count > maxCount) {
+            const lastIdx = itemLastSeen[name] ?? Infinity;
+            if (count > maxCount || (count === maxCount && lastIdx < mostRecentIdx)) {
               maxCount = count;
               favoriteItem = name;
+              mostRecentIdx = lastIdx;
             }
           });
 

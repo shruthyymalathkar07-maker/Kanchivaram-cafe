@@ -62,6 +62,8 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const orderCount = kpis.totalSales?.orderCount ?? 0;
   const swiggySales = kpis.onlineSales?.swiggy ?? kpis.totalSales?.swiggy ?? 0;
   const zomatoSales = kpis.onlineSales?.zomato ?? kpis.totalSales?.zomato ?? 0;
+  const onlineSales = swiggySales + zomatoSales;
+  const inStoreSales = kpis.totalSales?.inStore ?? kpis.inStoreSales?.amount ?? Math.max(0, totalSalesAmount - onlineSales);
   const growthRate = kpis.totalSales?.growth ?? 0;
 
   const inStorePct = totalSalesAmount > 0 ? Math.round((inStoreSales / totalSalesAmount) * 100) : 0;
@@ -69,6 +71,12 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const swiggyPct = totalSalesAmount > 0 ? Math.round((swiggySales / totalSalesAmount) * 100) : 0;
   const zomatoPct = totalSalesAmount > 0 ? Math.round((zomatoSales / totalSalesAmount) * 100) : 0;
   const avgBill = orderCount > 0 ? Math.round(totalSalesAmount / orderCount) : 0;
+
+  // Net Sales safely derived metrics
+  const netSalesAmount = kpis.netSales?.amount ?? kpis.netSales?.overallNet ?? Math.max(0, totalSalesAmount - (kpis.tax?.gstAmount ?? 0) - (kpis.discounts?.amount ?? 0));
+  const inStoreNetSales = kpis.netSales?.inStoreNet ?? inStoreSales;
+  const swiggyNetSales = kpis.netSales?.swiggyNet ?? swiggySales;
+  const zomatoNetSales = kpis.netSales?.zomatoNet ?? zomatoSales;
 
   // Tax Modal Dynamic Data (Real PostgreSQL aggregation)
   const activeTaxData = taxStats?.kpis?.tax || currentStats?.kpis?.tax || {};
@@ -238,38 +246,52 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div>
                   <p className="text-xs font-black text-[#456351] uppercase tracking-wider">Overall Net Sales (Gross Minus Tax & Discounts)</p>
                   <h3 className="text-3xl font-black font-mono text-[#0f3823] mt-1">
-                    ₹{(kpis.netSales?.overallNet || 16208).toLocaleString('en-IN')}
+                    ₹{netSalesAmount.toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="text-right text-xs text-[#456351] font-bold space-y-0.5">
-                  <p>Gross Sales: <strong className="text-[#11291f]">₹{(kpis.totalSales?.amount ?? 0).toLocaleString('en-IN')}</strong></p>
+                  <p>Gross Sales: <strong className="text-[#11291f]">₹{totalSalesAmount.toLocaleString('en-IN')}</strong></p>
                   <p>Taxes: <strong className="text-rose-700">-₹{(kpis.tax?.gstAmount ?? 0).toLocaleString('en-IN')}</strong></p>
                   <p>Discounts: <strong className="text-rose-700">-₹{(kpis.discounts?.amount ?? 0).toLocaleString('en-IN')}</strong></p>
                 </div>
               </div>
 
-              <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Online Food Apps Net Revenue Breakdown</h4>
+              <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Channel Net Revenue Breakdown</h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 
+                {/* In-Store Counter Net */}
+                <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-black text-[#456351]">
+                    <span>In-Store Counter Net</span>
+                    <Store className={`w-4 h-4 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
+                  </div>
+                  <h4 className="text-2xl font-black font-mono text-[#11291f]">
+                    ₹{inStoreNetSales.toLocaleString('en-IN')}
+                  </h4>
+                  <p className="text-[11px] text-[#547363] font-bold">Counter sales channel</p>
+                </div>
+
+                {/* Swiggy Delivery Net */}
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-black text-[#456351]">
                     <span>Swiggy Delivery Net</span>
                     <ShoppingBag className="w-4 h-4 text-amber-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.swiggy ?? 0).toLocaleString('en-IN')}
+                    ₹{swiggyNetSales.toLocaleString('en-IN')}
                   </h4>
                   <p className="text-[11px] text-[#547363] font-bold">Swiggy delivery channel</p>
                 </div>
 
+                {/* Zomato Delivery Net */}
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-black text-[#456351]">
                     <span>Zomato Delivery Net</span>
                     <ShoppingBag className="w-4 h-4 text-rose-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.zomato ?? 0).toLocaleString('en-IN')}
+                    ₹{zomatoNetSales.toLocaleString('en-IN')}
                   </h4>
                   <p className="text-[11px] text-[#547363] font-bold">Zomato delivery channel</p>
                 </div>
@@ -373,12 +395,12 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div>
                   <p className="text-xs font-black text-amber-900 uppercase tracking-wider">Total Online Channel Revenue</p>
                   <h3 className="text-3xl font-black font-mono text-amber-800 mt-1">
-                    ₹{(kpis.onlineSales?.amount ?? 0).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.amount ?? onlineSales).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="text-right text-xs text-amber-900 font-bold space-y-0.5">
                   <p className="font-extrabold">{kpis.onlineSales?.orderCount ?? 0} Online Orders</p>
-                  <p>Net: <strong className="text-emerald-700">₹{(kpis.onlineSales?.netOnlineSales ?? 0).toLocaleString('en-IN')}</strong></p>
+                  <p>Net: <strong className="text-emerald-700">₹{(kpis.onlineSales?.netOnlineSales ?? onlineSales).toLocaleString('en-IN')}</strong></p>
                 </div>
               </div>
 
@@ -387,23 +409,23 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-amber-800 uppercase">Swiggy Delivery</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <ShoppingBag className="w-4 h-4 text-amber-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.swiggy ?? 0).toLocaleString('en-IN')}
+                    ₹{swiggySales.toLocaleString('en-IN')}
                   </h4>
                   <p className="text-[11px] text-[#547363] font-bold">Swiggy channel</p>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-blue-800 uppercase">Direct Café App</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs font-black text-rose-800 uppercase">Zomato Delivery</span>
+                    <ShoppingBag className="w-4 h-4 text-rose-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.otherChannels ?? 0).toLocaleString('en-IN')}
+                    ₹{zomatoSales.toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">Direct app / online orders</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Zomato channel</p>
                 </div>
 
               </div>

@@ -108,19 +108,9 @@ export default function SalesReportView({ selectedBranch }) {
   const zomatoTotal = zomatoSalesList.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
   const zomatoCount = zomatoSalesList.length;
 
-  const dunzoSalesList = periodSales.filter(s => s.channel === 'Dunzo');
-  const dunzoTotal = dunzoSalesList.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
-  const dunzoCount = dunzoSalesList.length;
-
-  const otherSalesList = periodSales.filter(s => s.channel && !['POS', 'In-Store POS', 'Swiggy', 'Zomato', 'Dunzo'].includes(s.channel));
-  const otherTotal = otherSalesList.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
-  const otherCount = otherSalesList.length;
-
   const onlinePlatforms = [
     { id: 'swiggy', name: 'Swiggy', logo: '🟧', grossSales: swiggyTotal, ordersCount: swiggyCount, netSales: swiggyTotal },
-    { id: 'zomato', name: 'Zomato', logo: '🟥', grossSales: zomatoTotal, ordersCount: zomatoCount, netSales: zomatoTotal },
-    { id: 'dunzo', name: 'Dunzo', logo: '🟩', grossSales: dunzoTotal, ordersCount: dunzoCount, netSales: dunzoTotal },
-    { id: 'other', name: 'Other Online / Direct', logo: '🌐', grossSales: otherTotal, ordersCount: otherCount, netSales: otherTotal }
+    { id: 'zomato', name: 'Zomato', logo: '🟥', grossSales: zomatoTotal, ordersCount: zomatoCount, netSales: zomatoTotal }
   ];
 
   // CSV File Export Handler

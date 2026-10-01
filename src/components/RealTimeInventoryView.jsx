@@ -525,7 +525,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
               <thead>
                 <tr className={`${isBrownBranch ? 'bg-[#3E2312] text-[#E8D8C2]' : 'bg-[#ebdcc8] text-[#11291f]'} font-black uppercase text-[11px] tracking-wider border-b border-[#cabb9e]`}>
                   <th className="py-3 px-3.5">ITEM / PRODUCT NAME</th>
-                  <th className="py-3 px-3">CATEGORY</th>
+                  <th className="py-3 px-3 text-center">CATEGORY</th>
                   <th className="py-3 px-3 text-right">OPENING</th>
                   <th className="py-3 px-3 text-right">STOCK IN (+)</th>
                   <th className="py-3 px-3 text-right">STOCK OUT (-)</th>
@@ -545,7 +545,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 [1, 2, 3, 4, 5].map(idx => (
                   <tr key={idx} className="animate-pulse">
                     <td className="py-3 px-3"><div className="h-4 w-32 bg-[#ebe0cb] rounded" /></td>
-                    <td className="py-3 px-3"><div className="h-4 w-20 bg-[#ebdcc8] rounded" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-20 bg-[#ebdcc8] rounded mx-auto" /></td>
                     <td className="py-3 px-3 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
                     <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-emerald-100 rounded ml-auto" /></td>
                     <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-red-100 rounded ml-auto" /></td>
@@ -690,8 +690,8 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           {item.name}
                         </td>
 
-                        <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-xs font-semibold rounded-md">
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="inline-block px-2.5 py-0.5 bg-[#ebe0cb] text-[#456351] text-xs font-semibold rounded-md text-center">
                             {item.category}
                           </span>
                         </td>
@@ -729,18 +729,18 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           </button>
                         </td>
 
-                        {/* Calculated Status Badge (HEALTHY / LOW / CRITICAL) with comfortable fit */}
+                        {/* Calculated Status Badge (HEALTHY / LOW / CRITICAL) with comfortable width and padding */}
                         <td className="py-2.5 px-3 text-center">
                           {isCritical ? (
-                            <span className="inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 bg-red-600 text-white text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
+                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-red-600 text-white text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center">
                               CRITICAL
                             </span>
                           ) : isLow ? (
-                            <span className="inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 bg-[#d4af37] text-[#0d2b1d] text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
+                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-[#d4af37] text-[#0d2b1d] text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center">
                               LOW
                             </span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none`}>
+                            <span className={`inline-flex items-center justify-center min-w-[76px] px-3 py-1 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center`}>
                               HEALTHY
                             </span>
                           )}
