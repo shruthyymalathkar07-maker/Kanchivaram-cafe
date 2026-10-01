@@ -34,7 +34,7 @@ const OPERATING_CATEGORIES = [
 ];
 
 const ALL_FILTER_CATEGORIES = [
-  'Raw Ingredients (Stock In)',
+  'Raw Ingredients',
   ...OPERATING_CATEGORIES
 ];
 
@@ -110,14 +110,14 @@ export default function ExpensesView({ selectedBranch }) {
     };
   }, []);
 
-  // Map Stock-In Purchases from Purchase Module automatically as "Raw Ingredients (Stock In)"
+  // Map Stock-In Purchases from Purchase Module automatically as "Raw Ingredients"
   const stockInExpenses = (inventoryState.purchases || []).map(p => {
     const itemNames = (p.items || []).map(i => i.itemName).filter(Boolean).join(', ');
     const desc = itemNames || p.items?.[0]?.itemName || 'Raw Ingredients Purchase';
     return {
       id: `stock-${p.id}`,
       description: desc,
-      category: 'Raw Ingredients (Stock In)',
+      category: 'Raw Ingredients',
       amount: p.totalAmount || 0,
       date: p.dateIso || new Date().toISOString().split('T')[0],
       displayDate: p.date || p.dateIso,
@@ -599,12 +599,8 @@ export default function ExpensesView({ selectedBranch }) {
                           {item.notes && <span className="text-[11.5px] text-[#547363] font-normal block leading-tight mt-0.5">{item.notes}</span>}
                         </td>
 
-                        <td className="py-2.5 px-2 text-center">
-                          <span className={`inline-block px-2 py-0.5 text-[11.5px] font-semibold text-black rounded-md text-center ${
-                            item.isStockIn ? `bg-[#d4af37]/30` : 'bg-[#ebe0cb]'
-                          }`}>
-                            {item.category}
-                          </span>
+                        <td className="py-2.5 px-2 text-center font-semibold text-black text-[12.5px]">
+                          {item.category}
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-[12.5px] text-red-700 whitespace-nowrap">
