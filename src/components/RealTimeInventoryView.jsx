@@ -526,12 +526,12 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 <tr className={`${isBrownBranch ? 'bg-[#3E2312] text-[#E8D8C2]' : 'bg-[#ebdcc8] text-[#11291f]'} font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e]`}>
                   <th className="py-3 px-3.5">ITEM / PRODUCT NAME</th>
                   <th className="py-3 px-3 text-center">CATEGORY</th>
-                  <th className="py-3 px-3 text-right">OPENING</th>
-                  <th className="py-3 px-3 text-right">STOCK IN (+)</th>
-                  <th className="py-3 px-3 text-right">STOCK OUT (-)</th>
-                  <th className="py-3 px-3 text-right">REMAINING</th>
+                  <th className="py-3 px-3 text-center">OPENING</th>
+                  <th className="py-3 px-3 text-center">STOCK IN (+)</th>
+                  <th className="py-3 px-3 text-center">STOCK OUT (-)</th>
+                  <th className="py-3 px-3 text-center">REMAINING</th>
                   <th className="py-3 px-3 text-center">UNIT</th>
-                  <th className="py-3 px-3 text-right">MIN THRESHOLD</th>
+                  <th className="py-3 px-3 text-center">MIN THRESHOLD</th>
                   <th className="py-3 px-3 text-center">STATUS</th>
                   <th className="py-3 px-3 text-center">QUICK ACTION</th>
                 </tr>
@@ -545,13 +545,13 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 [1, 2, 3, 4, 5].map(idx => (
                   <tr key={idx} className="animate-pulse">
                     <td className="py-3 px-3"><div className="h-4 w-32 bg-[#ebe0cb] rounded" /></td>
-                    <td className="py-3 px-3 text-center"><div className="h-4 w-20 bg-[#ebdcc8] rounded mx-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-emerald-100 rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-12 bg-red-100 rounded ml-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-14 bg-[#ebdcc8] rounded ml-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-24 bg-[#ebdcc8] rounded mx-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-10 bg-[#ebe0cb] rounded mx-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-12 bg-emerald-100 rounded mx-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-12 bg-red-100 rounded mx-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-14 bg-[#ebdcc8] rounded mx-auto" /></td>
                     <td className="py-3 px-3 text-center"><div className="h-4 w-8 bg-[#ebe0cb] rounded mx-auto" /></td>
-                    <td className="py-3 px-3 text-right"><div className="h-4 w-10 bg-[#ebe0cb] rounded ml-auto" /></td>
+                    <td className="py-3 px-3 text-center"><div className="h-4 w-10 bg-[#ebe0cb] rounded mx-auto" /></td>
                     <td className="py-3 px-3 text-center"><div className="h-4 w-16 bg-[#ebdcc8] rounded-full mx-auto" /></td>
                     <td className="py-3 px-3 text-center"><div className="h-6 w-20 bg-[#103825]/30 rounded-lg mx-auto" /></td>
                   </tr>
@@ -691,25 +691,25 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         </td>
 
                         <td className="py-2.5 px-3 text-center">
-                          <span className="inline-block px-2.5 py-0.5 bg-[#ebe0cb] text-black text-[11.5px] font-semibold rounded-md text-center">
+                          <span className="inline-flex items-center justify-center w-[104px] py-0.5 bg-[#ebe0cb] text-black text-[11.5px] font-semibold rounded-md text-center">
                             {item.category}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-[12.5px] text-black font-semibold">
+                        <td className="py-2.5 px-3 text-center text-[12.5px] text-black font-semibold">
                           {item.openingStock}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-[12.5px] font-semibold text-emerald-700">
+                        <td className="py-2.5 px-3 text-center text-[12.5px] font-semibold text-emerald-700">
                           +{item.stockIn}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-[12.5px] font-semibold text-red-700">
+                        <td className="py-2.5 px-3 text-center text-[12.5px] font-semibold text-red-700">
                           -{item.stockOut}
                         </td>
 
                         {/* Remaining Stock = Opening + Stock In - Stock Out */}
-                        <td className="py-2.5 px-3 text-right text-[12.5px] font-semibold text-black">
+                        <td className="py-2.5 px-3 text-center text-[12.5px] font-semibold text-black">
                           {item.remainingStock}
                         </td>
 
@@ -717,11 +717,11 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           {item.unit}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right text-[12.5px] text-black font-semibold">
+                        <td className="py-2.5 px-3 text-center text-[12.5px] text-black font-semibold">
                           <button
                             type="button"
                             onClick={() => handleOpenThresholdModal(item)}
-                            className="inline-flex items-center gap-1 hover:text-black hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group"
+                            className="inline-flex items-center justify-center gap-1 hover:text-black hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group mx-auto"
                             title="Click to edit minimum stock threshold"
                           >
                             <span>{item.minThreshold}</span>
@@ -732,15 +732,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         {/* Calculated Status Badge (HEALTHY / LOW / CRITICAL) with comfortable width and padding */}
                         <td className="py-2.5 px-3 text-center">
                           {isCritical ? (
-                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-red-600 text-white text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center">
+                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-red-600 text-white text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-normal text-center">
                               CRITICAL
                             </span>
                           ) : isLow ? (
-                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-[#d4af37] text-[#0d2b1d] text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center">
+                            <span className="inline-flex items-center justify-center min-w-[76px] px-3 py-1 bg-[#d4af37] text-[#0d2b1d] text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-normal text-center">
                               LOW
                             </span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center min-w-[76px] px-3 py-1 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none text-center`}>
+                            <span className={`inline-flex items-center justify-center min-w-[76px] px-3 py-1 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-normal text-center`}>
                               HEALTHY
                             </span>
                           )}
