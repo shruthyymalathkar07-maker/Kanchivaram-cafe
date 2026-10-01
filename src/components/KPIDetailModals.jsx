@@ -555,20 +555,20 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 <div className="overflow-x-auto rounded-xl border border-[#ded4c5] max-h-56">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-[#ebdcc8] text-[#11291f] font-black uppercase text-[10px] tracking-wider border-b border-[#cabb9e]">
-                        <th className="py-2 px-3">Date &amp; Ref</th>
-                        <th className="py-2 px-3">Channel</th>
-                        <th className="py-2 px-3 text-right">Taxable</th>
-                        <th className="py-2 px-3 text-right">CGST (2.5%)</th>
-                        <th className="py-2 px-3 text-right">SGST (2.5%)</th>
-                        <th className="py-2 px-3 text-right">Total Tax</th>
-                        <th className="py-2 px-3 text-right">Net Amount</th>
+                      <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[10px] tracking-wider border-b border-[#cabb9e]">
+                        <th className="py-2 px-3 font-semibold">Date &amp; Ref</th>
+                        <th className="py-2 px-3 font-semibold">Channel</th>
+                        <th className="py-2 px-3 text-right font-semibold">Taxable</th>
+                        <th className="py-2 px-3 text-right font-semibold">CGST (2.5%)</th>
+                        <th className="py-2 px-3 text-right font-semibold">SGST (2.5%)</th>
+                        <th className="py-2 px-3 text-right font-semibold">Total Tax</th>
+                        <th className="py-2 px-3 text-right font-semibold">Net Amount</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#ded4c5] bg-white font-medium text-[#11291f]">
                       {taxFilteredSales.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="py-6 text-center text-xs font-bold text-[#547363]">
+                          <td colSpan="7" className="py-6 text-center text-xs font-normal text-[#547363]">
                             No completed sales tax records found for this period.
                           </td>
                         </tr>
@@ -578,20 +578,20 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                           const tNet = t.grandTotal || 0;
                           const tTaxable = Math.max(0, tNet - tGst);
                           return (
-                            <tr key={t.id} className="hover:bg-[#fbf8f3]">
-                              <td className="py-2 px-3 font-mono font-bold text-[11px]">
-                                {t.date} <span className="text-[#547363] text-[10px]">({t.billNumber || t.id})</span>
+                            <tr key={t.id} className="hover:bg-[#fbf8f3] transition-colors">
+                              <td className="py-2 px-3 font-medium text-[11px] text-[#11291f]">
+                                {t.date} <span className="text-[#547363] text-[10px] font-normal">({t.billNumber || t.id})</span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10px] font-bold rounded">
+                                <span className="px-1.5 py-0.5 bg-[#ebe0cb] text-[10px] font-medium text-[#11291f] rounded">
                                   {t.channel || 'POS'}
                                 </span>
                               </td>
-                              <td className="py-2 px-3 text-right font-mono">₹{tTaxable.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-mono text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-mono text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-mono font-bold text-[#b8860b]">₹{tGst.toFixed(2)}</td>
-                              <td className={`py-2 px-3 text-right font-mono font-black ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>₹{tNet.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[#11291f]">₹{tTaxable.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-[#547363]">₹{(tGst / 2).toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-medium text-amber-900">₹{tGst.toFixed(2)}</td>
+                              <td className={`py-2 px-3 text-right font-medium ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>₹{tNet.toFixed(2)}</td>
                             </tr>
                           );
                         })
