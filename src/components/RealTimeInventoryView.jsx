@@ -686,7 +686,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         }`}
                       >
                         {/* Item Name: Slightly larger, clearly readable, font-normal */}
-                        <td className="py-2.5 px-3.5 font-normal text-[13.5px] text-[#05140d] leading-snug">
+                        <td className="py-2.5 px-3.5 font-normal text-[13.5px] text-[#000000] leading-snug">
                           {item.name}
                         </td>
 
