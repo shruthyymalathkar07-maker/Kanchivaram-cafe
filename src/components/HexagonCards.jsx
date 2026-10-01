@@ -11,7 +11,6 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
   const netSales = kpis.netSales?.amount ?? 0;
   const swiggySales = kpis.onlineSales?.swiggy ?? 0;
   const zomatoSales = kpis.onlineSales?.zomato ?? 0;
-  const dunzoSales = kpis.onlineSales?.dunzo ?? 0;
 
   return (
     <div className="flex flex-col gap-2.5 w-full max-w-[380px] mx-auto items-center justify-center p-0">
@@ -137,7 +136,6 @@ export default function HexagonCards({ stats, onOpenModal, selectedBranch }) {
           <div className={`hidden sm:flex items-center gap-1 text-[8.5px] font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} border-l border-[#cabb9e] pl-2.5`}>
             <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Swiggy <strong>₹{swiggySales.toLocaleString('en-IN')}</strong></span>
             <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Zomato <strong>₹{zomatoSales.toLocaleString('en-IN')}</strong></span>
-            <span className={`${isBrownBranch ? 'bg-[#3E2312]/10' : 'bg-[#0f3823]/10'} px-1.5 py-0.5 rounded-full`}>Dunzo <strong>₹{dunzoSales.toLocaleString('en-IN')}</strong></span>
           </div>
         </div>
       </div>

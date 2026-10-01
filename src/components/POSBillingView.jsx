@@ -307,7 +307,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
         <div className="lg:col-span-8 flex flex-col overflow-hidden space-y-2">
           
           {/* Products Grid: Exactly 3 Products Per Row on Desktop */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 content-start flex-1 overflow-y-auto custom-scrollbar pr-1 max-h-[460px]">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 content-start flex-1 overflow-y-auto custom-scrollbar pr-1 max-h-[500px]">
             {filteredProducts.map((product) => {
               const stockQty = product.stockQuantity || 20;
               const stockColor = stockQty > 20 ? 'bg-emerald-600' : stockQty >= 10 ? 'bg-amber-500' : 'bg-red-600';
@@ -317,14 +317,14 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                 <div
                   key={product.id}
                   onClick={() => addToCart(product)}
-                  className="group relative bg-[#fdfbf7] hover:bg-[#f5ebd9] p-2 rounded-xl border border-[#cabb9e] hover:border-[#d4af37] shadow-xs transition-all duration-200 cursor-pointer flex flex-col justify-between transform hover:-translate-y-0.5 h-[148px]"
+                  className="group relative bg-[#fdfbf7] hover:bg-[#f5ebd9] p-2 sm:p-2.5 rounded-xl border border-[#cabb9e] hover:border-[#d4af37] shadow-xs transition-all duration-200 cursor-pointer flex flex-col justify-between transform hover:-translate-y-0.5 h-[148px] md:h-[195px]"
                 >
-                  {/* Food/Product Image */}
-                  <div className="relative w-full h-20 rounded-lg overflow-hidden bg-[#ebdcc8]">
+                  {/* Food/Product Image: Enhanced Desktop Height & Clear Visibility */}
+                  <div className="relative w-full h-20 md:h-32 rounded-lg overflow-hidden bg-[#ebdcc8] flex items-center justify-center">
                     <img
-                      src={product.image || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=300&q=80'}
+                      src={product.image || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=400&q=85'}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                     />
                     <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-[#0f3823]/85 backdrop-blur-xs text-white text-[8.5px] font-bold rounded">
                       {product.categoryName}

@@ -685,13 +685,13 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           isCritical ? 'bg-red-50/70' : isLow ? 'bg-amber-50/70' : ''
                         }`}
                       >
-                        {/* Unbolded Regular Font Item Name */}
-                        <td className="py-2.5 px-3.5 font-normal text-xs text-[#11291f]">
+                        {/* Item Name: Slightly larger, clearly readable, font-normal */}
+                        <td className="py-2.5 px-3.5 font-normal text-[13.5px] text-[#11291f] leading-snug">
                           {item.name}
                         </td>
 
                         <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[10px] font-semibold rounded-md">
+                          <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-xs font-semibold rounded-md">
                             {item.category}
                           </span>
                         </td>
@@ -729,19 +729,19 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                           </button>
                         </td>
 
-                        {/* Calculated Status Badge with ample padding */}
+                        {/* Calculated Status Badge (HEALTHY / LOW / CRITICAL) with comfortable fit */}
                         <td className="py-2.5 px-3 text-center">
                           {isCritical ? (
-                            <span className="inline-flex items-center justify-center min-w-[76px] px-2.5 py-1 bg-red-600 text-white text-[10px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
-                              Critical
+                            <span className="inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 bg-red-600 text-white text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
+                              CRITICAL
                             </span>
                           ) : isLow ? (
-                            <span className="inline-flex items-center justify-center min-w-[76px] px-2.5 py-1 bg-[#d4af37] text-[#0d2b1d] text-[10px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
-                              Low Limit
+                            <span className="inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 bg-[#d4af37] text-[#0d2b1d] text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none">
+                              LOW
                             </span>
                           ) : (
-                            <span className={`inline-flex items-center justify-center min-w-[76px] px-2.5 py-1 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[10px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none`}>
-                              Healthy
+                            <span className={`inline-flex items-center justify-center min-w-[62px] px-2 py-0.5 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} text-[8.5px] font-extrabold rounded-full shadow-2xs uppercase tracking-wide leading-none`}>
+                              HEALTHY
                             </span>
                           )}
                         </td>

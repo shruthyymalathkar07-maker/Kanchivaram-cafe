@@ -1762,12 +1762,17 @@ export function createApiRouter(io: SocketServer) {
 
         const formattedCustomers = dbCustomers.map(cust => {
           const custCleanDigits = cust.phone ? cust.phone.replace(/\D/g, '').slice(-10) : '';
+          const custCleanName = cust.name ? cust.name.trim().toLowerCase() : '';
           
-          // Match sales by customerId or matching phone number
-          const linkedSales = allSales.filter(s => 
-            (s.customerId && s.customerId === cust.id) || 
-            (s.customerPhone && custCleanDigits && s.customerPhone.replace(/\D/g, '').slice(-10) === custCleanDigits)
-          );
+          // Match sales strictly belonging to this customer by ID, Phone, or Name
+          const linkedSales = allSales.filter(s => {
+            if (s.customerId && s.customerId === cust.id) return true;
+            const sCleanPhone = s.customerPhone ? s.customerPhone.replace(/\D/g, '').slice(-10) : '';
+            if (sCleanPhone && custCleanDigits && sCleanPhone === custCleanDigits) return true;
+            const sCleanName = s.customerName ? s.customerName.trim().toLowerCase() : '';
+            if (sCleanName && custCleanName && sCleanName === custCleanName && !['walk-in customer', 'customer'].includes(sCleanName)) return true;
+            return false;
+          });
 
           // Compute accurate metrics from sales
           const totalSpent = linkedSales.length > 0

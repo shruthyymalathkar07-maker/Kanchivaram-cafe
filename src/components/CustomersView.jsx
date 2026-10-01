@@ -45,14 +45,59 @@ export default function CustomersView({ selectedBranch }) {
       if (selectedCustomerForHistory) {
         const updatedSelected = (state.customers || []).find(c => c.id === selectedCustomerForHistory.id);
         if (updatedSelected) {
-          setSelectedCustomerForHistory(updatedSelected);
+          setSelectedCustomerForHistory(getCustomerMetrics(updatedSelected));
         }
       }
     });
     return () => unsubscribe();
   }, [selectedCustomerForHistory]);
 
-  const filteredCustomers = customers.filter(c => {
+  const getCustomerMetrics = (cust) => {
+    const history = cust.purchaseHistory || [];
+    const totalSpent = history.length > 0 
+      ? history.reduce((sum, tx) => sum + (Number(tx.grandTotal) || Number(tx.total) || 0), 0)
+      : (Number(cust.totalSpent) || 0);
+    const visits = history.length > 0 ? history.length : (Number(cust.visits) || 0);
+
+    let favoriteItem = cust.favoriteItem;
+    if (history.length > 0) {
+      const itemCounts = {};
+      history.forEach(b => {
+        (b.items || []).forEach(itemObj => {
+          const iName = itemObj.name || itemObj.productName;
+          const iQty = parseFloat(itemObj.qty || itemObj.quantity || 1);
+          if (iName) {
+            itemCounts[iName] = (itemCounts[iName] || 0) + iQty;
+          }
+        });
+      });
+      let topItem = favoriteItem || 'Filter Coffee';
+      let topQty = 0;
+      Object.entries(itemCounts).forEach(([name, count]) => {
+        if (count > topQty) {
+          topQty = count;
+          topItem = name;
+        }
+      });
+      favoriteItem = topItem;
+    }
+
+    let lastVisit = cust.lastVisit;
+    if (history.length > 0 && history[0].date) {
+      lastVisit = `${history[0].date}${history[0].time ? `, ${history[0].time}` : ''}`.trim();
+    }
+
+    return {
+      ...cust,
+      totalSpent,
+      visits,
+      favoriteItem: favoriteItem || 'Filter Coffee',
+      lastVisit: lastVisit || 'No purchases yet',
+      purchaseHistory: history
+    };
+  };
+
+  const filteredCustomers = customers.map(getCustomerMetrics).filter(c => {
     const matchesSearch = 
       (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (c.phone || '').includes(searchQuery);

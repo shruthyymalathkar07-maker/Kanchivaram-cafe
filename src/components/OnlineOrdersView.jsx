@@ -83,19 +83,15 @@ export default function OnlineOrdersView({ selectedBranch }) {
   const doneOrdersCount = orders.filter(o => ['DONE', 'DELIVERED', 'COMPLETED'].includes(o.status?.toUpperCase())).length;
   const cancelledOrdersCount = orders.filter(o => o.status?.toUpperCase() === 'CANCELLED').length;
 
-  // Channel Counts Calculation
+  // Channel Counts Calculation (Only Zomato & Swiggy)
   const zomatoCount = orders.filter(o => o.platform?.toUpperCase() === 'ZOMATO').length;
   const swiggyCount = orders.filter(o => o.platform?.toUpperCase() === 'SWIGGY').length;
-  const dunzoCount = orders.filter(o => o.platform?.toUpperCase() === 'DUNZO').length;
-  const otherCount = orders.filter(o => !['ZOMATO', 'SWIGGY', 'DUNZO'].includes(o.platform?.toUpperCase())).length;
 
   // Filtered Orders List
   const filteredOrders = orders.filter(order => {
     // Channel filter
     if (selectedChannel !== 'ALL') {
-      if (selectedChannel === 'OTHER') {
-        if (['ZOMATO', 'SWIGGY', 'DUNZO'].includes(order.platform?.toUpperCase())) return false;
-      } else if (order.platform?.toUpperCase() !== selectedChannel) {
+      if (order.platform?.toUpperCase() !== selectedChannel) {
         return false;
       }
     }
@@ -147,7 +143,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
               Online Orders
             </h2>
             <p className="text-xs text-[#456351] font-bold mt-1">
-              Manage Zomato, Swiggy, Dunzo and other delivery orders in one place.
+              Manage Zomato and Swiggy delivery orders in one place.
             </p>
           </div>
         </div>
@@ -254,7 +250,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
       {/* ========================================================================= */}
       <div className="bg-[#fdfbf7] p-2.5 rounded-2xl border border-[#cabb9e] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
         
-        {/* Left: Platform Pills */}
+        {/* Left: Platform Pills (Only Zomato & Swiggy) */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={() => setSelectedChannel('ALL')}
@@ -289,30 +285,6 @@ export default function OnlineOrdersView({ selectedBranch }) {
           >
             <span className="w-2 h-2 rounded-full bg-[#fc8019] inline-block"></span>
             Swiggy ({swiggyCount})
-          </button>
-
-          <button
-            onClick={() => setSelectedChannel('DUNZO')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedChannel === 'DUNZO'
-                ? 'bg-[#00b386] text-white shadow-xs'
-                : 'bg-[#ebdcc8]/40 text-[#00b386] hover:bg-[#ebdcc8] border border-[#cabb9e]/50'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-[#00b386] inline-block"></span>
-            Dunzo ({dunzoCount})
-          </button>
-
-          <button
-            onClick={() => setSelectedChannel('OTHER')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              selectedChannel === 'OTHER'
-                ? 'bg-[#0f3823] text-white shadow-xs'
-                : 'bg-[#ebdcc8]/40 text-[#547363] hover:bg-[#ebdcc8] border border-[#cabb9e]/50'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            Other ({otherCount})
           </button>
         </div>
 
@@ -398,8 +370,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
               {filteredOrders.map(order => {
                 const isZomato = order.platform?.toUpperCase() === 'ZOMATO';
                 const isSwiggy = order.platform?.toUpperCase() === 'SWIGGY';
-                const isDunzo = order.platform?.toUpperCase() === 'DUNZO';
-                const badgeBg = isZomato ? 'bg-[#cb202d]' : isSwiggy ? 'bg-[#fc8019]' : isDunzo ? 'bg-[#00b386]' : 'bg-[#0f3823]';
+                const badgeBg = isZomato ? 'bg-[#cb202d]' : isSwiggy ? 'bg-[#fc8019]' : 'bg-[#0f3823]';
 
                 return (
                   <div

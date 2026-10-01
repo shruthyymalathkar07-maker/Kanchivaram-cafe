@@ -60,16 +60,14 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
   const kpis = currentStats?.kpis || {};
   const totalSalesAmount = kpis.totalSales?.amount ?? 0;
   const orderCount = kpis.totalSales?.orderCount ?? 0;
-  const inStoreSales = kpis.totalSales?.inStore ?? 0;
-  const onlineSales = kpis.totalSales?.online ?? 0;
   const swiggySales = kpis.onlineSales?.swiggy ?? kpis.totalSales?.swiggy ?? 0;
-  const directOnlineSales = kpis.onlineSales?.otherChannels ?? kpis.totalSales?.otherOnline ?? 0;
+  const zomatoSales = kpis.onlineSales?.zomato ?? kpis.totalSales?.zomato ?? 0;
   const growthRate = kpis.totalSales?.growth ?? 0;
 
   const inStorePct = totalSalesAmount > 0 ? Math.round((inStoreSales / totalSalesAmount) * 100) : 0;
   const onlinePct = totalSalesAmount > 0 ? Math.round((onlineSales / totalSalesAmount) * 100) : 0;
   const swiggyPct = totalSalesAmount > 0 ? Math.round((swiggySales / totalSalesAmount) * 100) : 0;
-  const directOnlinePct = totalSalesAmount > 0 ? Math.round((directOnlineSales / totalSalesAmount) * 100) : 0;
+  const zomatoPct = totalSalesAmount > 0 ? Math.round((zomatoSales / totalSalesAmount) * 100) : 0;
   const avgBill = orderCount > 0 ? Math.round(totalSalesAmount / orderCount) : 0;
 
   // Tax Modal Dynamic Data (Real PostgreSQL aggregation)
@@ -208,18 +206,18 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                     </div>
                   </div>
 
-                  {/* Direct Online */}
+                  {/* Zomato Orders */}
                   <div>
                     <div className="flex items-center justify-between text-xs font-bold mb-1">
                       <span className="flex items-center gap-2 text-[#11291f]">
-                        <ExternalLink className="w-4 h-4 text-blue-600" /> Direct Online Website
+                        <ShoppingBag className="w-4 h-4 text-rose-600" /> Zomato Orders
                       </span>
-                      <span className="text-blue-700 font-mono font-black">
-                        ₹{directOnlineSales.toLocaleString('en-IN')} ({directOnlinePct}%)
+                      <span className="text-rose-700 font-mono font-black">
+                        ₹{zomatoSales.toLocaleString('en-IN')} ({zomatoPct}%)
                       </span>
                     </div>
                     <div className="w-full bg-[#ebdcc8] h-2.5 rounded-full overflow-hidden">
-                      <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${directOnlinePct}%` }} />
+                      <div className="bg-rose-600 h-full rounded-full transition-all duration-500" style={{ width: `${zomatoPct}%` }} />
                     </div>
                   </div>
 
@@ -250,21 +248,10 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                 </div>
               </div>
 
-              <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Channel Net Revenue Audit</h4>
+              <h4 className="text-xs font-black text-[#11291f] uppercase tracking-wider">Online Food Apps Net Revenue Breakdown</h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 
-                <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-black text-[#456351]">
-                    <span>In-Store Counter Net</span>
-                    <Store className={`w-4 h-4 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
-                  </div>
-                  <h4 className={`text-2xl font-black font-mono ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`}>
-                    ₹{(kpis.netSales?.inStoreNet ?? 0).toLocaleString('en-IN')}
-                  </h4>
-                  <p className="text-[11px] text-emerald-700 font-extrabold">Direct counter sales</p>
-                </div>
-
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-black text-[#456351]">
                     <span>Swiggy Delivery Net</span>
@@ -273,18 +260,18 @@ export default function KPIDetailModals({ activeModal, onClose, stats, selectedB
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
                     ₹{(kpis.onlineSales?.swiggy ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">Swiggy channel</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Swiggy delivery channel</p>
                 </div>
 
                 <div className="bg-[#fbf8f3] p-4 rounded-2xl border border-[#cabb9e] shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-black text-[#456351]">
-                    <span>Direct Web Orders Net</span>
-                    <ExternalLink className="w-4 h-4 text-blue-600" />
+                    <span>Zomato Delivery Net</span>
+                    <ShoppingBag className="w-4 h-4 text-rose-600" />
                   </div>
                   <h4 className="text-2xl font-black font-mono text-[#11291f]">
-                    ₹{(kpis.onlineSales?.otherChannels ?? 0).toLocaleString('en-IN')}
+                    ₹{(kpis.onlineSales?.zomato ?? 0).toLocaleString('en-IN')}
                   </h4>
-                  <p className="text-[11px] text-[#547363] font-bold">Direct Online channel</p>
+                  <p className="text-[11px] text-[#547363] font-bold">Zomato delivery channel</p>
                 </div>
 
               </div>

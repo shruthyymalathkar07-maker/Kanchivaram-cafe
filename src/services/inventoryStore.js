@@ -649,35 +649,51 @@ class InventoryStore {
       });
     }
 
-    // 3. Customer Matching & Customer Store Update
-    const cleanedPhone = customerPhone ? customerPhone.replace(/\s+/g, '').replace(/[-+]/g, '') : null;
+    // 3. Customer Matching & Dynamic Customer Store Calculation
+    const cleanedPhone = customerPhone ? customerPhone.replace(/\D/g, '').slice(-10) : null;
+    const cleanCustName = customerName && customerName.trim() && customerName !== 'Walk-in Customer' ? customerName.trim() : null;
 
-    if (cleanedPhone && cleanedPhone.length >= 7) {
+    if (cleanedPhone || cleanCustName) {
       let customer = this.customers.find(c => {
-        const cCleaned = c.phone ? c.phone.replace(/\s+/g, '').replace(/[-+]/g, '') : '';
-        return cCleaned === cleanedPhone || (cCleaned.length >= 10 && cleanedPhone.endsWith(cCleaned.slice(-10)));
+        const cCleanPhone = c.phone ? c.phone.replace(/\D/g, '').slice(-10) : '';
+        const phoneMatch = Boolean(cleanedPhone && cCleanPhone && cleanedPhone === cCleanPhone);
+        const nameMatch = Boolean(cleanCustName && c.name && c.name.trim().toLowerCase() === cleanCustName.toLowerCase());
+        return phoneMatch || nameMatch;
       });
 
-      const formattedPhone = customerPhone.trim().startsWith('+91') ? customerPhone.trim() : `+91 ${customerPhone.trim()}`;
+      const formattedPhone = customerPhone && customerPhone.trim() 
+        ? (customerPhone.trim().startsWith('+91') ? customerPhone.trim() : `+91 ${customerPhone.trim()}`) 
+        : (customer?.phone || 'Not specified');
 
       if (customer) {
-        customer.visits = (customer.visits || 0) + 1;
-        customer.totalSpent = (customer.totalSpent || 0) + grandTotal;
-        customer.lastVisit = `${displayDate}, ${displayTime}`;
-        if (customerName && customerName.trim() && customerName !== 'Walk-in Customer' && (!customer.name || customer.name.includes('Customer'))) {
-          customer.name = customerName.trim();
-        }
         if (!customer.purchaseHistory) customer.purchaseHistory = [];
-        customer.purchaseHistory.unshift(completedTransaction);
+        
+        // Avoid duplicate transaction injection
+        if (!customer.purchaseHistory.some(tx => tx.billNumber === finalBillNumber || tx.id === completedTransaction.id)) {
+          customer.purchaseHistory.unshift(completedTransaction);
+        }
 
-        // Derive Favourite Item from actual purchase history
+        // Dynamically compute Total Spent & Orders strictly from this customer's purchase history
+        customer.totalSpent = customer.purchaseHistory.reduce((sum, tx) => sum + (Number(tx.grandTotal) || Number(tx.total) || 0), 0);
+        customer.visits = customer.purchaseHistory.length;
+        customer.lastVisit = `${displayDate}, ${displayTime}`;
+        
+        if (cleanCustName && (!customer.name || customer.name.includes('Customer'))) {
+          customer.name = cleanCustName;
+        }
+
+        // Derive Favourite Item strictly from this customer's actual items
         const itemCounts = {};
         customer.purchaseHistory.forEach(b => {
           (b.items || []).forEach(itemObj => {
-            itemCounts[itemObj.name] = (itemCounts[itemObj.name] || 0) + itemObj.qty;
+            const iName = itemObj.name || itemObj.productName;
+            const iQty = parseFloat(itemObj.qty || itemObj.quantity || 1);
+            if (iName) {
+              itemCounts[iName] = (itemCounts[iName] || 0) + iQty;
+            }
           });
         });
-        let topItem = customer.favoriteItem || items[0]?.name || 'Kanchivaram Filter Coffee';
+        let topItem = items[0]?.name || customer.favoriteItem || 'Kanchivaram Filter Coffee';
         let topQty = 0;
         Object.entries(itemCounts).forEach(([name, count]) => {
           if (count > topQty) {
@@ -696,7 +712,7 @@ class InventoryStore {
         }
 
       } else {
-        const newCustName = (customerName && customerName.trim() && customerName !== 'Walk-in Customer') ? customerName.trim() : `Customer (${customerPhone.slice(-4)})`;
+        const newCustName = cleanCustName || (customerPhone ? `Customer (${customerPhone.slice(-4)})` : 'Valued Customer');
         const newCustomer = {
           id: `c-${Date.now()}`,
           name: newCustName,
