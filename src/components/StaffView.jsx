@@ -336,11 +336,11 @@ export default function StaffView({ selectedBranch }) {
               ) : (
                 filteredStaff.map((staff) => (
                   <tr key={staff.id} className="hover:bg-[#fbf8f3] transition-colors grid grid-cols-12 gap-2 items-center">
-                    <td className="py-3 px-4 col-span-2 font-extrabold text-[#11291f] text-center">{staff.name}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[#11291f] text-center">{staff.role}</td>
-                    <td className="py-3 px-4 col-span-2 font-medium text-[#11291f] text-center">{staff.shift}</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-medium text-[#11291f] text-center">{staff.phone}</td>
-                    <td className="py-3 px-4 col-span-2 font-mono font-medium text-[#11291f] text-center">{staff.pay}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.name}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.role}</td>
+                    <td className="py-3 px-4 col-span-2 font-normal text-black text-center">{staff.shift}</td>
+                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">{staff.phone}</td>
+                    <td className="py-3 px-4 col-span-2 font-mono font-normal text-black text-center">{staff.pay}</td>
                     <td className="py-3 px-4 col-span-1 text-center flex items-center justify-center">
                       <span className={`px-2 py-0.5 text-[9.5px] font-black rounded-full border shadow-2xs ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B] border-[#542A16]' : 'bg-[#0f3823] text-[#4ade80] border-[#194c31]'}`}>
                         {staff.status}
@@ -389,10 +389,10 @@ export default function StaffView({ selectedBranch }) {
                 {/* Header: Name, Role & Status + Delete */}
                 <div className="flex items-start justify-between gap-2 border-b border-[#ebdcc8] pb-2">
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-serif font-black text-sm text-[#11291f] leading-snug break-words">
+                    <h4 className="font-serif font-black text-sm text-black leading-snug break-words">
                       {staff.name}
                     </h4>
-                    <span className={`inline-block text-[11px] font-extrabold ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} mt-0.5`}>
+                    <span className="inline-block text-[11px] font-normal text-black mt-0.5">
                       {staff.role}
                     </span>
                   </div>
@@ -416,7 +416,7 @@ export default function StaffView({ selectedBranch }) {
                     <Clock className="w-3.5 h-3.5 text-[#547363] shrink-0" />
                     <span>Shift Schedule</span>
                   </div>
-                  <p className="font-mono font-bold text-[11px] text-[#11291f] mt-1">
+                  <p className="font-mono font-normal text-[11px] text-black mt-1">
                     {staff.shift}
                   </p>
                 </div>
@@ -425,7 +425,7 @@ export default function StaffView({ selectedBranch }) {
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[#ded4c5]">
                   <div>
                     <span className="text-[9px] uppercase font-bold text-[#547363] block">Monthly Pay</span>
-                    <span className="font-mono font-black text-[#11291f] text-[11px]">
+                    <span className="font-mono font-normal text-black text-[11px]">
                       {staff.pay}
                     </span>
                   </div>
@@ -433,7 +433,7 @@ export default function StaffView({ selectedBranch }) {
                     <span className="text-[9px] uppercase font-bold text-[#547363] block">Contact Phone</span>
                     <a
                       href={`tel:${staff.phone}`}
-                      className="font-mono font-bold text-[#11291f] hover:underline flex items-center gap-1 mt-0.5 text-[11px]"
+                      className="font-mono font-normal text-black hover:underline flex items-center gap-1 mt-0.5 text-[11px]"
                     >
                       <Phone className="w-3 h-3 text-[#547363] shrink-0" />
                       <span>{staff.phone}</span>
