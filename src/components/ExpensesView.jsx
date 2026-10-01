@@ -459,9 +459,8 @@ export default function ExpensesView({ selectedBranch }) {
             <button
               type="submit"
               disabled={isSavingExpense}
-              className={`w-full py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border flex items-center justify-center gap-2 mt-1 disabled:opacity-50`}
+              className={`w-full py-2.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border flex items-center justify-center text-center mt-1 disabled:opacity-50`}
             >
-              <PlusCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
               <span>{isSavingExpense ? 'Saving...' : 'Save Expense Record'}</span>
             </button>
 
