@@ -675,12 +675,12 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       {/* Date & Invoice */}
                       <td className="py-3 px-4 align-top w-[16%]">
                         <div className="font-semibold text-black text-[12.5px] break-words">{purchase.invoiceRef}</div>
-                        <div className="text-[11.5px] text-[#547363] font-normal flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                        <div className="text-[11.5px] text-black font-normal flex items-center gap-1 mt-0.5 whitespace-nowrap">
                           <Calendar className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
-                          <span className="text-[#547363]">{purchase.date}</span>
+                          <span className="text-black">{purchase.date}</span>
                         </div>
                         {purchase.notes && (
-                          <div className="text-[11.5px] text-[#547363] italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words font-normal">
+                          <div className="text-[11.5px] text-black italic mt-1 bg-[#f8f6f0] p-1.5 rounded border border-[#e5d8c8] break-words font-normal">
                             "{purchase.notes}"
                           </div>
                         )}
@@ -691,7 +691,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                           <Building2 className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'} shrink-0`} />
                           <span className="break-words leading-tight">{purchase.supplier}</span>
                         </div>
-                        <div className="text-[11.5px] text-[#547363] font-normal mt-1 flex items-center justify-center gap-1">
+                        <div className="text-[11.5px] text-black font-normal mt-1 flex items-center justify-center gap-1">
                           <span>Category:</span>
                           <span className="text-black font-semibold">{purchase.category || 'Raw Ingredients'}</span>
                         </div>
@@ -715,7 +715,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                                 <span className="font-semibold text-emerald-700 text-[12.5px] whitespace-nowrap">
                                   +{item.qty} {item.unit}
                                 </span>
-                                <span className="text-[11.5px] text-[#547363] font-normal whitespace-nowrap">
+                                <span className="text-[11.5px] text-black font-normal whitespace-nowrap">
                                   ₹{item.pricePerUnit}/{item.unit}
                                 </span>
                                 <span className="font-semibold text-black whitespace-nowrap bg-[#ebdcc8]/50 px-2 py-0.5 rounded border border-[#cabb9e]/60">
@@ -731,7 +731,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                         <div className="font-semibold text-[12.5px] text-black whitespace-nowrap text-center">
                           ₹{(purchase.totalAmount || 0).toLocaleString('en-IN')}
                         </div>
-                        <div className="text-[11.5px] text-[#547363] font-normal mt-0.5 whitespace-nowrap text-center">
+                        <div className="text-[11.5px] text-black font-normal mt-0.5 whitespace-nowrap text-center">
                           {purchase.items.length} item{purchase.items.length > 1 ? 's' : ''} total
                         </div>
                       </td>
@@ -803,7 +803,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                         <Building2 className={`w-3 h-3 ${isBrownBranch ? 'text-[#7A4325]' : 'text-[#0f3823]'}`} />
                         <span>{purchase.supplier}</span>
                       </div>
-                      <div className="text-[11.5px] text-[#547363] font-normal flex items-center gap-1 mt-0.5">
+                      <div className="text-[11.5px] text-black font-normal flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3 text-[#87a997]" />
                         <span>{purchase.date}</span>
                       </div>
@@ -834,7 +834,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
                       <div key={idx} className="bg-[#ebdcc8]/30 p-2 rounded-xl border border-[#cabb9e]/50 flex items-center justify-between text-xs">
                         <div className="min-w-0">
                           <p className="font-semibold text-black text-[12.5px] truncate leading-tight">{item.itemName}</p>
-                          <p className="text-[11.5px] text-[#547363] font-normal mt-0.5">@ ₹{item.pricePerUnit}/{item.unit}</p>
+                          <p className="text-[11.5px] text-black font-normal mt-0.5">@ ₹{item.pricePerUnit}/{item.unit}</p>
                         </div>
                         <div className="text-right shrink-0">
                           <span className="font-semibold text-emerald-700 text-[12.5px]">+{item.qty} {item.unit}</span>
