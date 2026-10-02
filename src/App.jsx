@@ -221,19 +221,14 @@ export default function App() {
           <AuthView
             key="auth-view-branch-select"
             initialStep="BRANCH_SELECT"
+            onBranchSelectStart={(branchObj) => {
+              setActiveBranch(branchObj);
+              setActiveTab('home');
+              setIsBranchTransitioning(true);
+            }}
             onAuthSuccess={(newState) => {
-              if (newState.selectedBranch) {
-                setActiveBranch(newState.selectedBranch);
-                setActiveTab('home');
-                setIsBranchTransitioning(true);
-                
-                setTimeout(() => {
-                  setAuthState(newState);
-                  setIsBranchTransitioning(false);
-                }, 380);
-              } else {
-                setAuthState(newState);
-              }
+              setAuthState(newState);
+              setIsBranchTransitioning(false);
             }}
           />
         </div>

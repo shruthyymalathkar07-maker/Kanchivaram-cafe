@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { authStore, CAFÉ_BRANCHES } from '../services/authStore';
 
-export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
+export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialStep = 'LOGIN' }) {
   const [authStep, setAuthStep] = useState(initialStep); // LOGIN, FORGOT_PASSWORD, OTP_VERIFY, RESET_PASSWORD, RESET_SUCCESS, BRANCH_SELECT
   const [authState, setAuthState] = useState(() => authStore.getState());
 
@@ -260,12 +260,26 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
     }
   };
 
+  // Branch Selection Exit Animation State
+  const [isExiting, setIsExiting] = useState(false);
+
   // 6. HANDLE BRANCH SELECTION SUBMIT & SMOOTH EXIT
   const handleSelectBranch = (branchObj) => {
-    authStore.selectBranch(branchObj);
-    if (onAuthSuccess) {
-      onAuthSuccess(authStore.getState());
+    if (isExiting) return;
+    setIsExiting(true);
+    
+    // 1. Immediately inform parent to prepare the Home Dashboard underneath
+    if (onBranchSelectStart) {
+      onBranchSelectStart(branchObj);
     }
+
+    // 2. Allow 380ms for the smooth fade/dissolve exit transition
+    setTimeout(() => {
+      authStore.selectBranch(branchObj);
+      if (onAuthSuccess) {
+        onAuthSuccess(authStore.getState());
+      }
+    }, 380);
   };
 
   const handleBranchSelectSubmit = (e) => {
@@ -321,7 +335,9 @@ export default function AuthView({ onAuthSuccess, initialStep = 'LOGIN' }) {
   };
 
   return (
-    <div className="min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe">
+    <div className={`min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe transition-opacity duration-380 ease-out ${
+      isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
+    }`}>
       
       {/* 1. TOP HEADER ROW (BRANDING, "THE BREWING JOURNEY" & MICRO-BRANDING)       */}
       <div className="w-full flex items-center justify-between md:grid md:grid-cols-3 z-20 pt-1.5 pb-3.5 md:pt-0 md:pb-1.5 border-b border-[#E8DCC8] shrink-0 relative min-h-[62px] md:min-h-[54px] gap-1.5 min-[360px]:gap-2">
