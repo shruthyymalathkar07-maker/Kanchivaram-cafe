@@ -6,10 +6,6 @@ node_modules
 # Testing
 /coverage
 
-# Production Build Output
-/dist
-/dist-server
-
 # Environment Variables & Secrets (NEVER COMMIT)
 .env
 .env.local

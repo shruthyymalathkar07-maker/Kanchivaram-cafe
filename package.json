@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "server": "tsx server/src/index.ts",
     "start": "tsx server/src/index.ts",
-    "build": "npx prisma generate && vite build",
+    "build": "npx prisma generate --schema=server/prisma/schema.prisma && vite build",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android"
