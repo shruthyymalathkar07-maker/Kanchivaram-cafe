@@ -1377,6 +1377,7 @@ export function createApiRouter(io: SocketServer) {
     const { items, subtotal, tax, discount, grandTotal, paymentMethod, receiptType, cashierName, channel } = req.body;
     const customerPhone = req.body.customerPhone || req.body.customer?.phone || null;
     const customerName = req.body.customerName || req.body.customer?.name || null;
+    const orderNote = req.body.orderNote || req.body.notes || null;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart items are required' });
@@ -1399,6 +1400,7 @@ export function createApiRouter(io: SocketServer) {
       customerPhone,
       customerName,
       cashierName: cashierName || 'Shruthy',
+      orderNote: orderNote ? String(orderNote).trim() : null,
       status: 'COMPLETED',
       channel: channel || 'POS',
       createdAt: new Date().toISOString(),
@@ -1640,6 +1642,7 @@ export function createApiRouter(io: SocketServer) {
           receiptType: newSale.receiptType,
           status: 'COMPLETED',
           cashierName: newSale.cashierName,
+          orderNote: newSale.orderNote || null,
           dateIso: todayIso,
           items: {
             create: validatedSaleItems

@@ -70,7 +70,8 @@ export async function createSaleTransaction(salePayload, branchId = 'branch-1') 
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-branch-id': finalBranchId
+        'x-branch-id': finalBranchId,
+        ...getAuthHeaders()
       },
       body: JSON.stringify({ ...salePayload, branchId: finalBranchId })
     });
@@ -85,7 +86,10 @@ export async function fetchSales(period = 'today', branchId = 'branch-1', channe
   try {
     const url = `${API_BASE_URL}/sales?period=${period}&branchId=${branchId}&channel=${channel}`;
     const res = await fetch(url, {
-      headers: { 'x-branch-id': branchId }
+      headers: { 
+        'x-branch-id': branchId,
+        ...getAuthHeaders()
+      }
     });
     const json = await res.json();
     return json.sales || [];

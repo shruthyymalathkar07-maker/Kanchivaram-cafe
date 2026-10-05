@@ -43,11 +43,29 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
 
-  // Quick Action States
-  const [heldBills, setHeldBills] = useState([]);
+  // Quick Action States with localStorage persistence per branch
+  const branchKey = selectedBranch?.id || 'branch-1';
+  const [heldBills, setHeldBills] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`kc_held_bills_${branchKey}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [isHeldBillsOpen, setIsHeldBillsOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [orderNote, setOrderNote] = useState('');
+
+  // Sync held bills to localStorage whenever updated
+  const saveHeldBills = (newHeldList) => {
+    setHeldBills(newHeldList);
+    try {
+      localStorage.setItem(`kc_held_bills_${branchKey}`, JSON.stringify(newHeldList));
+    } catch (e) {
+      console.warn('[POS] Failed to save held bills to localStorage:', e);
+    }
+  };
 
   const fallbackCategories = categories.length > 0 ? categories : PRODUCT_CATEGORIES;
   const fallbackProducts = products.length > 0 ? products : CLIENT_PRODUCTS_MASTER;
@@ -92,6 +110,12 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     setOrderNote('');
   };
 
+  // Calculations
+  const subtotal = cart.reduce((acc, item) => acc + ((item.dineInPrice || item.price || 0) * item.quantity), 0);
+  const taxRate = 0.05; // 5% GST
+  const tax = subtotal * taxRate;
+  const grandTotal = Math.max(0, subtotal + tax - discountAmount);
+
   // Quick Action Handlers
   const handleHoldBill = () => {
     if (cart.length === 0) {
@@ -100,12 +124,19 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     }
     const newHold = {
       id: `HOLD-${Date.now().toString().slice(-4)}`,
-      cart: [...cart],
+      branchId: branchKey,
+      cart: cart.map(i => ({ ...i })),
       subtotal,
+      tax,
+      discountAmount,
+      orderNote: orderNote ? orderNote.trim() : '',
       grandTotal,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      itemsSummary: cart.map(i => `${i.name} (x${i.quantity})`).join(', '),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+      timestamp: Date.now()
     };
-    setHeldBills(prev => [...prev, newHold]);
+    const updatedList = [newHold, ...heldBills];
+    saveHeldBills(updatedList);
     setCart([]);
     setDiscountAmount(0);
     setOrderNote('');
@@ -113,31 +144,53 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   };
 
   const handleRestoreHeldBill = (heldItem) => {
-    setCart(heldItem.cart);
-    setHeldBills(prev => prev.filter(h => h.id !== heldItem.id));
+    setCart(heldItem.cart ? heldItem.cart.map(i => ({ ...i })) : []);
+    setDiscountAmount(Number(heldItem.discountAmount) || 0);
+    setOrderNote(heldItem.orderNote || '');
+    const updatedList = heldBills.filter(h => h.id !== heldItem.id);
+    saveHeldBills(updatedList);
     setIsHeldBillsOpen(false);
   };
 
+  const handleDeleteHeldBill = (heldId, e) => {
+    if (e) e.stopPropagation();
+    const updatedList = heldBills.filter(h => h.id !== heldId);
+    saveHeldBills(updatedList);
+  };
+
   const handleApplyDiscountPrompt = () => {
-    const input = prompt("Enter Discount Amount (in ₹):", discountAmount);
+    if (cart.length === 0) {
+      alert("Please add items to cart before applying a discount.");
+      return;
+    }
+    const currentMax = subtotal + tax;
+    const input = prompt(`Enter Discount Amount in ₹ (Max applicable: ₹${currentMax.toFixed(2)}):`, discountAmount > 0 ? String(discountAmount) : '');
     if (input !== null) {
-      const val = parseFloat(input) || 0;
-      setDiscountAmount(val);
+      const trimmed = input.trim();
+      if (trimmed === '') {
+        setDiscountAmount(0);
+        return;
+      }
+      const val = parseFloat(trimmed);
+      if (isNaN(val) || val < 0) {
+        alert("Please enter a valid positive discount amount.");
+        return;
+      }
+      if (val > currentMax) {
+        alert(`Discount (₹${val.toFixed(2)}) exceeds maximum bill amount. Applying maximum allowable discount: ₹${currentMax.toFixed(2)}`);
+        setDiscountAmount(currentMax);
+      } else {
+        setDiscountAmount(val);
+      }
     }
   };
 
   const handleAddNotePrompt = () => {
-    const input = prompt("Add Order Note / Special Instructions:", orderNote);
+    const input = prompt("Add Internal Kitchen / Order Note (e.g. 'No sugar - less ice', 'Extra chutney'):", orderNote);
     if (input !== null) {
-      setOrderNote(input);
+      setOrderNote(input.trim());
     }
   };
-
-  // Calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const taxRate = 0.05; // 5% GST
-  const tax = subtotal * taxRate;
-  const grandTotal = Math.max(0, subtotal + tax - discountAmount);
 
   // Finalize Sale
   const handleCompleteSale = async () => {
@@ -548,6 +601,22 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                 <span className="font-mono">-₹{discountAmount.toFixed(2)}</span>
               </div>
             )}
+            {orderNote && (
+              <div className="flex items-center justify-between bg-[#ebdcc8] px-2 py-1 rounded-md border border-[#cabb9e] text-[11px] text-[#2c1d11]">
+                <span className="font-extrabold flex items-center gap-1 text-[#0f3823]">
+                  <span>📝 Kitchen Note:</span>
+                </span>
+                <span className="font-semibold italic truncate max-w-[130px]" title={orderNote}>"{orderNote}"</span>
+                <button 
+                  type="button" 
+                  onClick={() => setOrderNote('')} 
+                  className="text-xs text-red-700 hover:text-red-900 font-bold ml-1 cursor-pointer"
+                  title="Remove note"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             <div className="flex justify-between items-center bg-[#ebdcc8] p-2 rounded-lg border border-[#d4af37] text-sm font-black text-[#11291f] mt-1">
               <span>Grand Total</span>
               <span className="text-[#0f3823] font-mono text-base font-black">₹{grandTotal.toFixed(2)}</span>
@@ -689,21 +758,50 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
             <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
               {heldBills.length === 0 ? (
-                <p className="text-xs text-center text-[#557361] py-6 font-bold">No held bills found.</p>
+                <div className="py-8 text-center text-[#557361] space-y-1 font-bold text-xs">
+                  <p>No held bills found for this branch.</p>
+                  <p className="text-[10px] font-normal text-[#759080]">Click "Hold Bill" while items are in cart to park an unfinished order.</p>
+                </div>
               ) : (
                 heldBills.map(item => (
-                  <div key={item.id} className="p-3 bg-[#f4ebd9] rounded-xl border border-[#ded4c5] flex items-center justify-between">
-                    <div>
-                      <span className="font-mono font-black text-xs text-[#0f3823]">{item.id}</span>
-                      <p className="text-[10px] text-[#557361] font-bold">{item.cart.length} items • {item.time}</p>
-                      <p className="text-xs font-black text-[#11291f] font-mono">₹{item.grandTotal.toFixed(2)}</p>
+                  <div key={item.id} className="p-3 bg-[#f4ebd9] rounded-xl border border-[#ded4c5] flex items-center justify-between gap-2 shadow-2xs hover:border-[#d4af37] transition-all">
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-xs text-[#0f3823]">{item.id}</span>
+                        <span className="text-[10px] text-[#557361] font-bold">• {item.time}</span>
+                      </div>
+                      <p className="text-[10px] text-[#11291f] font-semibold truncate" title={item.itemsSummary}>
+                        {item.itemsSummary || `${item.cart?.length || 0} items`}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                        <span className="font-mono font-black text-xs text-[#11291f]">₹{(item.grandTotal || 0).toFixed(2)}</span>
+                        {item.discountAmount > 0 && (
+                          <span className="text-red-700 font-bold bg-red-100/70 px-1.5 py-0.2 rounded">Disc: ₹{item.discountAmount.toFixed(2)}</span>
+                        )}
+                        {item.orderNote && (
+                          <span className="text-[#3d2b16] italic font-semibold bg-[#ebdcc8] px-1.5 py-0.2 rounded truncate max-w-[150px]" title={item.orderNote}>
+                            📝 {item.orderNote}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => handleRestoreHeldBill(item)}
-                      className="px-3 py-1.5 bg-[#0f3823] text-white text-xs font-extrabold rounded-lg hover:bg-[#15422e]"
-                    >
-                      Restore
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteHeldBill(item.id, e)}
+                        className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Discard Held Bill"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRestoreHeldBill(item)}
+                        className="px-3 py-1.5 bg-[#0f3823] text-white text-xs font-black rounded-lg hover:bg-[#15422e] shadow-2xs transition-all cursor-pointer"
+                      >
+                        Restore
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

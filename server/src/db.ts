@@ -51,6 +51,7 @@ export interface SaleRecord {
   customerPhone?: string;
   customerName?: string;
   cashierName: string;
+  orderNote?: string | null;
   status: string;
   channel: 'IN_STORE' | 'POS' | 'SWIGGY' | 'ZOMATO' | 'DIRECT_ONLINE';
   createdAt: string;
