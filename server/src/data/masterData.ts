@@ -1,5 +1,18 @@
-// Kanchivaram Café Master Data Definition
-// Imported verbatim from Client Master Specifications
+export function normalizeUnit(unit: string | null | undefined): string {
+  if (!unit) return 'NOS';
+  const clean = String(unit).trim();
+  const lower = clean.toLowerCase().replace(/[.\s_-]/g, '');
+  if (['nos', 'no', 'unit', 'units', 'piece', 'pieces', 'pack', 'packs', 'packet', 'packets', 'number', 'numbers'].includes(lower)) {
+    return 'NOS';
+  }
+  if (lower === 'kg' || lower === 'kilogram' || lower === 'kilograms') return 'kg';
+  if (lower === 'g' || lower === 'gm' || lower === 'gms' || lower === 'gram' || lower === 'grams') return 'g';
+  if (lower === 'l' || lower === 'ltr' || lower === 'liter' || lower === 'liters' || lower === 'litre' || lower === 'litres') return 'L';
+  if (lower === 'ml' || lower === 'milliliter' || lower === 'milliliters' || lower === 'millilitre' || lower === 'millilitres') return 'ml';
+  if (lower === 'm' || lower === 'meter' || lower === 'meters' || lower === 'metre' || lower === 'metres') return 'm';
+  if (lower === 'cm' || lower === 'centimeter' || lower === 'centimeters') return 'cm';
+  return clean;
+}
 
 export interface ClientProductMaster {
   id: string;
@@ -7,7 +20,7 @@ export interface ClientProductMaster {
   category: string;
   categoryId: string;
   servingQty: number; // Serving quantity in UOM (NOT inventory stock!)
-  uom: string; // Nos., g, ml
+  uom: string; // NOS, g, ml
   dineInPrice: number;
   deliveryPrice: number;
   packingCharge: number;

@@ -7,7 +7,8 @@ import {
   CLIENT_RAW_MATERIALS_MASTER, 
   CLIENT_BOM_MASTER,
   SaleRecord,
-  StockLedgerEntry
+  StockLedgerEntry,
+  normalizeUnit
 } from '../db';
 import { 
   findUserByEmail, 
@@ -668,6 +669,7 @@ export function createApiRouter(io: SocketServer) {
           // Sort items in case-insensitive ascending alphabetical order (A-Z) by name
           const sortedItems = dbItems.map(item => ({
             ...item,
+            unit: normalizeUnit(item.unit),
             remainingStock: Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0)),
             lastMovementDisplay: item.lastMovement ? new Date(item.lastMovement).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
           })).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
@@ -688,6 +690,7 @@ export function createApiRouter(io: SocketServer) {
     const sortedFallback = [...branchData.inventoryItems]
       .map(item => ({
         ...item,
+        unit: normalizeUnit(item.unit),
         remainingStock: Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0))
       }))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
@@ -952,13 +955,15 @@ export function createApiRouter(io: SocketServer) {
             const updated = updatedRows[0] || dbItem;
             const remainingAfter = Math.max(0, (updated.openingStock || 0) + (updated.stockIn || 0) - (updated.stockOut || 0));
 
+            const lineUnit = normalizeUnit(lineItem.unit || updated.unit || 'NOS');
+
             // Create PurchaseItem
             const piId = `pi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             await prisma.$executeRawUnsafe(
               `INSERT INTO "public"."PurchaseItem" ("id", "purchaseId", "itemId", "itemName", "category", "qty", "unit", "pricePerUnit", "total")
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                ON CONFLICT ("id") DO NOTHING;`,
-              piId, purchaseRecord.id, updated.id, updated.name, updated.category, numQty, lineItem.unit || updated.unit, numPrice, itemTotal
+              piId, purchaseRecord.id, updated.id, updated.name, updated.category, numQty, lineUnit, numPrice, itemTotal
             );
 
             // Create StockLedger movement
@@ -967,7 +972,7 @@ export function createApiRouter(io: SocketServer) {
               `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "purchaseId", "dateIso", "createdAt")
                VALUES ($1, $2, $3, $4, 'STOCK_IN', $5, $6, $7, $8, 'Purchase / Stock In', $9, $10, $11, $12, CURRENT_TIMESTAMP)
                ON CONFLICT ("id") DO NOTHING;`,
-              mvId, branchId, updated.id, updated.name, numQty, lineItem.unit || updated.unit, finalSupplier, finalInvoiceRef, notes || `Purchase In (${finalInvoiceRef})`, remainingAfter, purchaseRecord.id, todayIso
+              mvId, branchId, updated.id, updated.name, numQty, lineUnit, finalSupplier, finalInvoiceRef, notes || `Purchase In (${finalInvoiceRef})`, remainingAfter, purchaseRecord.id, todayIso
             );
 
             processedLineItems.push({
@@ -975,18 +980,19 @@ export function createApiRouter(io: SocketServer) {
               itemName: updated.name,
               category: updated.category,
               qty: numQty,
-              unit: lineItem.unit || updated.unit,
+              unit: lineUnit,
               pricePerUnit: numPrice,
               total: itemTotal
             });
           } else if (lineItem.itemName) {
             // Genuinely new raw material item: create in catalog
             const newRmId = `rm-${Date.now().toString().slice(-6)}`;
+            const newLineUnit = normalizeUnit(lineItem.unit || 'NOS');
             await prisma.$executeRawUnsafe(
               `INSERT INTO "public"."InventoryItem" ("id", "branchId", "name", "category", "unit", "openingStock", "stockIn", "stockOut", "minThreshold", "costPerUnit", "supplier", "lastMovement", "createdAt", "updatedAt")
                VALUES ($1, $2, $3, $4, $5, 0, $6, 0, 0, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                ON CONFLICT ("id") DO NOTHING;`,
-              newRmId, branchId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', lineItem.unit || 'kg', numQty, numPrice, finalSupplier
+              newRmId, branchId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', newLineUnit, numQty, numPrice, finalSupplier
             );
 
             // Create PurchaseItem
@@ -995,7 +1001,7 @@ export function createApiRouter(io: SocketServer) {
               `INSERT INTO "public"."PurchaseItem" ("id", "purchaseId", "itemId", "itemName", "category", "qty", "unit", "pricePerUnit", "total")
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                ON CONFLICT ("id") DO NOTHING;`,
-              piId, purchaseRecord.id, newRmId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', numQty, lineItem.unit || 'kg', numPrice, itemTotal
+              piId, purchaseRecord.id, newRmId, lineItem.itemName.trim(), lineItem.category || 'Raw Ingredients', numQty, newLineUnit, numPrice, itemTotal
             );
 
             // Create StockLedger movement
@@ -1004,7 +1010,7 @@ export function createApiRouter(io: SocketServer) {
               `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "purchaseId", "dateIso", "createdAt")
                VALUES ($1, $2, $3, $4, 'STOCK_IN', $5, $6, $7, $8, 'Purchase / Stock In', $9, $10, $11, $12, CURRENT_TIMESTAMP)
                ON CONFLICT ("id") DO NOTHING;`,
-              mvId, branchId, newRmId, lineItem.itemName.trim(), numQty, lineItem.unit || 'kg', finalSupplier, finalInvoiceRef, notes || `New Item Purchase (${finalInvoiceRef})`, numQty, purchaseRecord.id, todayIso
+              mvId, branchId, newRmId, lineItem.itemName.trim(), numQty, newLineUnit, finalSupplier, finalInvoiceRef, notes || `New Item Purchase (${finalInvoiceRef})`, numQty, purchaseRecord.id, todayIso
             );
 
             processedLineItems.push({
@@ -1012,7 +1018,7 @@ export function createApiRouter(io: SocketServer) {
               itemName: lineItem.itemName.trim(),
               category: lineItem.category || 'Raw Ingredients',
               qty: numQty,
-              unit: lineItem.unit || 'kg',
+              unit: newLineUnit,
               pricePerUnit: numPrice,
               total: itemTotal
             });
@@ -1051,6 +1057,179 @@ export function createApiRouter(io: SocketServer) {
 
   router.post('/inventory/purchases', handleStockInPurchase);
   router.post('/inventory/stock-in', handleStockInPurchase);
+
+  // 4b-1. POST /api/inventory/stock-out & /api/inventory/usage (Record Manual Stock Out: Spoilage, Wastage, Consumption in PostgreSQL)
+  const handleManualStockOut = async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { itemId, itemName, qty, unit, source, reason, ref, notes } = req.body || {};
+
+    const numQty = Math.max(0, parseFloat(qty) || 0);
+    if (numQty <= 0) {
+      return res.status(400).json({ success: false, message: 'A positive quantity is required for stock out' });
+    }
+
+    if (!itemId && (!itemName || !String(itemName).trim())) {
+      return res.status(400).json({ success: false, message: 'Item ID or Item Name is required' });
+    }
+
+    const todayIso = new Date().toISOString().split('T')[0];
+    const displayDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const displayTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const finalReason = (source || reason || 'Kitchen Consumption').trim();
+    const finalRef = (ref || `Usage #${Math.floor(1000 + Math.random() * 9000)}`).trim();
+    const finalNotes = (notes || `${finalReason} record`).trim();
+    const mvId = `MV-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+
+    try {
+      if (prisma) {
+        // Find target inventory item by ID or case-insensitive Name
+        let targetItem: any = null;
+        if (itemId) {
+          targetItem = await prisma.inventoryItem.findFirst({
+            where: {
+              OR: [
+                { id: itemId },
+                ...(branchId ? [{ id: itemId, branchId }] : [])
+              ]
+            }
+          });
+        }
+        if (!targetItem && itemName) {
+          targetItem = await prisma.inventoryItem.findFirst({
+            where: {
+              name: { equals: String(itemName).trim(), mode: 'insensitive' },
+              ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
+            }
+          });
+        }
+
+        if (!targetItem) {
+          return res.status(404).json({ success: false, message: `Inventory item '${itemName || itemId}' not found in catalog` });
+        }
+
+        // Increment stockOut in PostgreSQL
+        const updatedItem = await prisma.inventoryItem.update({
+          where: { id: targetItem.id },
+          data: {
+            stockOut: { increment: numQty },
+            lastMovement: new Date()
+          }
+        });
+
+        const remainingAfter = Math.max(0, (updatedItem.openingStock || 0) + (updatedItem.stockIn || 0) - (updatedItem.stockOut || 0));
+        const normalizedUnit = normalizeUnit(unit || targetItem.unit || 'NOS');
+
+        // Create StockLedger entry
+        let createdMovement: any = null;
+        try {
+          createdMovement = await prisma.stockLedger.create({
+            data: {
+              id: mvId,
+              branchId,
+              itemId: targetItem.id,
+              itemName: targetItem.name,
+              type: 'STOCK_OUT',
+              qty: numQty,
+              unit: normalizedUnit,
+              supplier: '-',
+              ref: finalRef,
+              source: finalReason,
+              notes: finalNotes,
+              remainingAfter,
+              dateIso: todayIso
+            }
+          });
+        } catch (ledgerErr: any) {
+          console.warn('[API /inventory/stock-out] Prisma ledger create fallback to raw SQL:', ledgerErr.message);
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "public"."StockLedger" ("id", "branchId", "itemId", "itemName", "type", "qty", "unit", "supplier", "ref", "source", "notes", "remainingAfter", "dateIso", "createdAt")
+             VALUES ($1, $2, $3, $4, 'STOCK_OUT', $5, $6, '-', $7, $8, $9, $10, $11, CURRENT_TIMESTAMP)
+             ON CONFLICT ("id") DO NOTHING;`,
+            mvId, branchId, targetItem.id, targetItem.name, numQty, normalizedUnit, finalRef, finalReason, finalNotes, remainingAfter, todayIso
+          );
+          createdMovement = {
+            id: mvId,
+            branchId,
+            itemId: targetItem.id,
+            itemName: targetItem.name,
+            type: 'STOCK_OUT',
+            qty: numQty,
+            unit: normalizedUnit,
+            supplier: '-',
+            ref: finalRef,
+            source: finalReason,
+            notes: finalNotes,
+            remainingAfter,
+            dateIso: todayIso,
+            createdAt: new Date()
+          };
+        }
+
+        // Broadcast real-time inventory updates to all POS clients
+        io.emit('inventory_updated', { branchId });
+
+        return res.status(201).json({
+          success: true,
+          message: `Deducted ${numQty} ${normalizedUnit} of ${targetItem.name} successfully`,
+          movement: {
+            ...createdMovement,
+            date: displayDate,
+            time: displayTime
+          },
+          item: {
+            ...updatedItem,
+            remainingStock: remainingAfter,
+            unit: normalizeUnit(updatedItem.unit)
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /inventory/stock-out POST] Database error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to record manual stock out in PostgreSQL database',
+        error: err.message
+      });
+    }
+
+    // In-memory fallback
+    const branchData = branchDb.getBranchData(branchId);
+    const item = branchData.inventoryItems.find(i => (itemId && i.id === itemId) || (itemName && i.name.toLowerCase() === itemName.toLowerCase()));
+    if (item) {
+      item.stockOut = (item.stockOut || 0) + numQty;
+      const remainingAfter = Math.max(0, (item.openingStock || 0) + (item.stockIn || 0) - (item.stockOut || 0));
+      const movement = {
+        id: mvId,
+        branchId,
+        itemId: item.id,
+        itemName: item.name,
+        type: 'STOCK_OUT' as const,
+        qty: numQty,
+        unit: normalizeUnit(unit || item.unit || 'NOS'),
+        supplier: '-',
+        ref: finalRef,
+        source: finalReason,
+        notes: finalNotes,
+        remainingAfter,
+        dateIso: todayIso,
+        createdAt: new Date().toISOString()
+      };
+      branchData.ledger.unshift(movement);
+      io.emit('inventory_updated', { branchId });
+      return res.status(201).json({
+        success: true,
+        message: `Deducted ${numQty} ${item.name}`,
+        movement,
+        item: { ...item, remainingStock: remainingAfter },
+        fallback: true
+      });
+    }
+
+    return res.status(404).json({ success: false, message: 'Item not found in catalog' });
+  };
+
+  router.post('/inventory/stock-out', handleManualStockOut);
+  router.post('/inventory/usage', handleManualStockOut);
 
   // 4c. GET /api/inventory/purchases (Fetch purchase invoices from PostgreSQL)
   router.get('/inventory/purchases', async (req: Request, res: Response) => {
@@ -1511,7 +1690,7 @@ export function createApiRouter(io: SocketServer) {
                   itemName: targetItem.name,
                   type: 'STOCK_OUT',
                   qty: totalRawQty,
-                  unit: targetItem.unit || rawUom,
+                  unit: normalizeUnit(targetItem.unit || rawUom || 'NOS'),
                   supplier: '-',
                   ref: billNumber,
                   source: 'POS / Recipe BOM',

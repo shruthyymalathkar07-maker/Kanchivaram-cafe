@@ -205,17 +205,18 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     }
 
     const selectedItemObj = realItems.find(i => i.id === outItemId);
+    const branchId = selectedBranch?.id || 'branch-1';
 
     try {
       await inventoryStore.recordStockOut({
         itemId: outItemId,
         itemName: selectedItemObj ? selectedItemObj.name : 'Unknown Item',
         qty: outQtyInput,
-        unit: selectedItemObj ? selectedItemObj.unit : 'units',
+        unit: selectedItemObj ? selectedItemObj.unit : 'NOS',
         source: outReasonInput,
         ref: `Usage #${Math.floor(1000 + Math.random() * 9000)}`,
         notes: outNotesInput || 'Internal usage / wastage record'
-      });
+      }, branchId);
 
       setOutItemId('');
       setOutQtyInput('');
@@ -1227,16 +1228,13 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     className="w-full px-2 py-2 bg-white text-[#11291f] font-bold rounded-xl border border-[#cabb9e]"
                   >
                     <option value="NOS">NOS</option>
-                    <option value="Nos.">Nos.</option>
                     <option value="kg">kg</option>
                     <option value="g">g</option>
                     <option value="L">L</option>
                     <option value="ml">ml</option>
-                    <option value="units">units</option>
                     <option value="cups">cups</option>
                     <option value="plates">plates</option>
                     <option value="bottles">bottles</option>
-                    <option value="pieces">pieces</option>
                   </select>
                 </div>
               </div>

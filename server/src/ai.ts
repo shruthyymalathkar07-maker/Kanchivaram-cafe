@@ -3,6 +3,7 @@
 
 import OpenAI from 'openai';
 import type { PrismaClient } from '@prisma/client';
+import { normalizeUnit } from './db';
 
 export interface KVCMQueryOptions {
   query: string;
@@ -98,7 +99,7 @@ export async function fetchBranchBusinessContext(prisma: PrismaClient, branchId:
       id: i.id,
       name: i.name,
       category: i.category || 'General',
-      unit: i.unit || 'units',
+      unit: normalizeUnit(i.unit || 'NOS'),
       openingStock: opening,
       stockIn,
       stockOut,

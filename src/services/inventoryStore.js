@@ -1,10 +1,11 @@
 // Centralized Single Source of Truth Real-Time Inventory Store for Kanchivaram Café
-import { CLIENT_RAW_MATERIALS_MASTER, CLIENT_BOM_MASTER } from '../data/masterData';
+import { CLIENT_RAW_MATERIALS_MASTER, CLIENT_BOM_MASTER, normalizeUnit } from '../data/masterData';
 import { 
   fetchInventoryMaster, 
   fetchInventoryPurchases, 
   fetchStockLedger, 
   createPurchaseStockIn, 
+  createStockOutTransaction,
   deleteInventoryPurchase,
   updateItemThreshold as apiUpdateItemThreshold,
   fetchCustomers,
@@ -23,7 +24,7 @@ const createInitialItems = () => [...CLIENT_RAW_MATERIALS_MASTER]
     name: rm.name,
     category: rm.category || 'Unspecified',
     rawCategory: rm.category,
-    unit: rm.unit || 'units',
+    unit: normalizeUnit(rm.unit || 'NOS'),
     openingStock: 0,
     stockIn: 0,
     stockOut: 0,
@@ -175,7 +176,7 @@ class InventoryStore {
             name: dbItem.name,
             category: dbItem.category || existing.category || 'Unspecified',
             rawCategory: dbItem.category || existing.rawCategory,
-            unit: dbItem.unit || existing.unit || 'units',
+            unit: normalizeUnit(dbItem.unit || existing.unit || 'NOS'),
             openingStock: Number(dbItem.openingStock || 0),
             stockIn: Number(dbItem.stockIn || 0),
             stockOut: Number(dbItem.stockOut || 0),
@@ -195,7 +196,7 @@ class InventoryStore {
               name: std.name,
               category: std.category || 'Unspecified',
               rawCategory: std.category,
-              unit: std.unit || 'units',
+              unit: normalizeUnit(std.unit || 'NOS'),
               openingStock: 0,
               stockIn: 0,
               stockOut: 0,
@@ -517,11 +518,14 @@ class InventoryStore {
     return this.recordPurchase(updatedPayload, branchId);
   }
 
-  // RECORD STOCK OUT / POS SALES / CONSUMPTION
-  recordStockOut(payload) {
+  // RECORD STOCK OUT / MANUAL CONSUMPTION / WASTAGE (PostgreSQL + Optimistic Local)
+  async recordStockOut(payload, branchId = this.currentBranchId) {
     const { itemId, itemName, qty, unit, source, ref, notes } = payload;
     const numQty = parseFloat(qty) || 0;
-    if (numQty <= 0) return;
+    if (numQty <= 0) return null;
+
+    const targetBranch = branchId || this.currentBranchId;
+    const normUnit = normalizeUnit(unit || 'NOS');
 
     const item = this.items.find(i => 
       (itemId && i.id === itemId) || 
@@ -537,7 +541,7 @@ class InventoryStore {
       item.lastMovement = displayDate;
     }
 
-    const targetItem = item || { id: 'generic', name: itemName || 'POS Item', unit: unit || 'units' };
+    const targetItem = item || { id: itemId || 'generic', name: itemName || 'Inventory Item', unit: normUnit };
     const newRemaining = item ? this.getItemRemainingStock(item) : 0;
 
     const newMovement = {
@@ -549,17 +553,37 @@ class InventoryStore {
       itemName: targetItem.name,
       type: 'STOCK_OUT',
       qty: numQty,
-      unit: targetItem.unit || 'units',
+      unit: normUnit,
       supplier: '-',
-      ref: ref || `POS #BILL-${Math.floor(1000 + Math.random() * 9000)}`,
-      source: source || 'POS / Sales',
-      notes: notes || 'Product sold via POS',
+      ref: ref || `Usage #${Math.floor(1000 + Math.random() * 9000)}`,
+      source: source || 'Kitchen Consumption',
+      notes: notes || 'Manual stock deduction',
       remainingAfter: newRemaining
     };
 
     this.ledger.unshift(newMovement);
     this.notify();
-    return newMovement;
+
+    // Persist to PostgreSQL backend via API
+    try {
+      const res = await createStockOutTransaction({
+        itemId: targetItem.id,
+        itemName: targetItem.name,
+        qty: numQty,
+        unit: normUnit,
+        source: source || 'Kitchen Consumption',
+        ref: ref || `Usage #${Math.floor(1000 + Math.random() * 9000)}`,
+        notes: notes || 'Manual stock deduction',
+        branchId: targetBranch
+      }, targetBranch);
+
+      this.scheduleDebouncedHydration(targetBranch, 50);
+      return res?.movement || newMovement;
+    } catch (err) {
+      console.warn('[InventoryStore] Error persisting stock out to PostgreSQL:', err);
+      this.scheduleDebouncedHydration(targetBranch, 50);
+      return newMovement;
+    }
   }
 
   // RECORD COMPLETED POS BILL & EXECUTE BOM DEDUCTION LOGIC

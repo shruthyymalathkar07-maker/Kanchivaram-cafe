@@ -1,6 +1,22 @@
 // Kanchivaram Café Master Data (59 Products, 9 Categories, 117 Raw Materials, BOM Recipes)
 // Imported verbatim from Client Master Specifications with high-fidelity, accurate food photography
 
+export function normalizeUnit(unit) {
+  if (!unit) return 'NOS';
+  const clean = String(unit).trim();
+  const lower = clean.toLowerCase().replace(/[.\s_-]/g, '');
+  if (['nos', 'no', 'unit', 'units', 'piece', 'pieces', 'pack', 'packs', 'packet', 'packets', 'number', 'numbers'].includes(lower)) {
+    return 'NOS';
+  }
+  if (lower === 'kg' || lower === 'kilogram' || lower === 'kilograms') return 'kg';
+  if (lower === 'g' || lower === 'gm' || lower === 'gms' || lower === 'gram' || lower === 'grams') return 'g';
+  if (lower === 'l' || lower === 'ltr' || lower === 'liter' || lower === 'liters' || lower === 'litre' || lower === 'litres') return 'L';
+  if (lower === 'ml' || lower === 'milliliter' || lower === 'milliliters' || lower === 'millilitre' || lower === 'millilitres') return 'ml';
+  if (lower === 'm' || lower === 'meter' || lower === 'meters' || lower === 'metre' || lower === 'metres') return 'm';
+  if (lower === 'cm' || lower === 'centimeter' || lower === 'centimeters') return 'cm';
+  return clean;
+}
+
 export const PRODUCT_CATEGORIES = [
   { id: 'all', name: 'All Menu Items', slug: 'all', icon: '✨' },
   { id: 'cat-kc-signatures', name: 'KC Signatures', slug: 'kc-signatures', icon: '✨' },

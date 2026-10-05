@@ -540,6 +540,25 @@ export async function sendChatbotQuery(query, branchId = 'branch-1') {
   }
 }
 
+export async function createStockOutTransaction(stockOutPayload, branchId = 'branch-1') {
+  try {
+    const finalBranchId = stockOutPayload?.branchId || branchId;
+    const res = await fetch(`${API_BASE_URL}/inventory/stock-out`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': finalBranchId,
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ ...stockOutPayload, branchId: finalBranchId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Create stock out error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 
 
 

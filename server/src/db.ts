@@ -9,7 +9,8 @@ import {
   CLIENT_BOM_MASTER,
   ClientProductMaster,
   ClientInventoryMaster,
-  ClientBOMMaster
+  ClientBOMMaster,
+  normalizeUnit
 } from './data/masterData';
 
 // Load environment variables
@@ -35,7 +36,8 @@ export {
   PRODUCT_CATEGORIES, 
   CLIENT_PRODUCTS_MASTER, 
   CLIENT_RAW_MATERIALS_MASTER, 
-  CLIENT_BOM_MASTER 
+  CLIENT_BOM_MASTER,
+  normalizeUnit
 };
 
 export interface SaleRecord {

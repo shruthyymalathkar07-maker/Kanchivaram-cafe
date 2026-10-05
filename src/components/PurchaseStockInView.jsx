@@ -1073,17 +1073,13 @@ export default function PurchaseStockInView({ selectedBranch }) {
                               className="w-full px-1.5 py-1.5 bg-[#fbf8f3] text-[#11291f] text-[11px] font-bold rounded-lg border border-[#cabb9e]"
                             >
                               <option value="NOS">NOS</option>
-                              <option value="Nos.">Nos.</option>
                               <option value="kg">kg</option>
                               <option value="g">g</option>
                               <option value="L">L</option>
                               <option value="ml">ml</option>
-                              <option value="units">units</option>
                               <option value="cups">cups</option>
                               <option value="plates">plates</option>
                               <option value="bottles">bottles</option>
-                              <option value="pieces">pieces</option>
-                              <option value="packs">packs</option>
                             </select>
                           </div>
 
