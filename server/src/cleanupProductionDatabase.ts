@@ -7,6 +7,22 @@ import {
 } from './data/masterData';
 import { seedDefaultUsers } from './auth';
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 5, delay = 1000): Promise<T> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      attempt++;
+      if (attempt >= retries) {
+        throw err;
+      }
+      console.log(`[Retry ${attempt}/${retries}] Reconnecting after error: ${err.message || err.code}`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
 export async function executeProductionHandoverCleanup() {
   console.log('================================================================================');
   console.log('🧹 EXECUTING PRODUCTION HANDOVER CLEANUP — KANCHIPURAM CAFÉ');
@@ -23,7 +39,7 @@ export async function executeProductionHandoverCleanup() {
     preStaff,
     preCustomers,
     preInventory
-  ] = await Promise.all([
+  ] = await withRetry(() => Promise.all([
     prisma.sale.count(),
     prisma.saleItem.count(),
     prisma.purchase.count(),
@@ -33,7 +49,7 @@ export async function executeProductionHandoverCleanup() {
     prisma.staff.count(),
     prisma.customer.count(),
     prisma.inventoryItem.count()
-  ]);
+  ]));
 
   console.log(`- Sales: ${preSales} (Items: ${preSaleItems})`);
   console.log(`- Purchases: ${prePurchases} (Items: ${prePurchaseItems})`);
@@ -88,36 +104,40 @@ export async function executeProductionHandoverCleanup() {
   }
 
   console.log('\nSTEP 3: Resetting 117 Master Inventory Items to clean 0 stock...');
-  for (const rm of CLIENT_RAW_MATERIALS_MASTER) {
-    const categoryName = rm.category || 'Raw Ingredients';
-    await prisma.inventoryItem.upsert({
-      where: { id: rm.id },
-      update: {
-        name: rm.name,
-        category: categoryName,
-        unit: rm.unit || 'units',
-        openingStock: 0.0,
-        stockIn: 0.0,
-        stockOut: 0.0,
-        minThreshold: 0.0,
-        costPerUnit: 0.0,
-        supplier: 'Unassigned',
-        lastMovement: null
-      },
-      create: {
-        id: rm.id,
-        name: rm.name,
-        category: categoryName,
-        unit: rm.unit || 'units',
-        openingStock: 0.0,
-        stockIn: 0.0,
-        stockOut: 0.0,
-        minThreshold: 0.0,
-        costPerUnit: 0.0,
-        supplier: 'Unassigned',
-        lastMovement: null
-      }
-    });
+  await withRetry(() => prisma.inventoryItem.updateMany({
+    data: {
+      openingStock: 0.0,
+      stockIn: 0.0,
+      stockOut: 0.0,
+      minThreshold: 0.0,
+      costPerUnit: 0.0,
+      supplier: 'Unassigned',
+      lastMovement: null
+    }
+  }));
+
+  const existingInv = await withRetry(() => prisma.inventoryItem.findMany({ select: { id: true } }));
+  const existingInvIds = new Set(existingInv.map(i => i.id));
+  const missingInv = CLIENT_RAW_MATERIALS_MASTER.filter(rm => !existingInvIds.has(rm.id));
+  if (missingInv.length > 0) {
+    for (const rm of missingInv) {
+      const categoryName = rm.category || 'Raw Ingredients';
+      await withRetry(() => prisma.inventoryItem.create({
+        data: {
+          id: rm.id,
+          name: rm.name,
+          category: categoryName,
+          unit: rm.unit || 'units',
+          openingStock: 0.0,
+          stockIn: 0.0,
+          stockOut: 0.0,
+          minThreshold: 0.0,
+          costPerUnit: 0.0,
+          supplier: 'Unassigned',
+          lastMovement: null
+        }
+      }));
+    }
   }
   console.log(`✓ Synchronized all 117 Raw Material Master items with 0 stock.`);
 
@@ -154,12 +174,12 @@ export async function executeProductionHandoverCleanup() {
     }
   ];
   for (const b of branches) {
-    await prisma.branch.upsert({
+    await withRetry(() => prisma.branch.upsert({
       where: { id: b.id },
       update: b,
       create: b
-    });
-    await prisma.storeSetting.upsert({
+    }));
+    await withRetry(() => prisma.storeSetting.upsert({
       where: { branchId: b.id },
       update: {
         storeName: 'Kanchivaram Café',
@@ -186,104 +206,113 @@ export async function executeProductionHandoverCleanup() {
         autoPrintReceipt: true,
         defaultPaymentMode: 'CASH'
       }
-    });
+    }));
   }
 
   // 2. Categories (9)
-  for (const cat of PRODUCT_CATEGORIES) {
-    await prisma.productCategory.upsert({
-      where: { id: cat.id },
-      update: {
-        name: cat.name,
-        slug: cat.slug,
-        icon: cat.icon,
-        displayOrder: cat.displayOrder
-      },
-      create: {
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        icon: cat.icon,
-        displayOrder: cat.displayOrder
-      }
-    });
+  const catCount = await withRetry(() => prisma.productCategory.count());
+  if (catCount !== 9) {
+    for (const cat of PRODUCT_CATEGORIES) {
+      await withRetry(() => prisma.productCategory.upsert({
+        where: { id: cat.id },
+        update: {
+          name: cat.name,
+          slug: cat.slug,
+          icon: cat.icon,
+          displayOrder: cat.displayOrder
+        },
+        create: {
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          icon: cat.icon,
+          displayOrder: cat.displayOrder
+        }
+      }));
+    }
   }
 
   // 3. Products (59)
-  for (const prod of CLIENT_PRODUCTS_MASTER) {
-    await prisma.product.upsert({
-      where: { id: prod.id },
-      update: {
-        categoryId: prod.categoryId,
-        categoryName: prod.category,
-        name: prod.name,
-        servingQty: prod.servingQty,
-        uom: prod.uom,
-        dineInPrice: prod.dineInPrice,
-        deliveryPrice: prod.deliveryPrice,
-        packingCharge: prod.packingCharge,
-        description: prod.description,
-        image: prod.image,
-        isAvailable: true
-      },
-      create: {
-        id: prod.id,
-        categoryId: prod.categoryId,
-        categoryName: prod.category,
-        name: prod.name,
-        servingQty: prod.servingQty,
-        uom: prod.uom,
-        dineInPrice: prod.dineInPrice,
-        deliveryPrice: prod.deliveryPrice,
-        packingCharge: prod.packingCharge,
-        description: prod.description,
-        image: prod.image,
-        isAvailable: true
-      }
-    });
+  const prodCount = await withRetry(() => prisma.product.count());
+  if (prodCount !== 59) {
+    for (const prod of CLIENT_PRODUCTS_MASTER) {
+      await withRetry(() => prisma.product.upsert({
+        where: { id: prod.id },
+        update: {
+          categoryId: prod.categoryId,
+          categoryName: prod.category,
+          name: prod.name,
+          servingQty: prod.servingQty,
+          uom: prod.uom,
+          dineInPrice: prod.dineInPrice,
+          deliveryPrice: prod.deliveryPrice,
+          packingCharge: prod.packingCharge,
+          description: prod.description,
+          image: prod.image,
+          isAvailable: true
+        },
+        create: {
+          id: prod.id,
+          categoryId: prod.categoryId,
+          categoryName: prod.category,
+          name: prod.name,
+          servingQty: prod.servingQty,
+          uom: prod.uom,
+          dineInPrice: prod.dineInPrice,
+          deliveryPrice: prod.deliveryPrice,
+          packingCharge: prod.packingCharge,
+          description: prod.description,
+          image: prod.image,
+          isAvailable: true
+        }
+      }));
+    }
   }
 
   // 4. BOM Recipes (9)
-  for (const bom of CLIENT_BOM_MASTER) {
-    const recipeRecord = await prisma.recipe.upsert({
-      where: { productId: bom.productId },
-      update: {
-        productName: bom.productName,
-        status: bom.status,
-        servingQty: bom.servingQty,
-        servingUom: bom.servingUom || 'units',
-        finalProcess: bom.finalProcess || ''
-      },
-      create: {
-        id: `recipe-${bom.productId}`,
-        productId: bom.productId,
-        productName: bom.productName,
-        status: bom.status,
-        servingQty: bom.servingQty,
-        servingUom: bom.servingUom || 'units',
-        finalProcess: bom.finalProcess || ''
-      }
-    });
+  const recipeCount = await withRetry(() => prisma.recipe.count());
+  if (recipeCount !== 9) {
+    for (const bom of CLIENT_BOM_MASTER) {
+      const recipeRecord = await withRetry(() => prisma.recipe.upsert({
+        where: { productId: bom.productId },
+        update: {
+          productName: bom.productName,
+          status: bom.status,
+          servingQty: bom.servingQty,
+          servingUom: bom.servingUom || 'units',
+          finalProcess: bom.finalProcess || ''
+        },
+        create: {
+          id: `recipe-${bom.productId}`,
+          productId: bom.productId,
+          productName: bom.productName,
+          status: bom.status,
+          servingQty: bom.servingQty,
+          servingUom: bom.servingUom || 'units',
+          finalProcess: bom.finalProcess || ''
+        }
+      }));
 
-    await prisma.recipeItem.deleteMany({
-      where: { recipeId: recipeRecord.id }
-    });
+      await withRetry(() => prisma.recipeItem.deleteMany({
+        where: { recipeId: recipeRecord.id }
+      }));
 
-    if (bom.processes && bom.processes.length > 0) {
-      for (let step = 0; step < bom.processes.length; step++) {
-        const item = bom.processes[step];
-        await prisma.recipeItem.create({
-          data: {
-            id: `ri-${recipeRecord.id}-${step + 1}`,
-            recipeId: recipeRecord.id,
-            stepNumber: step + 1,
-            rawMaterialName: item.rawMaterialName,
-            inventoryItemId: item.rawMaterialId,
-            quantity: item.qty,
-            uom: item.uom,
-            process: item.process
-          }
-        });
+      if (bom.processes && bom.processes.length > 0) {
+        for (let step = 0; step < bom.processes.length; step++) {
+          const item = bom.processes[step];
+          await withRetry(() => prisma.recipeItem.create({
+            data: {
+              id: `ri-${recipeRecord.id}-${step + 1}`,
+              recipeId: recipeRecord.id,
+              stepNumber: step + 1,
+              rawMaterialName: item.rawMaterialName,
+              inventoryItemId: item.rawMaterialId,
+              quantity: item.qty,
+              uom: item.uom,
+              process: item.process
+            }
+          }));
+        }
       }
     }
   }

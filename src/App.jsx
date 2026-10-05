@@ -108,14 +108,14 @@ export default function App() {
   const [isBranchTransitioning, setIsBranchTransitioning] = useState(false);
   const [activeBranch, setActiveBranch] = useState(() => authState.selectedBranch || null);
 
-  // Live Data State
+  // Live Data State (Clean Production Starting State)
   const [stats, setStats] = useState(() => ({
     kpis: {
-      totalSales: { amount: 32450, inStore: 22750, online: 9700 },
-      netSales: { amount: 28900 },
-      discounts: { amount: 1550 },
-      cashCollection: { amount: 18200 },
-      onlineSales: { amount: 9700 }
+      totalSales: { amount: 0, inStore: 0, online: 0 },
+      netSales: { amount: 0 },
+      discounts: { amount: 0 },
+      cashCollection: { amount: 0 },
+      onlineSales: { amount: 0 }
     }
   }));
   const [productsData, setProductsData] = useState({ categories: [], products: [] });
@@ -204,9 +204,9 @@ export default function App() {
   const selectedBranch = authState.selectedBranch || activeBranch || { id: 'branch-1', name: 'Main Branch', badge: 'Main Branch' };
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
-  const currentTotalSales = stats?.kpis?.totalSales?.amount ?? 32450;
-  const currentPosSales = stats?.kpis?.totalSales?.inStore ?? 22750;
-  const currentOnlineSales = stats?.kpis?.totalSales?.online ?? 9700;
+  const currentTotalSales = stats?.kpis?.totalSales?.amount ?? 0;
+  const currentPosSales = stats?.kpis?.totalSales?.inStore ?? 0;
+  const currentOnlineSales = stats?.kpis?.totalSales?.online ?? 0;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f8f6f0] text-slate-900 font-sans antialiased selection:bg-[#4ade80] selection:text-[#0f231a] relative">
