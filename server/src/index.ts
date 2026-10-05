@@ -23,10 +23,25 @@ app.use(express.json());
 // API Router with Socket.IO instance
 app.use('/api', createApiRouter(io));
 
+import path from 'path';
+import fs from 'fs';
+
 // Health Check Endpoint
 app.get('/health', (_req, res) => {
   res.json({ status: 'OK', system: 'Kanchivaram Cafe Operating System API', timestamp: new Date() });
 });
+
+// Serve frontend static assets from dist
+const distPath = path.join(process.cwd(), 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Socket.IO event listeners
 io.on('connection', (socket) => {
