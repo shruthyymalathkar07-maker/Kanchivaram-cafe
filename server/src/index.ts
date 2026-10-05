@@ -32,15 +32,28 @@ app.get('/health', (_req, res) => {
 });
 
 // Serve frontend static assets from dist
-const distPath = path.join(process.cwd(), 'dist');
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const potentialDistPaths = [
+  path.resolve(__dirname, '../../dist'),
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), '../dist')
+];
+
+const foundDist = potentialDistPaths.find(p => fs.existsSync(p));
+if (foundDist) {
+  console.log(`📦 Serving static frontend from: ${foundDist}`);
+  app.use(express.static(foundDist));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/socket.io')) {
       return next();
     }
-    res.sendFile(path.join(distPath, 'index.html'));
+    res.sendFile(path.join(foundDist, 'index.html'));
   });
+} else {
+  console.log('⚠️ Static dist directory not found. Potential paths checked:', potentialDistPaths);
 }
 
 // Socket.IO event listeners
