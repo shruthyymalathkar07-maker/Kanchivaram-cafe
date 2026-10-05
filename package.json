@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "server": "tsx server/src/index.ts",
-    "build": "vite build",
+    "start": "tsx server/src/index.ts",
+    "build": "npx prisma generate && vite build",
     "preview": "vite preview",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android"
