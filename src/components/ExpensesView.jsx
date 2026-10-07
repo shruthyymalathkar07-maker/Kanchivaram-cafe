@@ -445,7 +445,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-lg font-mono font-black text-[#0f3823] leading-tight">
+              <p className="text-lg font-mono font-medium text-[#0f3823] leading-tight">
                 ₹{activeOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -456,9 +456,9 @@ export default function ExpensesView({ selectedBranch }) {
             <button
               type="button"
               onClick={handleOpenOpeningModal}
-              className={`w-full py-1.5 px-3 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] text-white' : 'bg-[#103825] hover:bg-[#0a2618] text-white'} font-black text-[11px] rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all`}
+              className="w-full py-1.5 px-3 bg-white hover:bg-[#faf6ee] text-[#11291f] border border-[#cabb9e] font-bold text-[11px] rounded-lg shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer transition-all"
             >
-              <Edit3 className="w-3 h-3" />
+              <Edit3 className="w-3 h-3 text-[#547363]" />
               {isOpeningSet ? 'Edit Opening Balance' : 'Set Opening Balance'}
             </button>
           </div>
@@ -475,7 +475,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-lg font-mono font-black text-rose-700 leading-tight">
+              <p className="text-lg font-mono font-medium text-rose-700 leading-tight">
                 ₹{dayTotalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -484,20 +484,20 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             {/* Interactive Payment Mode Dropdown Selector */}
-            <div className="py-1 px-2.5 bg-white/90 rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#345142] flex items-center justify-between gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#11291f] shrink-0">Payment Mode</span>
-              <div className="relative flex-1">
+            <div className="flex items-center justify-between gap-2 py-0.5">
+              <span className="text-[10.5px] font-bold text-[#11291f] shrink-0">Payment Mode:</span>
+              <div className="relative">
                 <select
                   value={selectedCardPaymentMode}
                   onChange={(e) => setSelectedCardPaymentMode(e.target.value)}
-                  className="w-full bg-white border border-[#cabb9e] rounded-md px-2 py-0.5 text-xs font-bold text-[#11291f] focus:outline-none focus:ring-1 focus:ring-[#0f3823] cursor-pointer appearance-none pr-5 shadow-2xs"
+                  className="bg-white border border-[#cabb9e] rounded-lg px-2.5 py-1 text-xs font-bold text-[#11291f] focus:outline-none focus:ring-1 focus:ring-[#0f3823] cursor-pointer appearance-none pr-6 shadow-2xs min-w-[95px]"
                 >
-                  <option value="">Select Payment Mode</option>
+                  <option value="">Select</option>
                   <option value="Cash">Cash</option>
                   <option value="UPI">UPI</option>
                   <option value="Bank">Bank</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-[#547363] absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-3 h-3 text-[#547363] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
@@ -515,7 +515,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className={`text-lg font-mono font-black leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
+              <p className={`text-lg font-mono font-medium leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
                 ₹{computedClosingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -523,7 +523,7 @@ export default function ExpensesView({ selectedBranch }) {
               </span>
             </div>
 
-            <div className="py-1 px-2.5 bg-[#f5ecdf] rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#11291f] flex items-center justify-between">
+            <div className="py-1 px-2.5 bg-white rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#11291f] flex items-center justify-between shadow-2xs">
               <span>Formula:</span>
               <span className="font-bold text-[#456351]">Opening − Day Total Expenses</span>
             </div>
