@@ -1150,3 +1150,9 @@ export const CLIENT_BOM_MASTER = [
   { productId: 'prod-58', productName: 'Mango Juice', servingQty: 300, servingUom: 'ml', status: 'AWAITING_RECIPE_DETAILS', processes: [], finalProcess: null },
   { productId: 'prod-59', productName: 'Pomegranate', servingQty: 300, servingUom: 'ml', status: 'AWAITING_RECIPE_DETAILS', processes: [], finalProcess: null }
 ];
+
+export const ORIGINAL_PRODUCT_IDS = new Set(CLIENT_PRODUCTS_MASTER.map(p => p.id));
+export function isOriginalProduct(productId) {
+  if (!productId) return false;
+  return ORIGINAL_PRODUCT_IDS.has(productId);
+}

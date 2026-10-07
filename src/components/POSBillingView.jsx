@@ -18,12 +18,13 @@ import {
   RefreshCw,
   AlertTriangle,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  Edit2
 } from 'lucide-react';
 import { createSaleTransaction } from '../services/api';
 import { PrintService } from '../services/printService';
 import { inventoryStore } from '../services/inventoryStore';
-import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER } from '../data/masterData';
+import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER, isOriginalProduct } from '../data/masterData';
 import AddMenuItemModal from './AddMenuItemModal';
 
 export default function POSBillingView({ products = [], categories = [], onSaleCompleted, onProductCreated, searchQuery = '', onSearchChange, selectedBranch }) {
@@ -34,8 +35,9 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('CASH'); // CASH, UPI, CARD
   
-  // Add Menu Item Modal State
+  // Add / Edit Menu Item Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [localCustomProducts, setLocalCustomProducts] = useState([]);
 
   // Checkout & Customer State
@@ -93,6 +95,17 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     return matchesCategory && matchesSearch;
   });
 
+  const handleOpenAddModal = () => {
+    setEditingProduct(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEditModal = (e, product) => {
+    e.stopPropagation();
+    setEditingProduct(product);
+    setIsAddModalOpen(true);
+  };
+
   const handleProductCreated = (newProd) => {
     if (!newProd) return;
     setLocalCustomProducts(prev => {
@@ -105,6 +118,17 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     if (onProductCreated) {
       onProductCreated(newProd);
     }
+  };
+
+  const handleProductUpdated = (updatedProd) => {
+    if (!updatedProd) return;
+    setLocalCustomProducts(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
+  };
+
+  const handleProductDeleted = (deletedProdId) => {
+    if (!deletedProdId) return;
+    setLocalCustomProducts(prev => prev.filter(p => p.id !== deletedProdId));
+    setCart(prev => prev.filter(p => p.id !== deletedProdId));
   };
 
   // Cart operations
@@ -302,7 +326,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       <div className="bg-[#ebdcc8] text-[#122c20] rounded-2xl p-2.5 sm:p-3.5 px-3 sm:px-4 border border-[#cabb9e] shadow-sm flex flex-row items-center justify-between gap-2 sm:gap-3 shrink-0 relative overflow-hidden">
         
-        {/* Left Side: Coffee Cup Accent & Header Titles & Add Menu Item Button */}
+        {/* Left Side: Coffee Cup Accent & Header Titles */}
         <div className="flex items-center gap-2 sm:gap-3 z-10 py-0.5 min-w-0 flex-1">
           <div className={`p-1.5 sm:p-2.5 ${isBrownBranch ? 'bg-[#3E2312] border-[#542A16]' : 'bg-[#0f3823] border-[#194c31]'} text-white rounded-xl shadow-md border shrink-0`}>
             <Coffee className={`w-4 h-4 sm:w-5 sm:h-5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
@@ -316,18 +340,6 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <span className="inline-block whitespace-nowrap">Bill Smarter.</span>
             </p>
           </div>
-
-          {/* Add Menu Item Button integrated naturally into POS Header */}
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className={`ml-1.5 sm:ml-3 px-2.5 sm:px-3.5 py-1.5 sm:py-2 ${
-              isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'
-            } text-white font-black text-[11px] sm:text-xs rounded-xl shadow-md border flex items-center gap-1.5 cursor-pointer transition-all shrink-0 hover:scale-[1.02]`}
-          >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4ade80]" />
-            <span className="whitespace-nowrap">Add Menu Item</span>
-          </button>
         </div>
 
         {/* Right Side: Header POS Billing Illustration */}
@@ -367,7 +379,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. CATEGORY FILTER BAR (Single-line horizontal pills)                      */}
+      {/* 3. CATEGORY FILTER BAR (Single-line horizontal pills + Add Menu Item)      */}
       {/* ========================================================================= */}
       <div className="flex items-center justify-between gap-2 shrink-0 py-0.5">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full">
@@ -388,6 +400,21 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               </button>
             );
           })}
+
+          {/* Add Menu Item (+) button placed directly next to Juices (the last category) */}
+          <button
+            type="button"
+            onClick={handleOpenAddModal}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
+              isBrownBranch
+                ? 'bg-[#3E2312] hover:bg-[#542A16] text-[#E0C097] border-[#704225] shadow-xs hover:scale-[1.02]'
+                : 'bg-[#0f3823] hover:bg-[#15422e] text-[#4ade80] border-[#1b5e3b] shadow-xs hover:scale-[1.02]'
+            }`}
+            title="Add New Menu Item directly from POS"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Menu Item</span>
+          </button>
         </div>
       </div>
 
@@ -405,6 +432,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               const stockQty = product.stockQuantity || 20;
               const stockColor = stockQty > 20 ? 'bg-emerald-600' : stockQty >= 10 ? 'bg-amber-500' : 'bg-red-600';
               const stockPercent = Math.min(100, Math.max(10, (stockQty / 50) * 100));
+              const isCustom = !isOriginalProduct(product.id);
 
               return (
                 <div
@@ -422,9 +450,28 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                     <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-[#0f3823]/85 backdrop-blur-xs text-white text-[8.5px] font-bold rounded">
                       {product.categoryName}
                     </span>
-                    <button className="absolute top-1 right-1 p-1 bg-[#0f3823] group-hover:bg-[#d4af37] text-white group-hover:text-[#0d2b1d] rounded-md transition-all shadow-xs">
-                      <Plus className="w-3 h-3" />
-                    </button>
+                    <div className="absolute top-1 right-1 flex items-center gap-1">
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenEditModal(e, product)}
+                          title="Edit or Remove Custom Menu Item"
+                          className="p-1 bg-[#1a1a1a]/85 hover:bg-amber-600 text-amber-300 hover:text-white rounded-md transition-all shadow-xs cursor-pointer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      )}
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
+                        className="p-1 bg-[#0f3823] group-hover:bg-[#d4af37] text-white group-hover:text-[#0d2b1d] rounded-md transition-all shadow-xs"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Title & Price */}
@@ -910,8 +957,14 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       <AddMenuItemModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingProduct(null);
+        }}
+        productToEdit={editingProduct}
         onProductCreated={handleProductCreated}
+        onProductUpdated={handleProductUpdated}
+        onProductDeleted={handleProductDeleted}
         existingProducts={combinedProducts}
         selectedBranch={selectedBranch}
       />

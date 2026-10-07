@@ -83,6 +83,43 @@ export async function createProduct(productPayload, branchId = 'branch-1') {
   }
 }
 
+export async function updateProduct(productId, productPayload, branchId = 'branch-1') {
+  try {
+    const finalBranchId = productPayload?.branchId || branchId;
+    const res = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': finalBranchId,
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ ...productPayload, branchId: finalBranchId })
+    });
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.warn('[API] Update product error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteProduct(productId, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'x-branch-id': branchId,
+        ...getAuthHeaders()
+      }
+    });
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.warn('[API] Delete product error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 
 export async function createSaleTransaction(salePayload, branchId = 'branch-1') {
   try {

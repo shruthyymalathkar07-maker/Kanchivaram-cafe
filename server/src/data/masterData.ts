@@ -1136,3 +1136,9 @@ export const CLIENT_BOM_MASTER: ClientBOMMaster[] = [
     finalProcess: null
   }
 ];
+
+export const ORIGINAL_PRODUCT_IDS = new Set<string>(CLIENT_PRODUCTS_MASTER.map(p => p.id));
+export function isOriginalProduct(productId: string): boolean {
+  if (!productId) return false;
+  return ORIGINAL_PRODUCT_IDS.has(productId);
+}

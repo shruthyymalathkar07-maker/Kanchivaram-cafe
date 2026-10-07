@@ -18,14 +18,17 @@ import {
   Info,
   Tag
 } from 'lucide-react';
-import { PRODUCT_CATEGORIES, CLIENT_RAW_MATERIALS_MASTER, normalizeUnit } from '../data/masterData';
-import { createProduct } from '../services/api';
+import { PRODUCT_CATEGORIES, CLIENT_RAW_MATERIALS_MASTER, normalizeUnit, isOriginalProduct } from '../data/masterData';
+import { createProduct, updateProduct, deleteProduct } from '../services/api';
 import { inventoryStore } from '../services/inventoryStore';
 
 export default function AddMenuItemModal({ 
   isOpen, 
   onClose, 
-  onProductCreated, 
+  onProductCreated,
+  onProductUpdated,
+  onProductDeleted,
+  productToEdit = null,
   existingProducts = [], 
   selectedBranch 
 }) {
@@ -72,6 +75,8 @@ export default function AddMenuItemModal({
   // Validation & Submission State
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Raw Materials Master list for BOM dropdown (Alphabetical A-Z)
   const [availableRawMaterials, setAvailableRawMaterials] = useState(() => {
@@ -87,9 +92,92 @@ export default function AddMenuItemModal({
     }
   }, [isOpen]);
 
-  // Check for duplicate name warning
+  // Sync / Initialize Form Data when modal opens or productToEdit changes
+  useEffect(() => {
+    if (isOpen) {
+      if (productToEdit) {
+        setName(productToEdit.name || '');
+        setCategoryId(productToEdit.categoryId || 'cat-kc-signatures');
+        setServingQty(String(productToEdit.servingQty || 1));
+        setUom(productToEdit.uom || 'Nos.');
+        setDescription(productToEdit.description || '');
+        setDineInPrice(productToEdit.dineInPrice !== undefined ? String(productToEdit.dineInPrice) : (productToEdit.price !== undefined ? String(productToEdit.price) : ''));
+        setSwiggyPrice(productToEdit.swiggyPrice !== undefined && productToEdit.swiggyPrice !== null ? String(productToEdit.swiggyPrice) : '');
+        setZomatoPrice(productToEdit.zomatoPrice !== undefined && productToEdit.zomatoPrice !== null ? String(productToEdit.zomatoPrice) : '');
+        setGstPercent(productToEdit.gstPercent !== undefined ? String(productToEdit.gstPercent) : '5');
+        setStandardizedImage(productToEdit.image || '');
+        setRawImageSrc(productToEdit.image || null);
+        setImageFileName('');
+        setIsAvailable(productToEdit.isAvailable !== false);
+
+        // Populate BOM if present
+        if (productToEdit.recipe && productToEdit.recipe.ingredients && productToEdit.recipe.ingredients.length > 0) {
+          setEnableBOM(true);
+          setRecipeServingQty(String(productToEdit.recipe.servingQty || productToEdit.servingQty || 1));
+          setRecipeServingUom(productToEdit.recipe.servingUom || productToEdit.uom || 'Nos.');
+          setFinalProcess(productToEdit.recipe.finalProcess || '');
+          setIngredients(productToEdit.recipe.ingredients.map(ing => ({
+            rawMaterialId: ing.rawMaterialId || '',
+            rawMaterialName: ing.rawMaterialName || ing.name || '',
+            quantity: String(ing.quantity || ing.qty || ''),
+            uom: ing.uom || 'g',
+            process: ing.process || 'Add'
+          })));
+        } else {
+          setEnableBOM(false);
+          setRecipeServingQty('1');
+          setRecipeServingUom('Nos.');
+          setFinalProcess('');
+          setIngredients([{ rawMaterialId: '', rawMaterialName: '', quantity: '', uom: 'g', process: 'Add' }]);
+        }
+
+        // Populate Addons if present
+        if (productToEdit.addons && Array.isArray(productToEdit.addons) && productToEdit.addons.length > 0) {
+          setEnableAddons(true);
+          setAddonsList(productToEdit.addons.map(a => ({
+            id: a.id || `add-${Date.now()}`,
+            name: a.name || '',
+            price: String(a.price || 0),
+            isAvailable: a.isAvailable !== false,
+            rawMaterialId: a.rawMaterialId || '',
+            quantity: a.quantity ? String(a.quantity) : '',
+            uom: a.uom || 'g'
+          })));
+        } else {
+          setEnableAddons(false);
+          setAddonsList([{ id: 'add-1', name: '', price: '', isAvailable: true, rawMaterialId: '', quantity: '', uom: 'g' }]);
+        }
+      } else {
+        // Reset to initial clean state
+        setName('');
+        setCategoryId('cat-kc-signatures');
+        setServingQty('1');
+        setUom('Nos.');
+        setDescription('');
+        setDineInPrice('');
+        setSwiggyPrice('');
+        setZomatoPrice('');
+        setGstPercent('5');
+        setRawImageSrc(null);
+        setStandardizedImage('');
+        setImageFileName('');
+        setIsAvailable(true);
+        setEnableBOM(false);
+        setRecipeServingQty('1');
+        setRecipeServingUom('Nos.');
+        setFinalProcess('');
+        setIngredients([{ rawMaterialId: '', rawMaterialName: '', quantity: '', uom: 'g', process: 'Add' }]);
+        setEnableAddons(false);
+        setAddonsList([{ id: 'add-1', name: '', price: '', isAvailable: true, rawMaterialId: '', quantity: '', uom: 'g' }]);
+      }
+      setErrorMessage('');
+      setIsConfirmRemoveOpen(false);
+    }
+  }, [isOpen, productToEdit]);
+
+  // Check for duplicate name warning (excluding self when editing)
   const duplicateWarning = name.trim() && existingProducts.some(
-    p => p.name.trim().toLowerCase() === name.trim().toLowerCase()
+    p => p.id !== productToEdit?.id && p.name.trim().toLowerCase() === name.trim().toLowerCase()
   );
 
   // Available categories (excluding 'all' pseudo-filter)
@@ -308,38 +396,71 @@ export default function AddMenuItemModal({
         recipe: recipePayload
       };
 
-      const res = await createProduct(productPayload, selectedBranch?.id || 'branch-1');
+      if (productToEdit) {
+        const res = await updateProduct(productToEdit.id, productPayload, selectedBranch?.id || 'branch-1');
+        if (!res || res.success === false) {
+          throw new Error(res?.error || 'Failed to update menu item.');
+        }
 
-      if (!res || res.success === false) {
-        throw new Error(res?.error || 'Failed to save menu item to database.');
-      }
+        if (onProductUpdated) {
+          onProductUpdated(res.product || { ...productPayload, id: productToEdit.id });
+        }
+      } else {
+        const res = await createProduct(productPayload, selectedBranch?.id || 'branch-1');
 
-      // If product has a recipe, register it dynamically with inventoryStore
-      if (res.product && recipePayload) {
-        inventoryStore.customRecipes[res.product.id] = {
-          productId: res.product.id,
-          productName: cleanName,
-          status: 'COMPLETE',
-          processes: recipePayload.ingredients.map(ing => ({
-            rawMaterialId: ing.rawMaterialId,
-            rawMaterialName: ing.rawMaterialName,
-            qty: ing.quantity,
-            uom: ing.uom,
-            process: ing.process
-          }))
-        };
-      }
+        if (!res || res.success === false) {
+          throw new Error(res?.error || 'Failed to save menu item to database.');
+        }
 
-      if (onProductCreated) {
-        onProductCreated(res.product);
+        // If product has a recipe, register it dynamically with inventoryStore
+        if (res.product && recipePayload) {
+          inventoryStore.customRecipes[res.product.id] = {
+            productId: res.product.id,
+            productName: cleanName,
+            status: 'COMPLETE',
+            processes: recipePayload.ingredients.map(ing => ({
+              rawMaterialId: ing.rawMaterialId,
+              rawMaterialName: ing.rawMaterialName,
+              qty: ing.quantity,
+              uom: ing.uom,
+              process: ing.process
+            }))
+          };
+        }
+
+        if (onProductCreated) {
+          onProductCreated(res.product);
+        }
       }
 
       onClose();
     } catch (err) {
       console.error('[AddMenuItemModal] Save error:', err);
-      setErrorMessage(err.message || 'Failed to create menu item. Please try again.');
+      setErrorMessage(err.message || 'Failed to save menu item. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!productToEdit || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const branchId = selectedBranch?.id || 'branch-1';
+      const res = await deleteProduct(productToEdit.id, branchId);
+      if (res && res.success === false) {
+        throw new Error(res.error || 'Failed to remove menu item');
+      }
+      if (onProductDeleted) {
+        onProductDeleted(productToEdit.id);
+      }
+      setIsConfirmRemoveOpen(false);
+      onClose();
+    } catch (err) {
+      console.error('[AddMenuItemModal] Delete error:', err);
+      alert(err.message || 'Failed to remove menu item. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -362,10 +483,10 @@ export default function AddMenuItemModal({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-serif font-black text-[#11291f] leading-tight">
-                Add New Menu Item
+                {productToEdit ? 'Edit Menu Item' : 'Add New Menu Item'}
               </h2>
               <p className="text-xs font-bold text-[#456351] mt-0.5">
-                Add directly to POS catalog with pricing, photo, GST, BOM & add-ons
+                {productToEdit ? 'Manage pricing, photo, availability, BOM recipe & extras' : 'Add directly to POS catalog with pricing, photo, GST, BOM & add-ons'}
               </p>
             </div>
           </div>
@@ -990,37 +1111,112 @@ export default function AddMenuItemModal({
           {/* ========================================================================= */}
           {/* MODAL ACTIONS FOOTER                                                      */}
           {/* ========================================================================= */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#ded4c5] sticky bottom-0 bg-[#fdfbf7] py-2 z-10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#11291f] font-black text-xs rounded-xl transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#ded4c5] sticky bottom-0 bg-[#fdfbf7] py-2 z-10">
+            {productToEdit && !isOriginalProduct(productToEdit.id) ? (
+              <button
+                type="button"
+                onClick={() => setIsConfirmRemoveOpen(true)}
+                className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer mr-auto"
+                title="Remove this custom menu item"
+              >
+                <Trash2 className="w-4 h-4 text-rose-600" />
+                <span>Remove Menu Item</span>
+              </button>
+            ) : <div />}
 
-            <button
-              type="submit"
-              disabled={isSubmitting || isProcessingImage}
-              className={`px-6 py-2.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#092416] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md border flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-all`}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>Saving Menu Item...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-[#4ade80]" />
-                  <span>Save Menu Item</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#11291f] font-black text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || isProcessingImage}
+                className={`px-6 py-2.5 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#092416] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md border flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-all`}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>{productToEdit ? 'Saving Changes...' : 'Saving Menu Item...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#4ade80]" />
+                    <span>{productToEdit ? 'Save Changes' : 'Save Menu Item'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
         </form>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* CONFIRMATION MODAL: REMOVE MENU ITEM                                      */}
+      {/* ========================================================================= */}
+      {isConfirmRemoveOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 modal-backdrop-overlay flex items-center justify-center p-4 z-[60] animate-fadeIn">
+          <div className="bg-[#fdfbf7] w-full max-w-sm rounded-2xl border-2 border-[#cabb9e] shadow-2xl p-5 space-y-4 animate-fadeIn">
+            
+            <div className="flex items-center gap-3 pb-3 border-b border-[#ebdcc8]">
+              <div className="p-2.5 bg-rose-100 text-rose-700 rounded-xl border border-rose-300">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-serif font-black text-[#11291f]">Remove Menu Item?</h3>
+                <p className="text-xs font-bold text-[#547363]">Product Management Action</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <p className="font-bold text-[#11291f]">
+                Are you sure you want to remove <strong className="text-rose-800 underline">"{name}"</strong>?
+              </p>
+              <p className="text-[#547363] leading-relaxed font-medium">
+                This item will no longer be available for POS or online ordering.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcc8]">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setIsConfirmRemoveOpen(false)}
+                className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#11291f] font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmRemove}
+                className="px-5 py-2 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs rounded-xl shadow-md border border-rose-900 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 text-white" />
+                    <span>Remove Item</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>,
     document.body
   );

@@ -174,6 +174,16 @@ export default function App() {
       loadInitialData();
     });
 
+    socket.on('product_updated', (data) => {
+      console.log('[Socket.IO] Product updated live:', data);
+      loadInitialData();
+    });
+
+    socket.on('product_deleted', (data) => {
+      console.log('[Socket.IO] Product deleted live:', data);
+      loadInitialData();
+    });
+
     socket.on('stock_updated', (updatedProducts) => {
       console.log('[Socket.IO] Stock updated live:', updatedProducts);
       loadInitialData();
@@ -186,6 +196,8 @@ export default function App() {
     return () => {
       socket.off('sale_created');
       socket.off('product_created');
+      socket.off('product_updated');
+      socket.off('product_deleted');
       socket.off('stock_updated');
       socket.off('inventory_updated');
     };

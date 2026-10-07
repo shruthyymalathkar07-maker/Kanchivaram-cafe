@@ -37,6 +37,8 @@ export {
   CLIENT_PRODUCTS_MASTER, 
   CLIENT_RAW_MATERIALS_MASTER, 
   CLIENT_BOM_MASTER,
+  ORIGINAL_PRODUCT_IDS,
+  isOriginalProduct,
   normalizeUnit
 };
 

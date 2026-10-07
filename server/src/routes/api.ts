@@ -6,6 +6,8 @@ import {
   CLIENT_PRODUCTS_MASTER, 
   CLIENT_RAW_MATERIALS_MASTER, 
   CLIENT_BOM_MASTER,
+  ORIGINAL_PRODUCT_IDS,
+  isOriginalProduct,
   SaleRecord,
   StockLedgerEntry,
   normalizeUnit
@@ -921,6 +923,251 @@ export function createApiRouter(io: SocketServer) {
       message: `Menu item "${cleanName}" created successfully.`,
       product: fallbackProd
     });
+  });
+
+  // 3c. PUT /api/products/:id (Update Menu Item)
+  router.put('/products/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+    const {
+      name,
+      categoryId,
+      categoryName,
+      servingQty = 1,
+      uom = 'Nos.',
+      dineInPrice,
+      deliveryPrice,
+      swiggyPrice,
+      zomatoPrice,
+      gstPercent = 5.0,
+      addons = [],
+      description = '',
+      image = '',
+      isAvailable = true,
+      recipe = null
+    } = req.body || {};
+
+    const cleanName = (name || '').trim();
+    if (!cleanName) {
+      return res.status(400).json({ success: false, error: 'Product name is required.' });
+    }
+
+    const numDineInPrice = parseFloat(dineInPrice);
+    if (isNaN(numDineInPrice) || numDineInPrice < 0) {
+      return res.status(400).json({ success: false, error: 'Valid dining / in-store price is required.' });
+    }
+
+    const matchedCategory = PRODUCT_CATEGORIES.find(c => c.id === categoryId);
+    const finalCategoryName = categoryName || matchedCategory?.name || 'General';
+    const numSwiggyPrice = swiggyPrice !== undefined && swiggyPrice !== '' ? parseFloat(swiggyPrice) : numDineInPrice;
+    const numZomatoPrice = zomatoPrice !== undefined && zomatoPrice !== '' ? parseFloat(zomatoPrice) : numDineInPrice;
+    const numDeliveryPrice = deliveryPrice !== undefined && deliveryPrice !== '' ? parseFloat(deliveryPrice) : numSwiggyPrice;
+    const numGstPercent = gstPercent !== undefined && gstPercent !== '' ? parseFloat(gstPercent) : 5.0;
+
+    try {
+      if (prisma) {
+        const existing = await prisma.product.findUnique({ where: { id } });
+        if (!existing) {
+          return res.status(404).json({ success: false, error: `Product with ID ${id} not found.` });
+        }
+
+        const updatedProduct = await prisma.product.update({
+          where: { id },
+          data: {
+            name: cleanName,
+            categoryId: categoryId || existing.categoryId,
+            categoryName: finalCategoryName,
+            servingQty: parseFloat(servingQty) || 1,
+            uom: uom || 'Nos.',
+            dineInPrice: numDineInPrice,
+            deliveryPrice: numDeliveryPrice,
+            swiggyPrice: numSwiggyPrice,
+            zomatoPrice: numZomatoPrice,
+            gstPercent: numGstPercent,
+            addons: addons || [],
+            description: description || '',
+            image: image || existing.image,
+            isAvailable: isAvailable !== false,
+            updatedAt: new Date()
+          }
+        });
+
+        // Update recipe if provided
+        if (recipe && Array.isArray(recipe.ingredients)) {
+          await prisma.recipeItem.deleteMany({ where: { recipe: { productId: id } } });
+          const validIngredients = recipe.ingredients.filter((ing: any) =>
+            (ing.rawMaterialName || ing.name) && (parseFloat(ing.quantity || ing.qty || 0) > 0)
+          );
+          if (validIngredients.length > 0) {
+            await prisma.recipe.upsert({
+              where: { productId: id },
+              update: {
+                productName: cleanName,
+                servingQty: parseFloat(recipe.servingQty || servingQty || 1),
+                servingUom: recipe.servingUom || uom || 'Nos.',
+                finalProcess: recipe.finalProcess || `Prepare and serve ${cleanName}`,
+                items: {
+                  create: validIngredients.map((ing: any, idx: number) => ({
+                    id: `ri-${id}-${idx + 1}-${Date.now().toString().slice(-4)}`,
+                    stepNumber: idx + 1,
+                    rawMaterialName: (ing.rawMaterialName || ing.name).trim(),
+                    inventoryItemId: ing.rawMaterialId || ing.inventoryItemId || null,
+                    quantity: parseFloat(ing.quantity || ing.qty || 0),
+                    uom: ing.uom || ing.unit || 'units',
+                    process: ing.process || 'Add'
+                  }))
+                }
+              },
+              create: {
+                id: `recipe-${id}`,
+                productId: id,
+                productName: cleanName,
+                servingQty: parseFloat(recipe.servingQty || servingQty || 1),
+                servingUom: recipe.servingUom || uom || 'Nos.',
+                status: 'COMPLETE',
+                finalProcess: recipe.finalProcess || `Prepare and serve ${cleanName}`,
+                items: {
+                  create: validIngredients.map((ing: any, idx: number) => ({
+                    id: `ri-${id}-${idx + 1}`,
+                    stepNumber: idx + 1,
+                    rawMaterialName: (ing.rawMaterialName || ing.name).trim(),
+                    inventoryItemId: ing.rawMaterialId || ing.inventoryItemId || null,
+                    quantity: parseFloat(ing.quantity || ing.qty || 0),
+                    uom: ing.uom || ing.unit || 'units',
+                    process: ing.process || 'Add'
+                  }))
+                }
+              }
+            });
+          }
+        }
+
+        io.emit('product_updated', { product: updatedProduct, branchId });
+        io.emit('stock_updated', { branchId });
+
+        return res.json({
+          success: true,
+          message: `Menu item "${cleanName}" updated successfully.`,
+          product: updatedProduct
+        });
+      }
+    } catch (err: any) {
+      console.error(`[API /products/:id PUT] Error:`, err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to update product.' });
+    }
+
+    return res.status(503).json({ success: false, error: 'Database unavailable' });
+  });
+
+  // 3d. DELETE /api/products/:id (Safely Delete or Archive Custom Menu Item)
+  router.delete('/products/:id', async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+
+    if (isOriginalProduct(id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'The original 52 menu catalog products are protected and cannot be deleted.'
+      });
+    }
+
+    try {
+      if (prisma) {
+        const product = await prisma.product.findUnique({
+          where: { id },
+          include: { saleItems: true, recipe: { include: { items: true } } }
+        });
+
+        if (!product) {
+          const branchData = branchDb.getBranchData(branchId);
+          const idx = branchData.products.findIndex(p => p.id === id);
+          if (idx !== -1) {
+            const removed = branchData.products.splice(idx, 1)[0];
+            io.emit('product_deleted', { id, name: removed.name, branchId });
+            io.emit('stock_updated', { branchId });
+            return res.json({
+              success: true,
+              action: 'DELETED',
+              message: `Menu item "${removed.name}" deleted successfully.`
+            });
+          }
+          return res.status(404).json({ success: false, error: `Product with ID ${id} not found.` });
+        }
+
+        // Check if product has any sales history
+        const hasSalesInSaleItems = product.saleItems && product.saleItems.length > 0;
+        const matchingSaleItem = hasSalesInSaleItems ? true : await prisma.saleItem.findFirst({
+          where: {
+            OR: [
+              { productId: id },
+              { name: { equals: product.name, mode: 'insensitive' } }
+            ]
+          }
+        });
+
+        if (matchingSaleItem) {
+          // CASE B: Has sales history -> DEACTIVATE / ARCHIVE
+          // Preserve historical sales, reports, revenue and bills 100%
+          await prisma.product.update({
+            where: { id },
+            data: {
+              isAvailable: false,
+              updatedAt: new Date()
+            }
+          });
+
+          io.emit('product_deleted', { id, name: product.name, branchId, action: 'ARCHIVED' });
+          io.emit('stock_updated', { branchId });
+
+          return res.json({
+            success: true,
+            action: 'ARCHIVED',
+            message: `Menu item "${product.name}" has historical sales records and has been safely deactivated from active POS and online channels.`
+          });
+        } else {
+          // CASE A: Never sold -> Permanent Delete
+          if (product.recipe) {
+            await prisma.recipeItem.deleteMany({
+              where: { recipeId: product.recipe.id }
+            });
+            await prisma.recipe.delete({
+              where: { id: product.recipe.id }
+            });
+          }
+
+          await prisma.product.delete({
+            where: { id }
+          });
+
+          io.emit('product_deleted', { id, name: product.name, branchId, action: 'DELETED' });
+          io.emit('stock_updated', { branchId });
+
+          return res.json({
+            success: true,
+            action: 'DELETED',
+            message: `Menu item "${product.name}" has been permanently removed.`
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error(`[API /products/:id DELETE] Error deleting product ${id}:`, err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to delete product.' });
+    }
+
+    const branchData = branchDb.getBranchData(branchId);
+    const idx = branchData.products.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      const removed = branchData.products.splice(idx, 1)[0];
+      io.emit('product_deleted', { id, name: removed.name, branchId });
+      io.emit('stock_updated', { branchId });
+      return res.json({
+        success: true,
+        action: 'DELETED',
+        message: `Menu item "${removed.name}" deleted successfully.`
+      });
+    }
+
+    return res.status(404).json({ success: false, error: `Product with ID ${id} not found.` });
   });
 
   // 4. GET /api/inventory/master & /api/inventory/items (Returns exact 117+ Raw Material Master Items from PostgreSQL, sorted alphabetically A-Z)
