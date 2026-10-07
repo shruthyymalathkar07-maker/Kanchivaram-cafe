@@ -445,7 +445,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-xl font-mono font-black text-[#0f3823] leading-tight">
+              <p className="text-lg font-mono font-black text-[#0f3823] leading-tight">
                 ₹{activeOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -475,7 +475,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-xl font-mono font-black text-rose-700 leading-tight">
+              <p className="text-lg font-mono font-black text-rose-700 leading-tight">
                 ₹{dayTotalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -515,7 +515,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className={`text-xl font-mono font-black leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
+              <p className={`text-lg font-mono font-black leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
                 ₹{computedClosingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
