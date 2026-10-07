@@ -863,7 +863,6 @@ export default function ExpensesView({ selectedBranch }) {
 
                         <td className="py-2.5 px-2 font-semibold text-black text-[12.5px] text-center">
                           <div className="leading-snug break-words">{item.description}</div>
-                          {item.notes && <span className="text-[11.5px] text-[#547363] font-normal block leading-tight mt-0.5">{item.notes}</span>}
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-black text-[12.5px]">
