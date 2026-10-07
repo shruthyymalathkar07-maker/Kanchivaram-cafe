@@ -36,6 +36,7 @@ model Branch {
   staff           Staff[]
   customers       Customer[]
   stockLedgers    StockLedger[]
+  dailyBalances   DailyBalance[]
   settings        StoreSetting?
 }
 
@@ -250,6 +251,7 @@ model Expense {
   description     String
   category        String           // 'Utilities', 'Rent & Lease', 'Staff Wages', etc.
   amount          Float
+  paymentMode     String           @default("Cash") // 'Cash', 'UPI', 'Bank'
   dateIso         String
   notes           String?
   recordedBy      String           @default("Shruthy A")
@@ -309,4 +311,19 @@ model StoreSetting {
   autoPrintReceipt Boolean         @default(true)
   defaultPaymentMode String        @default("CASH")
   updatedAt       DateTime         @updatedAt
+}
+
+// 15. DAILY OPENING & OPERATIONAL BALANCE
+model DailyBalance {
+  id              String           @id @default(uuid())
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  businessDate    String           // 'YYYY-MM-DD'
+  openingBalance  Float            @default(0.0)
+  notes           String?
+  recordedBy      String           @default("Shruthy A")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([branchId, businessDate])
 }

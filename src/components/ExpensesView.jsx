@@ -17,7 +17,11 @@ import {
   Receipt,
   PackageCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  Wallet,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 import { expenseStore } from '../services/expenseStore';
 import { inventoryStore } from '../services/inventoryStore';
@@ -47,7 +51,15 @@ export default function ExpensesView({ selectedBranch }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState('ALL'); // ALL, TODAY, THIS_MONTH
   const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [selectedCardPaymentMode, setSelectedCardPaymentMode] = useState('');
   const categoryScrollRef = React.useRef(null);
+
+  // Daily Opening & Closing Balance States
+  const [selectedBalanceDate, setSelectedBalanceDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [isOpeningModalOpen, setIsOpeningModalOpen] = useState(false);
+  const [openingAmountInput, setOpeningAmountInput] = useState('');
+  const [openingNotesInput, setOpeningNotesInput] = useState('');
+  const [isSavingOpening, setIsSavingOpening] = useState(false);
 
   const scrollCategoryLeft = () => {
     if (categoryScrollRef.current) {
@@ -64,6 +76,7 @@ export default function ExpensesView({ selectedBranch }) {
   // Form Inputs for "Add New Operating Expense" (Blank by default)
   const [descriptionInput, setDescriptionInput] = useState('');
   const [categoryInput, setCategoryInput] = useState('Utilities');
+  const [paymentModeInput, setPaymentModeInput] = useState('Cash');
   const [amountInput, setAmountInput] = useState('');
   const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
   const [notesInput, setNotesInput] = useState('');
@@ -73,6 +86,7 @@ export default function ExpensesView({ selectedBranch }) {
   const [editingExpense, setEditingExpense] = useState(null);
   const [editDesc, setEditDesc] = useState('');
   const [editCategory, setEditCategory] = useState('Utilities');
+  const [editPaymentMode, setEditPaymentMode] = useState('Cash');
   const [editAmount, setEditAmount] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -88,8 +102,16 @@ export default function ExpensesView({ selectedBranch }) {
       inventoryStore.setBranch(selectedBranch.id);
       setExpenseState(expenseStore.getState());
       setInventoryState(inventoryStore.getState());
+      expenseStore.loadDailyBalance(selectedBalanceDate, selectedBranch.id);
     }
   }, [selectedBranch?.id]);
+
+  // Load daily balance when selected date changes
+  useEffect(() => {
+    if (selectedBranch?.id && selectedBalanceDate) {
+      expenseStore.loadDailyBalance(selectedBalanceDate, selectedBranch.id);
+    }
+  }, [selectedBalanceDate, selectedBranch?.id]);
 
   // Subscribe to expenseStore and inventoryStore
   useEffect(() => {
@@ -118,6 +140,7 @@ export default function ExpensesView({ selectedBranch }) {
       id: `stock-${p.id}`,
       description: desc,
       category: 'Raw Ingredients',
+      paymentMode: 'Bank',
       amount: p.totalAmount || 0,
       date: p.dateIso || new Date().toISOString().split('T')[0],
       displayDate: p.date || p.dateIso,
@@ -145,6 +168,7 @@ export default function ExpensesView({ selectedBranch }) {
     const matchesSearch = !searchQuery || 
       (item.description || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (item.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.paymentMode || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory = categoryFilter === 'ALL' || item.category === categoryFilter;
@@ -174,12 +198,14 @@ export default function ExpensesView({ selectedBranch }) {
     }
 
     const selectedCategoryToSave = categoryInput || 'Utilities';
+    const selectedModeToSave = paymentModeInput || 'Cash';
 
     setIsSavingExpense(true);
     try {
       const res = await expenseStore.addExpense({
         description: descriptionInput.trim(),
         category: selectedCategoryToSave,
+        paymentMode: selectedModeToSave,
         amount: numAmount,
         date: dateInput,
         notes: notesInput
@@ -194,6 +220,7 @@ export default function ExpensesView({ selectedBranch }) {
       setAmountInput('');
       setNotesInput('');
       setCategoryInput('Utilities');
+      setPaymentModeInput('Cash');
       setDateInput(new Date().toISOString().split('T')[0]);
     } catch (err) {
       console.error('[ExpensesView] Add expense error:', err);
@@ -212,6 +239,7 @@ export default function ExpensesView({ selectedBranch }) {
     setEditingExpense(item);
     setEditDesc(item.description);
     setEditCategory(item.category || 'Utilities');
+    setEditPaymentMode(item.paymentMode || 'Cash');
     setEditAmount(item.amount.toString());
     setEditDate(item.date);
     setEditNotes(item.notes || '');
@@ -227,6 +255,7 @@ export default function ExpensesView({ selectedBranch }) {
       const res = await expenseStore.updateExpense(editingExpense.id, {
         description: editDesc,
         category: editCategory,
+        paymentMode: editPaymentMode,
         amount: editAmount,
         date: editDate,
         notes: editNotes
@@ -259,6 +288,54 @@ export default function ExpensesView({ selectedBranch }) {
     }
   };
 
+  // Daily Balance reactive calculations for selectedBalanceDate
+  const dailyBalanceRecord = expenseState.dailyBalances?.[selectedBalanceDate] || null;
+  const isOpeningSet = Boolean(dailyBalanceRecord?.isSet);
+  const openingBalanceVal = dailyBalanceRecord ? (parseFloat(dailyBalanceRecord.openingBalance) || 0) : 0;
+  const suggestedOpeningVal = dailyBalanceRecord ? (parseFloat(dailyBalanceRecord.suggestedOpeningBalance) || 0) : 0;
+  const activeOpeningBalance = isOpeningSet ? openingBalanceVal : suggestedOpeningVal;
+
+  const dayExpensesList = combinedExpenses.filter(e => (e.date || e.dateIso) === selectedBalanceDate);
+  const dayOperatingExpenses = dayExpensesList.filter(e => !e.isStockIn).reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const dayPurchaseExpenses = dayExpensesList.filter(e => e.isStockIn).reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const dayTotalExpenses = dayOperatingExpenses + dayPurchaseExpenses;
+
+  // Auto-calculated Closing Balance (Opening - Total Outflows for that Day)
+  const computedClosingBalance = activeOpeningBalance - dayTotalExpenses;
+
+  const handleOpenOpeningModal = () => {
+    setOpeningAmountInput(activeOpeningBalance > 0 ? activeOpeningBalance.toString() : '');
+    setOpeningNotesInput(dailyBalanceRecord?.notes || '');
+    setIsOpeningModalOpen(true);
+  };
+
+  const handleSaveOpeningBalance = async (e) => {
+    e.preventDefault();
+    if (isSavingOpening) return;
+    const numVal = parseFloat(openingAmountInput);
+    if (isNaN(numVal) || numVal < 0) {
+      alert("Please enter a valid non-negative opening balance (e.g. 10500).");
+      return;
+    }
+    setIsSavingOpening(true);
+    try {
+      const res = await expenseStore.saveDailyBalance({
+        date: selectedBalanceDate,
+        openingBalance: numVal,
+        notes: openingNotesInput
+      });
+      if (!res) {
+        throw new Error("Failed to save opening balance");
+      }
+      setIsOpeningModalOpen(false);
+    } catch (err) {
+      console.error('[ExpensesView] Save opening balance error:', err);
+      alert('Failed to save opening balance. Please try again.');
+    } finally {
+      setIsSavingOpening(false);
+    }
+  };
+
   return (
     <div className="space-y-3 font-sans relative pb-6 w-full">
       
@@ -267,8 +344,6 @@ export default function ExpensesView({ selectedBranch }) {
       {/* ========================================================================= */}
       <div className="bg-[#ebdcc8] text-[#122c20] rounded-2xl p-3.5 px-4 border border-[#cabb9e] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 relative overflow-hidden">
         
-
-
         <div className="flex items-center gap-3 z-10 min-w-0">
           <div className={`p-2.5 ${isBrownBranch ? 'bg-[#3E2312] border-[#542A16]' : 'bg-[#0f3823] border-[#194c31]'} text-white rounded-xl shadow-xs border shrink-0`}>
             <Receipt className={`w-5 h-5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
@@ -303,6 +378,159 @@ export default function ExpensesView({ selectedBranch }) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 1b. DAILY OPENING & CLOSING BALANCE RECONCILIATION CARD                   */}
+      {/* ========================================================================= */}
+      <div className="bg-[#fdfbf7] rounded-2xl p-3.5 sm:p-4 border border-[#cabb9e] shadow-xs space-y-3 shrink-0">
+        
+        {/* Header & Date Selector Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[#ded4c5]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`p-2 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} rounded-xl shadow-2xs shrink-0`}>
+              <Wallet className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif font-black text-sm text-[#11291f] truncate">
+                  Daily Opening & Closing Balance
+                </h3>
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${isOpeningSet ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'}`}>
+                  {isOpeningSet ? '✓ Set for this Day' : 'Suggested Mode'}
+                </span>
+              </div>
+              <p className="text-[11px] font-bold text-[#456351] truncate">
+                Reconciliation: <span className="font-mono font-bold text-[#11291f]">Closing Balance = Opening Balance − Total Day Outflows</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Date Picker Control */}
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-[#cabb9e] shadow-2xs">
+              <Calendar className="w-3.5 h-3.5 text-[#547363]" />
+              <span className="text-[11px] font-extrabold text-[#11291f]">Business Date:</span>
+              <input
+                type="date"
+                value={selectedBalanceDate}
+                onChange={(e) => setSelectedBalanceDate(e.target.value)}
+                className="text-xs font-mono font-bold text-[#11291f] bg-transparent focus:outline-none cursor-pointer"
+              />
+            </div>
+            {selectedBalanceDate !== todayIso && (
+              <button
+                type="button"
+                onClick={() => setSelectedBalanceDate(todayIso)}
+                className={`px-2.5 py-1.5 ${isBrownBranch ? 'bg-[#3E2312] text-white' : 'bg-[#0f3823] text-white'} text-[11px] font-black rounded-xl shadow-2xs cursor-pointer hover:opacity-90`}
+              >
+                Today
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 3 Metric Balance Flow Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          
+          {/* Block 1: Daily Opening Balance */}
+          <div className="bg-[#ebdcc8] p-3 rounded-xl border border-[#cabb9e] shadow-xs flex flex-col justify-between space-y-2 relative">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#11291f] uppercase tracking-wider">
+                1. Daily Opening Balance
+              </span>
+              <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${isOpeningSet ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}`}>
+                {isOpeningSet ? 'Confirmed' : 'Suggested'}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xl font-mono font-black text-[#0f3823] leading-tight">
+                ₹{activeOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
+                {isOpeningSet ? (dailyBalanceRecord?.notes ? `Remarks: ${dailyBalanceRecord.notes}` : 'Opening balance confirmed') : 'Suggested from previous closing balance'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenOpeningModal}
+              className={`w-full py-1.5 px-3 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] text-white' : 'bg-[#103825] hover:bg-[#0a2618] text-white'} font-black text-[11px] rounded-lg shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all`}
+            >
+              <Edit3 className="w-3 h-3" />
+              {isOpeningSet ? 'Edit Opening Balance' : 'Set Opening Balance'}
+            </button>
+          </div>
+
+          {/* Block 2: Day Outflows / Expenses Paid */}
+          <div className="bg-[#ebdcc8] p-3 rounded-xl border border-[#cabb9e] shadow-xs flex flex-col justify-between space-y-2 relative">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-rose-950 uppercase tracking-wider">
+                2. Total Expenses Paid (−)
+              </span>
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300">
+                {dayExpensesList.length} Outflows
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xl font-mono font-black text-rose-700 leading-tight">
+                ₹{dayTotalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
+                Operating: ₹{dayOperatingExpenses.toFixed(2)} • Raw Ingredients: ₹{dayPurchaseExpenses.toFixed(2)}
+              </span>
+            </div>
+
+            {/* Interactive Payment Mode Dropdown Selector */}
+            <div className="py-1 px-2.5 bg-white/90 rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#345142] flex items-center justify-between gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#11291f] shrink-0">Payment Mode</span>
+              <div className="relative flex-1">
+                <select
+                  value={selectedCardPaymentMode}
+                  onChange={(e) => setSelectedCardPaymentMode(e.target.value)}
+                  className="w-full bg-white border border-[#cabb9e] rounded-md px-2 py-0.5 text-xs font-bold text-[#11291f] focus:outline-none focus:ring-1 focus:ring-[#0f3823] cursor-pointer appearance-none pr-5 shadow-2xs"
+                >
+                  <option value="">Select Payment Mode</option>
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank">Bank</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#547363] absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Block 3: Auto-Calculated Daily Closing Balance */}
+          <div className={`p-3 rounded-xl border shadow-xs flex flex-col justify-between space-y-2 relative ${computedClosingBalance >= 0 ? 'bg-[#ebdcc8] border-[#cabb9e]' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-[#11291f] uppercase tracking-wider flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5 text-[#547363]" />
+                3. Daily Closing Balance (=)
+              </span>
+              <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-[#0f3823] text-white border border-[#194c31]">
+                Auto-Calculated
+              </span>
+            </div>
+
+            <div>
+              <p className={`text-xl font-mono font-black leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
+                ₹{computedClosingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
+                ₹{activeOpeningBalance.toFixed(2)} − ₹{dayTotalExpenses.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="py-1 px-2.5 bg-[#f5ecdf] rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#11291f] flex items-center justify-between">
+              <span>Formula:</span>
+              <span className="font-bold text-[#456351]">Opening − Day Total Expenses</span>
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
       {/* ========================================================================= */}
@@ -400,8 +628,8 @@ export default function ExpensesView({ selectedBranch }) {
               />
             </div>
 
-            {/* Category & Amount Row */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Category, Payment Mode & Amount Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
                 <label className="font-extrabold text-[#11291f] block mb-1">Category *</label>
                 <select
@@ -412,6 +640,19 @@ export default function ExpensesView({ selectedBranch }) {
                   {OPERATING_CATEGORIES.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-extrabold text-[#11291f] block mb-1">Payment Mode *</label>
+                <select
+                  value={paymentModeInput}
+                  onChange={(e) => setPaymentModeInput(e.target.value)}
+                  className={`w-full px-2.5 py-1.5 bg-white border border-[#cabb9e] rounded-xl font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank">Bank</option>
                 </select>
               </div>
 
@@ -561,8 +802,8 @@ export default function ExpensesView({ selectedBranch }) {
                 <thead>
                   <tr className="bg-[#ebdcc8] text-[#11291f] font-semibold uppercase text-[11px] tracking-wider border-b border-[#cabb9e] sticky top-0 z-10">
                     <th className="py-2.5 px-2 text-center font-semibold w-[18%]">DATE</th>
-                    <th className="py-2.5 px-2 text-center font-semibold w-[36%]">DESCRIPTION</th>
-                    <th className="py-2.5 px-2 text-center font-semibold w-[22%]">CATEGORY</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[34%]">DESCRIPTION</th>
+                    <th className="py-2.5 px-2 text-center font-semibold w-[24%]">CATEGORY / MODE</th>
                     <th className="py-2.5 px-2 text-center font-semibold w-[14%]">AMOUNT (₹)</th>
                     <th className="py-2.5 px-2 text-center font-semibold w-[10%]">ACTIONS</th>
                   </tr>
@@ -600,7 +841,10 @@ export default function ExpensesView({ selectedBranch }) {
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-black text-[12.5px]">
-                          {item.category}
+                          <div>{item.category}</div>
+                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#ebdcc8] text-[#11291f] border border-[#cabb9e] inline-block mt-0.5">
+                            {item.paymentMode || 'Cash'}
+                          </span>
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-[12.5px] text-red-700 whitespace-nowrap">
@@ -673,7 +917,7 @@ export default function ExpensesView({ selectedBranch }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label className="font-extrabold text-[#11291f] block mb-1">Category</label>
                   <select
@@ -684,6 +928,19 @@ export default function ExpensesView({ selectedBranch }) {
                     {OPERATING_CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-extrabold text-[#11291f] block mb-1">Payment Mode</label>
+                  <select
+                    value={editPaymentMode}
+                    onChange={(e) => setEditPaymentMode(e.target.value)}
+                    className={`w-full px-2.5 py-1.5 bg-white border border-[#cabb9e] rounded-xl font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'}`}
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank">Bank</option>
                   </select>
                 </div>
 
@@ -777,6 +1034,111 @@ export default function ExpensesView({ selectedBranch }) {
               </button>
             </div>
 
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. MODAL: SET / EDIT DAILY OPENING BALANCE                                */}
+      {/* ========================================================================= */}
+      {isOpeningModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-overlay animate-fadeIn">
+          <div className="bg-[#fdfbf7] border-2 border-[#cabb9e] rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl relative">
+            
+            <div className="flex items-center justify-between pb-2 border-b border-[#ded4c5]">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 ${isBrownBranch ? 'bg-[#3E2312] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'} rounded-xl shadow-xs`}>
+                  <Wallet className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-black text-base text-[#11291f]">
+                    {isOpeningSet ? 'Edit Daily Opening Balance' : 'Set Daily Opening Balance'}
+                  </h3>
+                  <p className="text-xs font-bold text-[#456351]">
+                    {selectedBranch?.name || 'Main Branch'} • Date: {selectedBalanceDate}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpeningModalOpen(false)}
+                className="p-1 rounded-lg text-[#547363] hover:bg-[#ebdcc8] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOpeningBalance} className="space-y-3.5 text-xs">
+              
+              <div>
+                <label className="font-extrabold text-[#11291f] block mb-1">
+                  Opening Balance Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  required
+                  autoFocus
+                  value={openingAmountInput}
+                  onChange={(e) => setOpeningAmountInput(e.target.value)}
+                  placeholder="e.g. 10500"
+                  className={`w-full px-3 py-2 bg-white border border-[#cabb9e] rounded-xl font-mono font-bold text-sm text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                />
+                <p className="text-[10px] font-bold text-[#547363] mt-1">
+                  {suggestedOpeningVal > 0 && !isOpeningSet ? `Suggested from previous day's closing balance: ₹${suggestedOpeningVal.toFixed(2)}` : 'Enter the verified cash / drawer balance at opening.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="font-extrabold text-[#11291f] block mb-1">
+                  Notes / Remarks (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={openingNotesInput}
+                  onChange={(e) => setOpeningNotesInput(e.target.value)}
+                  placeholder="e.g. Cash drawer count verified with morning shift handover"
+                  className={`w-full px-3 py-2 bg-white border border-[#cabb9e] rounded-xl font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                />
+              </div>
+
+              <div className="bg-[#ebdcc8] p-3 rounded-xl border border-[#cabb9e] text-[11px] font-bold text-[#11291f] space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#456351]">Recorded By:</span>
+                  <span className="font-black text-[#11291f]">Shruthy A</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#456351]">Day Outflows Paid:</span>
+                  <span className="font-mono font-black text-rose-700">₹{dayTotalExpenses.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-[#ded4c5]">
+                  <span className="text-[#11291f]">Calculated Closing:</span>
+                  <span className="font-mono font-black text-[#0f3823] text-sm">
+                    ₹{((parseFloat(openingAmountInput) || 0) - dayTotalExpenses).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#ded4c5]">
+                <button
+                  type="button"
+                  onClick={() => setIsOpeningModalOpen(false)}
+                  className="px-4 py-2 bg-[#ebe0cb] text-[#122c20] font-black text-xs rounded-xl hover:bg-[#dfd3bc] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingOpening}
+                  className={`px-5 py-2 ${isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'} text-white font-black text-xs rounded-xl shadow-md border cursor-pointer disabled:opacity-50`}
+                >
+                  {isSavingOpening ? 'Saving...' : 'Confirm & Save Balance'}
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>,
         document.body

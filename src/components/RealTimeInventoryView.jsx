@@ -134,6 +134,31 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
     return matchesType && matchesSearch;
   });
 
+  // Format accurate movement date & time from actual DB timestamp (Asia/Kolkata / IST)
+  const formatMovementDate = (entry) => {
+    if (entry.createdAt) {
+      try {
+        const d = new Date(entry.createdAt);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+        }
+      } catch (_) {}
+    }
+    return entry.date || entry.dateIso || 'Today';
+  };
+
+  const formatMovementTime = (entry) => {
+    if (entry.createdAt) {
+      try {
+        const d = new Date(entry.createdAt);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
+        }
+      } catch (_) {}
+    }
+    return entry.time || '';
+  };
+
   // Retry handler
   const handleRetry = () => {
     setIsManualLoading(true);
@@ -986,8 +1011,8 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     <tr key={entry.id} className="hover:bg-[#fbf8f3] transition-colors">
                       <td className="py-2 px-3 font-semibold text-black text-[12.5px] text-center whitespace-nowrap">
                         <div className="inline-flex items-center justify-center gap-1.5 tabular-nums">
-                          <span>{entry.date}</span>
-                          {entry.time && <span className="text-black">{entry.time}</span>}
+                          <span>{formatMovementDate(entry)}</span>
+                          {formatMovementTime(entry) && <span className="text-black">{formatMovementTime(entry)}</span>}
                         </div>
                       </td>
 
@@ -1068,7 +1093,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         {entry.itemName}
                       </h4>
                       <p className="text-[11.5px] text-[#557361] mt-0.5 font-normal">
-                        {entry.date} • {entry.time}
+                        {formatMovementDate(entry)}{formatMovementTime(entry) ? ` • ${formatMovementTime(entry)}` : ''}
                       </p>
                     </div>
                     <div>

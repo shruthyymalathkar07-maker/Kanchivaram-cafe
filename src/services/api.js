@@ -310,6 +310,58 @@ export async function deleteExpense(id, branchId = 'branch-1') {
   }
 }
 
+export async function fetchDailyBalance(date, branchId = 'branch-1') {
+  try {
+    const query = date ? `?date=${encodeURIComponent(date)}` : '';
+    const res = await fetch(`${API_BASE_URL}/expenses/daily-balance${query}`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    if (!res.ok) {
+      return { success: false, error: `HTTP ${res.status}` };
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch daily balance error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function saveDailyBalance(payload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses/daily-balance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      return { success: false, error: `HTTP ${res.status}` };
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Save daily balance error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchDailyBalanceHistory(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/expenses/daily-balance/history`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Fetch daily balance history error:', err);
+    return { success: false, records: [] };
+  }
+}
+
 // -------------------------------------------------------------
 // STAFF & SHIFTS API SERVICES (PostgreSQL Connected)
 // -------------------------------------------------------------

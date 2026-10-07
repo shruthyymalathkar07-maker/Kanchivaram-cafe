@@ -1072,9 +1072,9 @@ export function createApiRouter(io: SocketServer) {
       return res.status(400).json({ success: false, message: 'Item ID or Item Name is required' });
     }
 
-    const todayIso = new Date().toISOString().split('T')[0];
-    const displayDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const displayTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const todayIso = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const displayDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+    const displayTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
     const finalReason = (source || reason || 'Kitchen Consumption').trim();
     const finalRef = (ref || `Usage #${Math.floor(1000 + Math.random() * 9000)}`).trim();
     const finalNotes = (notes || `${finalReason} record`).trim();
@@ -1248,7 +1248,8 @@ export function createApiRouter(io: SocketServer) {
           count: purchases.length,
           purchases: purchases.map(p => ({
             ...p,
-            date: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : p.dateIso
+            createdAt: p.createdAt ? p.createdAt.toISOString() : undefined,
+            date: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : p.dateIso
           }))
         });
       }
@@ -1345,8 +1346,9 @@ export function createApiRouter(io: SocketServer) {
           count: ledger.length,
           ledger: ledger.map(m => ({
             ...m,
-            date: m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : m.dateIso,
-            time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''
+            createdAt: m.createdAt ? m.createdAt.toISOString() : undefined,
+            date: m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : m.dateIso,
+            time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' }) : ''
           }))
         });
       }
@@ -2169,7 +2171,7 @@ export function createApiRouter(io: SocketServer) {
     try {
       if (prisma) {
         const rows = await prisma.$queryRawUnsafe<any[]>(
-          `SELECT "id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt"
+          `SELECT "id", "branchId", "description", "category", "amount", "paymentMode", "dateIso", "notes", "recordedBy", "createdAt"
            FROM "public"."Expense"
            WHERE "branchId" = $1
            ORDER BY "dateIso" DESC, "createdAt" DESC;`,
@@ -2185,6 +2187,7 @@ export function createApiRouter(io: SocketServer) {
             description: r.description,
             category: r.category || 'Other',
             amount: parseFloat(r.amount) || 0,
+            paymentMode: r.paymentMode || 'Cash',
             date: r.dateIso || todayIso,
             dateIso: r.dateIso || todayIso,
             displayDate,
@@ -2234,7 +2237,7 @@ export function createApiRouter(io: SocketServer) {
   // 10c. POST /api/expenses (Create an operational expense in PostgreSQL)
   router.post('/expenses', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
-    const { description, category, amount, date, notes, recordedBy } = req.body;
+    const { description, category, amount, paymentMode, date, notes, recordedBy } = req.body;
 
     const numAmount = parseFloat(amount) || 0;
     if (!description || typeof description !== 'string' || !description.trim() || numAmount <= 0) {
@@ -2249,6 +2252,7 @@ export function createApiRouter(io: SocketServer) {
     const dateIso = date || todayIso;
     const cleanDesc = description.trim();
     const cleanCategory = (category || 'Other').trim();
+    const cleanPaymentMode = (paymentMode || 'Cash').trim();
     const cleanNotes = notes ? String(notes).trim() : 'General operational expense';
     const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Shruthy A';
 
@@ -2256,52 +2260,23 @@ export function createApiRouter(io: SocketServer) {
       if (prisma) {
         try {
           await prisma.$executeRawUnsafe(
-            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
-            expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
+            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "paymentMode", "dateIso", "notes", "recordedBy", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP);`,
+            expenseId, branchId, cleanDesc, cleanCategory, numAmount, cleanPaymentMode, dateIso, cleanNotes, cleanRecordedBy
           );
         } catch (insertErr: any) {
-          console.warn('[API /expenses POST] Initial insert failed, attempting dynamic legacy cleanup:', insertErr.message);
+          console.warn('[API /expenses POST] Initial insert failed, attempting dynamic column sync:', insertErr.message);
           try {
             await prisma.$executeRawUnsafe(`
-              DO $$
-              DECLARE
-                  rec RECORD;
-              BEGIN
-                  FOR rec IN (
-                      SELECT column_name 
-                      FROM information_schema.columns 
-                      WHERE table_schema = 'public' 
-                        AND table_name = 'Expense' 
-                        AND column_name NOT IN ('id', 'branchId', 'description', 'amount')
-                  ) LOOP
-                      BEGIN
-                          EXECUTE 'ALTER TABLE "public"."Expense" ALTER COLUMN "' || rec.column_name || '" DROP NOT NULL;';
-                      EXCEPTION WHEN OTHERS THEN NULL;
-                      END;
-                  END LOOP;
-
-                  FOR rec IN (
-                      SELECT column_name 
-                      FROM information_schema.columns 
-                      WHERE table_schema = 'public' 
-                        AND table_name = 'Expense' 
-                        AND column_name NOT IN ('id', 'branchId', 'description', 'category', 'amount', 'dateIso', 'notes', 'recordedBy', 'createdAt')
-                  ) LOOP
-                      BEGIN
-                          EXECUTE 'ALTER TABLE "public"."Expense" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
-                      EXCEPTION WHEN OTHERS THEN NULL;
-                      END;
-                  END LOOP;
-              END $$;
+              ALTER TABLE "public"."Expense" ADD COLUMN IF NOT EXISTS "paymentMode" TEXT NOT NULL DEFAULT 'Cash';
             `);
           } catch (alterErr) {
             console.warn('[API /expenses POST] Alter table notice:', alterErr);
           }
           await prisma.$executeRawUnsafe(
-            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "dateIso", "notes", "recordedBy", "createdAt")
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP);`,
-            expenseId, branchId, cleanDesc, cleanCategory, numAmount, dateIso, cleanNotes, cleanRecordedBy
+            `INSERT INTO "public"."Expense" ("id", "branchId", "description", "category", "amount", "paymentMode", "dateIso", "notes", "recordedBy", "createdAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP);`,
+            expenseId, branchId, cleanDesc, cleanCategory, numAmount, cleanPaymentMode, dateIso, cleanNotes, cleanRecordedBy
           );
         }
 
@@ -2314,6 +2289,7 @@ export function createApiRouter(io: SocketServer) {
           description: cleanDesc,
           category: cleanCategory,
           amount: numAmount,
+          paymentMode: cleanPaymentMode,
           date: dateIso,
           dateIso,
           displayDate,
@@ -2349,11 +2325,12 @@ export function createApiRouter(io: SocketServer) {
   const handleUpdateExpense = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
     const branchId = getBranchId(req);
-    const { description, category, amount, date, notes, recordedBy } = req.body;
+    const { description, category, amount, paymentMode, date, notes, recordedBy } = req.body;
 
     const numAmount = amount !== undefined ? (parseFloat(amount) || 0) : undefined;
     const cleanDesc = description ? String(description).trim() : undefined;
     const cleanCategory = category ? String(category).trim() : undefined;
+    const cleanPaymentMode = paymentMode ? String(paymentMode).trim() : undefined;
     const cleanNotes = notes !== undefined ? String(notes).trim() : undefined;
     const cleanDate = date ? String(date).trim() : undefined;
     const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : undefined;
@@ -2377,6 +2354,7 @@ export function createApiRouter(io: SocketServer) {
         const finalDesc = cleanDesc !== undefined ? cleanDesc : current.description;
         const finalCategory = cleanCategory !== undefined ? cleanCategory : current.category;
         const finalAmount = numAmount !== undefined && numAmount > 0 ? numAmount : current.amount;
+        const finalPaymentMode = cleanPaymentMode !== undefined ? cleanPaymentMode : (current.paymentMode || 'Cash');
         const finalDateIso = cleanDate !== undefined ? cleanDate : current.dateIso;
         const finalNotes = cleanNotes !== undefined ? cleanNotes : current.notes;
         const finalRecordedBy = cleanRecordedBy !== undefined ? cleanRecordedBy : current.recordedBy;
@@ -2386,11 +2364,12 @@ export function createApiRouter(io: SocketServer) {
            SET "description" = $1,
                "category" = $2,
                "amount" = $3,
-               "dateIso" = $4,
-               "notes" = $5,
-               "recordedBy" = $6
-           WHERE "id" = $7 AND "branchId" = $8;`,
-          finalDesc, finalCategory, finalAmount, finalDateIso, finalNotes, finalRecordedBy, id, branchId
+               "paymentMode" = $4,
+               "dateIso" = $5,
+               "notes" = $6,
+               "recordedBy" = $7
+           WHERE "id" = $8 AND "branchId" = $9;`,
+          finalDesc, finalCategory, finalAmount, finalPaymentMode, finalDateIso, finalNotes, finalRecordedBy, id, branchId
         );
 
         const dateObj = new Date(finalDateIso);
@@ -2402,6 +2381,7 @@ export function createApiRouter(io: SocketServer) {
           description: finalDesc,
           category: finalCategory,
           amount: finalAmount,
+          paymentMode: finalPaymentMode,
           date: finalDateIso,
           dateIso: finalDateIso,
           displayDate,
@@ -2468,6 +2448,273 @@ export function createApiRouter(io: SocketServer) {
       success: false,
       message: 'PostgreSQL database connection unavailable'
     });
+  });
+
+  // 10e-1. GET /api/expenses/daily-balance (Fetch Daily Opening & Closing Balance)
+  router.get('/expenses/daily-balance', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const todayIso = new Date().toISOString().split('T')[0];
+    const queryDate = typeof req.query.date === 'string' && req.query.date.trim() ? req.query.date.trim() : todayIso;
+
+    try {
+      if (prisma) {
+        // Ensure table exists safely
+        try {
+          await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "public"."DailyBalance" (
+              "id" TEXT NOT NULL PRIMARY KEY,
+              "branchId" TEXT NOT NULL,
+              "businessDate" TEXT NOT NULL,
+              "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+              "notes" TEXT,
+              "recordedBy" TEXT NOT NULL DEFAULT 'Shruthy A',
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT "DailyBalance_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "public"."Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+            );
+          `);
+          await prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS "DailyBalance_branchId_businessDate_key" ON "public"."DailyBalance"("branchId", "businessDate");
+          `);
+        } catch (tableErr) {
+          // Table or index may already exist
+        }
+
+        // 1. Fetch record for this branch and date
+        const records = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "branchId", "businessDate", "openingBalance", "notes", "recordedBy", "createdAt", "updatedAt"
+           FROM "public"."DailyBalance"
+           WHERE "branchId" = $1 AND "businessDate" = $2
+           LIMIT 1;`,
+          branchId, queryDate
+        );
+
+        // 2. Fetch operating expenses for this branch and date
+        const expRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM("amount"), 0) AS "total"
+           FROM "public"."Expense"
+           WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+          branchId, queryDate, `${queryDate}%`
+        );
+        const operatingExpenses = parseFloat(expRows[0]?.total) || 0;
+
+        // 3. Fetch purchase expenses for this branch and date
+        const purRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM("totalAmount"), 0) AS "total"
+           FROM "public"."Purchase"
+           WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+          branchId, queryDate, `${queryDate}%`
+        );
+        const purchaseExpenses = parseFloat(purRows[0]?.total) || 0;
+
+        const totalExpenses = operatingExpenses + purchaseExpenses;
+
+        let openingBalance = 0;
+        let suggestedOpeningBalance = 0;
+        let isSet = false;
+        let notes = '';
+        let recordedBy = 'Shruthy A';
+        let id = null;
+
+        if (records.length > 0) {
+          isSet = true;
+          id = records[0].id;
+          openingBalance = parseFloat(records[0].openingBalance) || 0;
+          suggestedOpeningBalance = openingBalance;
+          notes = records[0].notes || '';
+          recordedBy = records[0].recordedBy || 'Shruthy A';
+        } else {
+          // Find most recent previous day's opening balance
+          const prevRecords = await prisma.$queryRawUnsafe<any[]>(
+            `SELECT "id", "businessDate", "openingBalance"
+             FROM "public"."DailyBalance"
+             WHERE "branchId" = $1 AND "businessDate" < $2
+             ORDER BY "businessDate" DESC
+             LIMIT 1;`,
+            branchId, queryDate
+          );
+
+          if (prevRecords.length > 0) {
+            const prevDate = prevRecords[0].businessDate;
+            const prevOpening = parseFloat(prevRecords[0].openingBalance) || 0;
+
+            // Prev day expenses
+            const prevExpRows = await prisma.$queryRawUnsafe<any[]>(
+              `SELECT COALESCE(SUM("amount"), 0) AS "total"
+               FROM "public"."Expense"
+               WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+              branchId, prevDate, `${prevDate}%`
+            );
+            const prevPurRows = await prisma.$queryRawUnsafe<any[]>(
+              `SELECT COALESCE(SUM("totalAmount"), 0) AS "total"
+               FROM "public"."Purchase"
+               WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+              branchId, prevDate, `${prevDate}%`
+            );
+            const prevTotalExp = (parseFloat(prevExpRows[0]?.total) || 0) + (parseFloat(prevPurRows[0]?.total) || 0);
+            suggestedOpeningBalance = Math.max(0, prevOpening - prevTotalExp);
+          }
+          openingBalance = suggestedOpeningBalance;
+        }
+
+        const closingBalance = openingBalance - totalExpenses;
+
+        return res.json({
+          success: true,
+          branchId,
+          date: queryDate,
+          isSet,
+          id,
+          openingBalance,
+          suggestedOpeningBalance,
+          operatingExpenses,
+          purchaseExpenses,
+          totalExpenses,
+          closingBalance,
+          notes,
+          recordedBy
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /expenses/daily-balance GET] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve daily balance',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10e-2. POST /api/expenses/daily-balance (Save/Set Daily Opening Balance)
+  router.post('/expenses/daily-balance', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const { date, openingBalance, notes, recordedBy } = req.body;
+
+    const todayIso = new Date().toISOString().split('T')[0];
+    const businessDate = (date || todayIso).trim();
+    const numOpening = Math.max(0, parseFloat(openingBalance) || 0);
+    const cleanNotes = notes ? String(notes).trim() : '';
+    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Shruthy A';
+    const balanceId = `bal-${branchId}-${businessDate}`;
+
+    try {
+      if (prisma) {
+        // Ensure table exists safely
+        try {
+          await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "public"."DailyBalance" (
+              "id" TEXT NOT NULL PRIMARY KEY,
+              "branchId" TEXT NOT NULL,
+              "businessDate" TEXT NOT NULL,
+              "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+              "notes" TEXT,
+              "recordedBy" TEXT NOT NULL DEFAULT 'Shruthy A',
+              "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              CONSTRAINT "DailyBalance_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "public"."Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+            );
+          `);
+          await prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS "DailyBalance_branchId_businessDate_key" ON "public"."DailyBalance"("branchId", "businessDate");
+          `);
+        } catch (tableErr) {}
+
+        // Upsert using raw SQL
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "public"."DailyBalance" ("id", "branchId", "businessDate", "openingBalance", "notes", "recordedBy", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           ON CONFLICT ("branchId", "businessDate")
+           DO UPDATE SET "openingBalance" = EXCLUDED."openingBalance",
+                         "notes" = EXCLUDED."notes",
+                         "recordedBy" = EXCLUDED."recordedBy",
+                         "updatedAt" = CURRENT_TIMESTAMP;`,
+          balanceId, branchId, businessDate, numOpening, cleanNotes, cleanRecordedBy
+        );
+
+        // Compute current expenses for response
+        const expRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM("amount"), 0) AS "total"
+           FROM "public"."Expense"
+           WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+          branchId, businessDate, `${businessDate}%`
+        );
+        const purRows = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT COALESCE(SUM("totalAmount"), 0) AS "total"
+           FROM "public"."Purchase"
+           WHERE "branchId" = $1 AND ("dateIso" = $2 OR ("dateIso" IS NULL AND "createdAt"::text LIKE $3));`,
+          branchId, businessDate, `${businessDate}%`
+        );
+        const operatingExpenses = parseFloat(expRows[0]?.total) || 0;
+        const purchaseExpenses = parseFloat(purRows[0]?.total) || 0;
+        const totalExpenses = operatingExpenses + purchaseExpenses;
+        const closingBalance = numOpening - totalExpenses;
+
+        const responseData = {
+          id: balanceId,
+          branchId,
+          date: businessDate,
+          isSet: true,
+          openingBalance: numOpening,
+          suggestedOpeningBalance: numOpening,
+          operatingExpenses,
+          purchaseExpenses,
+          totalExpenses,
+          closingBalance,
+          notes: cleanNotes,
+          recordedBy: cleanRecordedBy
+        };
+
+        io.emit('daily_balance_updated', {
+          branchId,
+          date: businessDate,
+          dailyBalance: responseData
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: 'Daily balance recorded successfully',
+          data: responseData
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /expenses/daily-balance POST] Error:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to save daily balance in PostgreSQL',
+        error: err.message
+      });
+    }
+
+    return res.status(503).json({
+      success: false,
+      message: 'PostgreSQL database connection unavailable'
+    });
+  });
+
+  // 10e-3. GET /api/expenses/daily-balance/history (Fetch recent balances)
+  router.get('/expenses/daily-balance/history', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      if (prisma) {
+        const records = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT "id", "branchId", "businessDate", "openingBalance", "notes", "recordedBy", "createdAt", "updatedAt"
+           FROM "public"."DailyBalance"
+           WHERE "branchId" = $1
+           ORDER BY "businessDate" DESC
+           LIMIT 60;`,
+          branchId
+        );
+        return res.json({ success: true, branchId, records });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    return res.status(503).json({ success: false, message: 'Database unavailable' });
   });
 
   // 10f. GET /api/staff (Fetch staff for branch from PostgreSQL)
@@ -2916,7 +3163,7 @@ export function createApiRouter(io: SocketServer) {
     const branchId = getBranchId(req);
     const period = (req.query.period as string) || 'today';
     const today = new Date();
-    const todayIso = today.toISOString().split('T')[0];
+    const todayIso = today.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
     try {
       let sales: any[] = [];
@@ -2924,7 +3171,12 @@ export function createApiRouter(io: SocketServer) {
         // Compute date filters based on period
         let dateFilter: any = {};
         if (period === 'today') {
-          dateFilter = { dateIso: todayIso };
+          dateFilter = {
+            OR: [
+              { dateIso: todayIso },
+              { dateIso: today.toISOString().split('T')[0] }
+            ]
+          };
         } else if (period === 'week') {
           const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
           dateFilter = { createdAt: { gte: sevenDaysAgo } };
@@ -2988,15 +3240,105 @@ export function createApiRouter(io: SocketServer) {
       const cardCollected = sales.filter(s => (s.paymentMethod || '').toUpperCase() === 'CARD').reduce((acc, s) => acc + (s.grandTotal || 0), 0);
       const productsSold = sales.reduce((acc, s) => acc + ((s.items || []).reduce((sum: number, i: any) => sum + (i.quantity || 0), 0)), 0);
 
-      // Hourly/time series distribution from real sales
-      const timeSlots = ['08:00 AM', '10:00 AM', '12:00 PM', '02:00 PM', '04:00 PM', '06:00 PM', '08:00 PM'];
-      const salesTrend = timeSlots.map(time => {
-        return {
-          time,
-          sales: Math.round(totalSales / (timeSlots.length || 1)),
-          orders: Math.round(sales.length / (timeSlots.length || 1))
-        };
-      });
+      // Hourly / time series distribution from real sales transactions
+      let salesTrend: Array<{ time: string; sales: number; orders: number }> = [];
+
+      if (period === 'today') {
+        const timeSlots = [
+          { label: '8 AM', startHour: 0, endHour: 9 },
+          { label: '10 AM', startHour: 9, endHour: 11 },
+          { label: '12 PM', startHour: 11, endHour: 13 },
+          { label: '2 PM', startHour: 13, endHour: 15 },
+          { label: '4 PM', startHour: 15, endHour: 17 },
+          { label: '6 PM', startHour: 17, endHour: 19 },
+          { label: '8 PM', startHour: 19, endHour: 21 },
+          { label: '10 PM', startHour: 21, endHour: 24 }
+        ];
+
+        salesTrend = timeSlots.map(slot => {
+          const matchingSales = sales.filter(s => {
+            const dt = s.createdAt ? new Date(s.createdAt) : null;
+            if (dt && !isNaN(dt.getTime())) {
+              const istDate = new Date(dt.getTime() + (5.5 * 60 * 60 * 1000));
+              const istHour = istDate.getUTCHours();
+              return istHour >= slot.startHour && istHour < slot.endHour;
+            }
+            if (s.time) {
+              const [hStr] = s.time.split(':');
+              let h = parseInt(hStr, 10);
+              if (s.time.toUpperCase().includes('PM') && h < 12) h += 12;
+              if (s.time.toUpperCase().includes('AM') && h === 12) h = 0;
+              return h >= slot.startHour && h < slot.endHour;
+            }
+            return false;
+          });
+          const slotSales = matchingSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
+          return {
+            time: slot.label,
+            sales: Math.round(slotSales),
+            orders: matchingSales.length
+          };
+        });
+      } else if (period === 'week') {
+        const istNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const dayOfWeek = (istNow.getDay() + 6) % 7; // 0 = Mon, 1 = Tue, ..., 6 = Sun
+        const monday = new Date(istNow);
+        monday.setDate(istNow.getDate() - dayOfWeek);
+
+        const weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const days = weekDayLabels.map((label, idx) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + idx);
+          const dateIsoStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          return { dateIsoStr, label };
+        });
+
+        salesTrend = days.map(day => {
+          const matchingSales = sales.filter(s => {
+            const sDateIso = s.dateIso || (s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '');
+            return sDateIso === day.dateIsoStr;
+          });
+          const daySales = matchingSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
+          return {
+            time: day.label,
+            sales: Math.round(daySales),
+            orders: matchingSales.length
+          };
+        });
+      } else if (period === 'month') {
+        const weeks = [
+          { label: 'Week 1', startDay: 1, endDay: 7 },
+          { label: 'Week 2', startDay: 8, endDay: 14 },
+          { label: 'Week 3', startDay: 15, endDay: 21 },
+          { label: 'Week 4', startDay: 22, endDay: 31 }
+        ];
+
+        salesTrend = weeks.map(w => {
+          const matchingSales = sales.filter(s => {
+            const dt = s.createdAt ? new Date(s.createdAt) : null;
+            if (dt && !isNaN(dt.getTime())) {
+              const dayOfMonth = parseInt(dt.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'Asia/Kolkata' }), 10);
+              return dayOfMonth >= w.startDay && dayOfMonth <= w.endDay;
+            }
+            if (s.dateIso) {
+              const parts = s.dateIso.split('-');
+              const dayOfMonth = parseInt(parts[2], 10);
+              return dayOfMonth >= w.startDay && dayOfMonth <= w.endDay;
+            }
+            return false;
+          });
+          const weekSales = matchingSales.reduce((acc, s) => acc + (s.grandTotal || 0), 0);
+          return {
+            time: w.label,
+            sales: Math.round(weekSales),
+            orders: matchingSales.length
+          };
+        });
+      } else {
+        salesTrend = [
+          { time: 'Total', sales: Math.round(totalSales), orders: sales.length }
+        ];
+      }
 
       // Distribution data
       const posPct = totalSales > 0 ? Math.round((posSales / totalSales) * 100) : 0;

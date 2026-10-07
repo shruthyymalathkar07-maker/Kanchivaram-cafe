@@ -302,73 +302,152 @@ export default function SalesReportView({ selectedBranch }) {
           </div>
 
           {/* Graph Content Container */}
-          <div className="w-full h-44 relative flex flex-col justify-between pt-2 overflow-hidden">
-            {periodSales.length === 0 ? (
-              /* CLEAN ELEGANT EMPTY STATE WHEN NO SALES */
-              <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 my-auto">
-                <BarChart2 className={`w-8 h-8 mb-2 ${isBrownBranch ? 'text-[#C69A4B]/40' : 'text-[#4ade80]/40'}`} />
-                <h4 className={`text-base font-serif font-black ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`}>No sales data yet</h4>
-                <p className={`text-xs font-bold mt-1 max-w-xs leading-relaxed ${isBrownBranch ? 'text-[#E8D8C2]' : 'text-[#87a997]'}`}>
-                  Completed POS bills and online orders will appear here automatically.
-                </p>
-              </div>
-            ) : (
-              /* REAL PLOTTED GRAPH WHEN SALES EXIST - X-AXIS LABELS STRICTLY INSIDE CARD */
-              <div className="flex-1 relative flex flex-col justify-between h-full">
-                <div className="flex-1 relative flex">
-                  <div className={`flex flex-col justify-between text-[9px] font-mono pr-2 py-0.5 select-none shrink-0 ${isBrownBranch ? 'text-[#C69A4B]/70' : 'text-[#628774]'}`}>
-                    <span>₹{(Math.max(...periodSales.map(s => s.grandTotal || 0)) || 100).toFixed(0)}</span>
-                    <span>₹{((Math.max(...periodSales.map(s => s.grandTotal || 0)) || 100) / 2).toFixed(0)}</span>
-                    <span>₹0</span>
+          <div className="w-full h-44 relative flex flex-col justify-between pt-1 overflow-hidden">
+            {(() => {
+              let trendData = [];
+              if (period === 'today') {
+                const defaultBuckets = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM', '10 PM'];
+                const rawList = Array.isArray(reportStats?.charts?.salesTrend) ? reportStats.charts.salesTrend : [];
+                trendData = defaultBuckets.map(b => {
+                  const bNorm = b.toUpperCase().replace(/\s+/g, '');
+                  const found = rawList.find(d => {
+                    const tNorm = (d.time || '').toUpperCase().replace(/\s+/g, '').replace(/^0/, '').replace(':00', '');
+                    return tNorm === bNorm || tNorm.replace(/^0/, '') === bNorm;
+                  });
+                  return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                });
+              } else if (period === 'week') {
+                const defaultBuckets = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const rawList = Array.isArray(reportStats?.charts?.salesTrend) ? reportStats.charts.salesTrend : [];
+                trendData = defaultBuckets.map(b => {
+                  const found = rawList.find(d => (d.time || '').toUpperCase().startsWith(b.toUpperCase().slice(0, 3)));
+                  return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                });
+              } else {
+                // month
+                const defaultBuckets = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                const rawList = Array.isArray(reportStats?.charts?.salesTrend) ? reportStats.charts.salesTrend : [];
+                trendData = defaultBuckets.map(b => {
+                  const bNorm = b.toUpperCase().replace(/\s+/g, '');
+                  const found = rawList.find(d => (d.time || '').toUpperCase().replace(/\s+/g, '') === bNorm);
+                  return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                });
+              }
+
+              const rawMax = Math.max(...trendData.map(d => d.sales || 0), 0);
+              const getNiceMax = (val) => {
+                if (val <= 0) return 100;
+                if (val <= 50) return 50;
+                if (val <= 100) return 100;
+                if (val <= 250) return 250;
+                if (val <= 500) return 500;
+                if (val <= 1000) return 1000;
+                if (val <= 2500) return 2500;
+                if (val <= 5000) return 5000;
+                if (val <= 10000) return 10000;
+                return Math.ceil(val / 5000) * 5000;
+              };
+              const niceMax = getNiceMax(rawMax);
+
+              const formatYTick = (v) => {
+                if (v >= 1000) {
+                  const k = v / 1000;
+                  return `₹${k % 1 === 0 ? k : k.toFixed(1)}k`;
+                }
+                return `₹${Math.round(v)}`;
+              };
+
+              const count = trendData.length;
+              const slotWidth = 500 / Math.max(1, count);
+              const barWidth = count === 4 ? 64 : (count === 7 ? 40 : 34);
+              const baselineY = 110;
+              const maxHeight = 95;
+
+              return (
+                <div className="flex-1 relative flex flex-col justify-between h-full">
+                  <div className="flex-1 relative flex">
+                    {/* Left Y-Axis Values */}
+                    <div className={`flex flex-col justify-between text-[9.5px] font-mono pr-2 py-0.5 select-none w-9 text-right shrink-0 font-bold ${isBrownBranch ? 'text-[#C69A4B]/80' : 'text-[#87a997]'}`}>
+                      <span>{formatYTick(niceMax)}</span>
+                      <span>{formatYTick(niceMax / 2)}</span>
+                      <span>₹0</span>
+                    </div>
+
+                    {/* SVG Histogram Chart (Stretches Full Width & Height) */}
+                    <div className="flex-1 h-full">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 500 115" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="salesReportBarGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={isBrownBranch ? "#E5B869" : "#4ade80"} stopOpacity="0.95" />
+                            <stop offset="100%" stopColor={isBrownBranch ? "#8D4D20" : "#166534"} stopOpacity="0.75" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Horizontal Gridlines */}
+                        <line x1="0" y1="15" x2="500" y2="15" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
+                        <line x1="0" y1="62" x2="500" y2="62" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
+                        <line x1="0" y1={baselineY} x2="500" y2={baselineY} stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeWidth="1.2" />
+
+                        {/* Histogram Bars */}
+                        {trendData.map((d, idx) => {
+                          const rawBarHeight = Math.max(0, ((d.sales || 0) / niceMax) * maxHeight);
+                          const hasSales = (d.sales || 0) > 0;
+                          const actualHeight = hasSales ? Math.max(4, rawBarHeight) : 2.5;
+                          const barX = idx * slotWidth + (slotWidth - barWidth) / 2;
+                          const topY = baselineY - actualHeight;
+
+                          return (
+                            <g key={idx}>
+                              <rect
+                                x={barX}
+                                y={topY}
+                                width={barWidth}
+                                height={actualHeight}
+                                rx="3.5"
+                                ry="3.5"
+                                fill={hasSales ? "url(#salesReportBarGrad)" : (isBrownBranch ? "#542A16" : "#194c31")}
+                                stroke={hasSales ? (isBrownBranch ? "#C69A4B" : "#4ade80") : "transparent"}
+                                strokeWidth="1.2"
+                                opacity={hasSales ? 1 : 0.35}
+                              >
+                                <title>{`${d.time}: ₹${(d.sales || 0).toLocaleString('en-IN')}`}</title>
+                              </rect>
+                              {hasSales && (
+                                <rect
+                                  x={barX}
+                                  y={topY}
+                                  width={barWidth}
+                                  height={2.5}
+                                  rx="1.2"
+                                  fill={isBrownBranch ? "#FAF6EE" : "#bbf7d0"}
+                                  opacity={0.85}
+                                />
+                              )}
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    </div>
                   </div>
 
-                  <div className="flex-1 h-full relative">
-                    <svg className="w-full h-full overflow-hidden" viewBox="0 0 500 130" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="salesReportGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={isBrownBranch ? "#C69A4B" : "#4ade80"} stopOpacity="0.45" />
-                          <stop offset="100%" stopColor={isBrownBranch ? "#C69A4B" : "#4ade80"} stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="0" y1="20" x2="500" y2="20" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                      <line x1="0" y1="65" x2="500" y2="65" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                      <line x1="0" y1="110" x2="500" y2="110" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                      
-                      {/* Dynamically Plotted Sales Line */}
-                      {(() => {
-                        const maxVal = Math.max(...periodSales.map(s => s.grandTotal || 0)) || 100;
-                        const points = periodSales.map((s, idx) => {
-                          const x = periodSales.length === 1 ? 250 : (idx / (periodSales.length - 1)) * 480 + 10;
-                          const y = 110 - ((s.grandTotal || 0) / maxVal) * 90;
-                          return { x, y, sale: s };
-                        });
-                        const pathD = points.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '');
-                        const areaD = `${pathD} L ${points[points.length - 1].x} 125 L ${points[0].x} 125 Z`;
-
-                        return (
-                          <>
-                            <path d={areaD} fill="url(#salesReportGrad)" />
-                            <path d={pathD} fill="none" stroke={isBrownBranch ? "#C69A4B" : "#4ade80"} strokeWidth="3" strokeLinecap="round" />
-                            {points.map((pt, i) => (
-                              <circle key={i} cx={pt.x} cy={pt.y} r="4" fill={isBrownBranch ? "#C69A4B" : "#4ade80"} stroke={isBrownBranch ? "#3E2312" : "#0f3823"} strokeWidth="2" />
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </svg>
+                  {/* X-Axis Time Ticks Centered Under Each Bar */}
+                  <div 
+                    className="w-full pt-1 select-none font-bold shrink-0"
+                    style={{
+                      paddingLeft: '36px',
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${trendData.length}, minmax(0, 1fr))`
+                    }}
+                  >
+                    {trendData.map((d, i) => (
+                      <span key={i} className={`text-[10px] font-mono text-center font-bold tracking-tight truncate ${isBrownBranch ? 'text-[#E8D8C2]' : 'text-[#a3c7b5]'}`}>
+                        {d.time}
+                      </span>
+                    ))}
                   </div>
                 </div>
-
-                {/* X-AXIS TIME LABELS STRICTLY INSIDE THE GRAPH CONTAINER AT BOTTOM */}
-                <div className={`flex justify-between text-[9px] font-mono pl-8 pr-2 pt-1 select-none font-bold shrink-0 border-t ${
-                  isBrownBranch ? 'text-[#C69A4B]/80 border-[#542A16]' : 'text-[#87a997] border-[#194c31]/50'
-                }`}>
-                  {periodSales.slice(0, 6).map((s, i) => (
-                    <span key={i} className="truncate max-w-[60px]">{s.time || s.billNumber || `Bill #${i+1}`}</span>
-                  ))}
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
 

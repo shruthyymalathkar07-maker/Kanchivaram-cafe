@@ -32,6 +32,21 @@ export default function DashboardCharts({ stats, timeframe, setTimeframe }) {
 
   const COLORS = ['#4ade80', '#f97316', '#3b82f6', '#a855f7'];
 
+  const rawMax = Math.max(...trendData.map(d => d.sales || 0), 0);
+  const getNiceMax = (val) => {
+    if (val <= 0) return 100;
+    if (val <= 50) return 50;
+    if (val <= 100) return 100;
+    if (val <= 250) return 250;
+    if (val <= 500) return 500;
+    if (val <= 1000) return 1000;
+    if (val <= 2500) return 2500;
+    if (val <= 5000) return 5000;
+    if (val <= 10000) return 10000;
+    return Math.ceil(val / 5000) * 5000;
+  };
+  const niceMax = getNiceMax(rawMax);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
@@ -71,18 +86,18 @@ export default function DashboardCharts({ stats, timeframe, setTimeframe }) {
           </div>
         </div>
 
-        {/* Recharts Area Chart */}
+        {/* Recharts Bar Chart */}
         <div className="w-full h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4ade80" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#4ade80" stopOpacity={0.0} />
+                  <stop offset="0%" stopColor="#4ade80" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#166534" stopOpacity={0.75} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="time" stroke="#69917f" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#69917f" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}`} />
+              <XAxis dataKey="time" stroke="#69917f" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(t) => t.replace(':00', '')} />
+              <YAxis stroke="#69917f" fontSize={11} tickLine={false} axisLine={false} domain={[0, niceMax]} tickFormatter={(v) => v >= 1000 ? `₹${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : `₹${Math.round(v)}`} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#0d2118',
@@ -94,15 +109,12 @@ export default function DashboardCharts({ stats, timeframe, setTimeframe }) {
                 }}
                 formatter={(val) => [`₹${val}`, 'Revenue']}
               />
-              <Area
-                type="monotone"
+              <Bar
                 dataKey="sales"
-                stroke="#4ade80"
-                strokeWidth={3}
-                fillOpacity={1}
                 fill="url(#colorSales)"
+                radius={[4, 4, 0, 0]}
               />
-            </AreaChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
 

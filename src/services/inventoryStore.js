@@ -12,9 +12,9 @@ import {
   socket 
 } from './api';
 
-const getTodayIso = () => new Date().toISOString().split('T')[0];
-const getDisplayDate = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-const getDisplayTime = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+const getTodayIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+const getDisplayDate = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+const getDisplayTime = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
 
 // Always sort master items alphabetically in ascending order (A-Z)
 const createInitialItems = () => [...CLIENT_RAW_MATERIALS_MASTER]

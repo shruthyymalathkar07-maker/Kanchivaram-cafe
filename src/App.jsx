@@ -363,7 +363,7 @@ export default function App() {
                               <TrendingUp className="w-3.5 h-3.5" />
                             </span>
                             <p className={`text-[11px] font-bold ${isBrownBranch ? 'text-[#E8D8C2]' : 'text-[#a3c7b5]'}`}>
-                              Total Sales (TODAY)
+                              Total Sales ({salesTimeframe === 'today' ? 'TODAY' : salesTimeframe === 'week' ? 'THIS WEEK' : 'THIS MONTH'})
                             </p>
                             <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-full border ${
                               isBrownBranch 
@@ -408,56 +408,179 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Full Width Spline Area Chart */}
-                      <div className="w-full h-[190px] relative flex flex-col justify-between pt-4 z-10">
-                        <div className="flex-1 relative flex">
-                          <div className={`flex flex-col justify-between text-[9px] font-mono pr-2 py-0.5 select-none ${isBrownBranch ? 'text-[#C69A4B]/70' : 'text-[#628774]'}`}>
-                            <span>₹3k</span>
-                            <span>₹2k</span>
-                            <span>₹1k</span>
-                            <span>0</span>
-                          </div>
+                      {/* Full Width Dynamic Bar Chart with Integrated SVG Axis Labels */}
+                      {(() => {
+                        let trendData = [];
+                        if (salesTimeframe === 'today') {
+                          const defaultBuckets = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM', '10 PM'];
+                          const rawList = Array.isArray(stats?.charts?.salesTrend) ? stats.charts.salesTrend : [];
+                          trendData = defaultBuckets.map(b => {
+                            const bNorm = b.toUpperCase().replace(/\s+/g, '');
+                            const found = rawList.find(d => {
+                              const tNorm = (d.time || '').toUpperCase().replace(/\s+/g, '').replace(/^0/, '').replace(':00', '');
+                              return tNorm === bNorm || tNorm.replace(/^0/, '') === bNorm;
+                            });
+                            return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                          });
+                        } else if (salesTimeframe === 'week') {
+                          const defaultBuckets = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                          const rawList = Array.isArray(stats?.charts?.salesTrend) ? stats.charts.salesTrend : [];
+                          trendData = defaultBuckets.map(b => {
+                            const found = rawList.find(d => (d.time || '').toUpperCase().startsWith(b.toUpperCase().slice(0, 3)));
+                            return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                          });
+                        } else {
+                          // month
+                          const defaultBuckets = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                          const rawList = Array.isArray(stats?.charts?.salesTrend) ? stats.charts.salesTrend : [];
+                          trendData = defaultBuckets.map(b => {
+                            const bNorm = b.toUpperCase().replace(/\s+/g, '');
+                            const found = rawList.find(d => (d.time || '').toUpperCase().replace(/\s+/g, '') === bNorm);
+                            return { time: b, sales: found?.sales || 0, orders: found?.orders || 0 };
+                          });
+                        }
 
-                          <div className="flex-1 h-full">
-                            <svg className="w-full h-full overflow-visible" viewBox="0 0 500 200">
-                              <defs>
-                                <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={isBrownBranch ? "#C69A4B" : "#4ade80"} stopOpacity="0.45" />
-                                  <stop offset="100%" stopColor={isBrownBranch ? "#C69A4B" : "#4ade80"} stopOpacity="0.0" />
-                                </linearGradient>
-                              </defs>
-                              <line x1="0" y1="20" x2="500" y2="20" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                              <line x1="0" y1="70" x2="500" y2="70" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                              <line x1="0" y1="120" x2="500" y2="120" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                              <line x1="0" y1="170" x2="500" y2="170" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
-                              <path
-                                d="M 0 160 C 70 140, 130 115, 200 120 C 270 125, 340 70, 420 80 C 460 85, 480 30, 500 20 L 500 200 L 0 200 Z"
-                                fill="url(#chartAreaGrad)"
-                              />
-                              <path
-                                d="M 0 160 C 70 140, 130 115, 200 120 C 270 125, 340 70, 420 80 C 460 85, 480 30, 500 20"
-                                fill="none"
-                                stroke={isBrownBranch ? "#C69A4B" : "#4ade80"}
-                                strokeWidth="3.5"
-                                strokeLinecap="round"
-                              />
-                              <circle cx="200" cy="120" r="4" fill={isBrownBranch ? "#C69A4B" : "#4ade80"} stroke={isBrownBranch ? "#3E2312" : "#0f3823"} strokeWidth="2" />
-                              <circle cx="420" cy="80" r="4" fill={isBrownBranch ? "#C69A4B" : "#4ade80"} stroke={isBrownBranch ? "#3E2312" : "#0f3823"} strokeWidth="2" />
-                              <circle cx="500" cy="20" r="5" fill={isBrownBranch ? "#C69A4B" : "#4ade80"} stroke={isBrownBranch ? "#3E2312" : "#0f3823"} strokeWidth="2.5" />
-                            </svg>
-                          </div>
-                        </div>
+                        const rawMax = Math.max(...trendData.map(d => d.sales || 0), 0);
+                        const getNiceMax = (val) => {
+                          if (val <= 0) return 100;
+                          if (val <= 50) return 50;
+                          if (val <= 100) return 100;
+                          if (val <= 250) return 250;
+                          if (val <= 500) return 500;
+                          if (val <= 1000) return 1000;
+                          if (val <= 2500) return 2500;
+                          if (val <= 5000) return 5000;
+                          if (val <= 10000) return 10000;
+                          return Math.ceil(val / 5000) * 5000;
+                        };
+                        const niceMax = getNiceMax(rawMax);
 
-                        {/* Time Ticks */}
-                        <div className="flex justify-between text-[9px] font-mono text-[#87a997] pl-6 pt-1 select-none font-bold">
-                          <span>6 AM</span>
-                          <span>9 AM</span>
-                          <span>12 PM</span>
-                          <span>3 PM</span>
-                          <span>6 PM</span>
-                          <span>9 PM</span>
-                        </div>
-                      </div>
+                        const formatYTick = (v) => {
+                          if (v >= 1000) {
+                            const k = v / 1000;
+                            return `₹${k % 1 === 0 ? k : k.toFixed(1)}k`;
+                          }
+                          return `₹${Math.round(v)}`;
+                        };
+
+                        const pointCount = trendData.length;
+                        const slotWidth = 500 / Math.max(1, pointCount);
+                        const barWidth = pointCount === 4 ? 64 : (pointCount === 7 ? 40 : 34);
+                        const baselineY = 125;
+                        const maxHeight = 112;
+
+                        const fullDayMap = {
+                          'Mon': 'Monday',
+                          'Tue': 'Tuesday',
+                          'Wed': 'Wednesday',
+                          'Thu': 'Thursday',
+                          'Fri': 'Friday',
+                          'Sat': 'Saturday',
+                          'Sun': 'Sunday'
+                        };
+
+                        return (
+                          <div className="w-full h-[160px] relative flex flex-col justify-between pt-1 pb-1 z-10">
+                            <div className="flex-1 relative flex min-h-0">
+                              {/* Left Y-Axis Values */}
+                              <div className={`flex flex-col justify-between text-[9px] sm:text-[9.5px] font-mono pr-2 py-0.5 select-none w-9 text-right shrink-0 font-bold ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#a3c7b5]'}`}>
+                                <span>{formatYTick(niceMax)}</span>
+                                <span>{formatYTick(niceMax * 0.67)}</span>
+                                <span>{formatYTick(niceMax * 0.33)}</span>
+                                <span>₹0</span>
+                              </div>
+
+                              {/* SVG Histogram Chart (Stretches Full Width & Height) */}
+                              <div className="flex-1 h-full min-h-0">
+                                <svg className="w-full h-full overflow-visible" viewBox="0 0 500 135" preserveAspectRatio="none">
+                                  <defs>
+                                    <linearGradient id="histBarGrad" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor={isBrownBranch ? "#E5B869" : "#4ade80"} stopOpacity="0.95" />
+                                      <stop offset="100%" stopColor={isBrownBranch ? "#8D4D20" : "#166534"} stopOpacity="0.75" />
+                                    </linearGradient>
+                                  </defs>
+
+                                  {/* Horizontal Gridlines */}
+                                  <line x1="0" y1="12" x2="500" y2="12" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
+                                  <line x1="0" y1="49" x2="500" y2="49" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
+                                  <line x1="0" y1="87" x2="500" y2="87" stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeDasharray="3 3" />
+                                  <line x1="0" y1={baselineY} x2="500" y2={baselineY} stroke={isBrownBranch ? "#542A16" : "#194c31"} strokeWidth="1.2" />
+
+                                  {/* Histogram Bars */}
+                                  {trendData.map((d, i) => {
+                                    const rawBarHeight = Math.max(0, ((d.sales || 0) / niceMax) * maxHeight);
+                                    const hasSales = (d.sales || 0) > 0;
+                                    const actualHeight = hasSales ? Math.max(4, rawBarHeight) : 2.5;
+                                    const barX = i * slotWidth + (slotWidth - barWidth) / 2;
+                                    const topY = baselineY - actualHeight;
+
+                                    return (
+                                      <g key={i}>
+                                        <rect
+                                          x={barX}
+                                          y={topY}
+                                          width={barWidth}
+                                          height={actualHeight}
+                                          rx="3.5"
+                                          ry="3.5"
+                                          fill={hasSales ? "url(#histBarGrad)" : (isBrownBranch ? "#542A16" : "#194c31")}
+                                          stroke={hasSales ? (isBrownBranch ? "#C69A4B" : "#4ade80") : "transparent"}
+                                          strokeWidth="1.2"
+                                          opacity={hasSales ? 1 : 0.35}
+                                        >
+                                          <title>{`${d.time}: ₹${(d.sales || 0).toLocaleString('en-IN')}`}</title>
+                                        </rect>
+
+                                        {hasSales && (
+                                          <rect
+                                            x={barX}
+                                            y={topY}
+                                            width={barWidth}
+                                            height={3}
+                                            rx="1.5"
+                                            fill={isBrownBranch ? "#FAF6EE" : "#bbf7d0"}
+                                            opacity={0.85}
+                                          />
+                                        )}
+                                      </g>
+                                    );
+                                  })}
+                                </svg>
+                              </div>
+                            </div>
+
+                            {/* X-Axis Time Ticks Centered Under Each Bar with Complete Visibility */}
+                            <div 
+                              className={`w-full pt-2 pb-0.5 select-none font-bold shrink-0 border-t ${
+                                isBrownBranch ? 'border-[#542A16]/60' : 'border-[#194c31]/60'
+                              }`}
+                              style={{
+                                paddingLeft: '36px',
+                                display: 'grid',
+                                gridTemplateColumns: `repeat(${trendData.length}, minmax(0, 1fr))`
+                              }}
+                            >
+                              {trendData.map((d, idx) => (
+                                <span 
+                                  key={idx} 
+                                  className={`text-[10px] sm:text-[11px] font-mono text-center font-extrabold tracking-tight truncate px-0.5 ${
+                                    isBrownBranch ? 'text-[#FAF6EE]' : 'text-[#f0fdf4]'
+                                  }`}
+                                >
+                                  {salesTimeframe === 'week' ? (
+                                    <>
+                                      <span className="hidden xl:inline">{fullDayMap[d.time] || d.time}</span>
+                                      <span className="xl:hidden">{d.time}</span>
+                                    </>
+                                  ) : (
+                                    d.time
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                     </div>
                   </div>
