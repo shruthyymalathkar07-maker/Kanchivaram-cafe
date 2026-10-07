@@ -46,7 +46,7 @@ const foundDist = potentialDistPaths.find(p => fs.existsSync(p));
 if (foundDist) {
   console.log(`📦 Serving static frontend from: ${foundDist}`);
   app.use(express.static(foundDist));
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/socket.io')) {
       return next();
     }

@@ -484,20 +484,20 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             {/* Interactive Payment Mode Dropdown Selector */}
-            <div className="flex items-center justify-between gap-2 py-0.5">
-              <span className="text-[10.5px] font-bold text-[#11291f] shrink-0">Payment Mode:</span>
-              <div className="relative">
+            <div className="py-1.5 px-3 bg-white rounded-lg border border-[#cabb9e] text-xs font-bold text-[#11291f] flex items-center justify-between shadow-2xs relative">
+              <span className="font-extrabold text-[#11291f] text-[11px] shrink-0">Payment Mode:</span>
+              <div className="relative flex-1 max-w-[140px]">
                 <select
                   value={selectedCardPaymentMode}
                   onChange={(e) => setSelectedCardPaymentMode(e.target.value)}
-                  className="bg-white border border-[#cabb9e] rounded-lg px-2.5 py-1 text-xs font-bold text-[#11291f] focus:outline-none focus:ring-1 focus:ring-[#0f3823] cursor-pointer appearance-none pr-6 shadow-2xs min-w-[95px]"
+                  className="w-full bg-transparent text-[#456351] font-bold text-[11px] focus:outline-none cursor-pointer appearance-none text-right pr-4"
                 >
-                  <option value="">Select</option>
+                  <option value="">Cash / UPI / Bank</option>
                   <option value="Cash">Cash</option>
                   <option value="UPI">UPI</option>
                   <option value="Bank">Bank</option>
                 </select>
-                <ChevronDown className="w-3 h-3 text-[#547363] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-3 h-3 text-[#547363] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
@@ -523,8 +523,8 @@ export default function ExpensesView({ selectedBranch }) {
               </span>
             </div>
 
-            <div className="py-1 px-2.5 bg-white rounded-lg border border-[#cabb9e] text-[10.5px] font-bold text-[#11291f] flex items-center justify-between shadow-2xs">
-              <span>Formula:</span>
+            <div className="py-1.5 px-3 bg-white rounded-lg border border-[#cabb9e] text-[11px] font-bold text-[#11291f] flex items-center gap-1.5 shadow-2xs">
+              <span className="font-extrabold text-[#11291f]">Formula:</span>
               <span className="font-bold text-[#456351]">Opening − Day Total Expenses</span>
             </div>
           </div>
