@@ -77,8 +77,11 @@ const DDL_STATEMENTS: string[] = [
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"amount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0;",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"dateIso\" TEXT;",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"notes\" TEXT;",
+  "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"paymentMode\" TEXT NOT NULL DEFAULT 'Cash';",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT DEFAULT 'Shruthy A';",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"DailyBalance\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"branchId\" TEXT NOT NULL,\n    \"businessDate\" TEXT NOT NULL,\n    \"openingBalance\" DOUBLE PRECISION NOT NULL DEFAULT 0,\n    \"notes\" TEXT,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Shruthy A',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"DailyBalance_branchId_fkey\" FOREIGN KEY (\"branchId\") REFERENCES \"public\".\"Branch\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n  );",
+  "CREATE UNIQUE INDEX IF NOT EXISTS \"DailyBalance_branchId_businessDate_key\" ON \"public\".\"DailyBalance\"(\"branchId\", \"businessDate\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Staff\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"role\" TEXT NOT NULL,\n    \"shift\" TEXT NOT NULL DEFAULT 'Morning',\n    \"shiftType\" TEXT NOT NULL DEFAULT 'Morning Shift (06:00 AM - 02:00 PM)',\n    \"startTime\" TEXT NOT NULL DEFAULT '06:00 AM',\n    \"endTime\" TEXT NOT NULL DEFAULT '02:00 PM',\n    \"phone\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'On Duty',\n    \"monthlyPay\" DOUBLE PRECISION NOT NULL DEFAULT 18000.0,\n    \"joinedDate\" TEXT NOT NULL DEFAULT 'Today',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Staff_pkey\" PRIMARY KEY (\"id\")\n  );",
   "ALTER TABLE \"public\".\"Staff\" ADD COLUMN IF NOT EXISTS \"shiftType\" TEXT DEFAULT 'Morning Shift (06:00 AM - 02:00 PM)';",
   "ALTER TABLE \"public\".\"Staff\" ADD COLUMN IF NOT EXISTS \"startTime\" TEXT DEFAULT '06:00 AM';",
@@ -185,7 +188,7 @@ export async function ensureDatabaseInitialized() {
               FROM information_schema.columns 
               WHERE table_schema = 'public' 
                 AND table_name = 'Expense' 
-                AND column_name NOT IN ('id', 'branchId', 'description', 'category', 'amount', 'dateIso', 'notes', 'recordedBy', 'createdAt')
+                AND column_name NOT IN ('id', 'branchId', 'description', 'category', 'amount', 'paymentMode', 'dateIso', 'notes', 'recordedBy', 'createdAt')
           ) LOOP
               BEGIN
                   EXECUTE 'ALTER TABLE "public"."Expense" DROP COLUMN IF EXISTS "' || rec.column_name || '" CASCADE;';
