@@ -606,18 +606,31 @@ export function createApiRouter(io: SocketServer) {
     res.json({ success: true, count: PRODUCT_CATEGORIES.length, categories: PRODUCT_CATEGORIES });
   });
 
-  // 3. GET /api/products (Returns exact 59 Menu Products & 9 Categories from PostgreSQL)
+  // 3. GET /api/products (Returns Menu Products & Categories from PostgreSQL in numerical ID sequence)
   router.get('/products', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     try {
       if (prisma) {
         const [dbProducts, dbCategories] = await Promise.all([
-          prisma.product.findMany({ orderBy: { id: 'asc' } }),
+          prisma.product.findMany({ 
+            include: { 
+              recipe: { 
+                include: { items: true } 
+              } 
+            } 
+          }),
           prisma.productCategory.findMany({ orderBy: { displayOrder: 'asc' } })
         ]);
 
         if (dbProducts.length > 0) {
-          const mappedProducts = dbProducts.map((p) => ({
+          // Sort products naturally by their numerical suffix (prod-1, prod-2, ..., prod-59, prod-60)
+          const sortedDbProducts = [...dbProducts].sort((a, b) => {
+            const numA = parseInt((a.id.match(/\d+/) || [0])[0], 10);
+            const numB = parseInt((b.id.match(/\d+/) || [0])[0], 10);
+            return numA - numB;
+          });
+
+          const mappedProducts = sortedDbProducts.map((p: any) => ({
             id: p.id,
             name: p.name,
             category: p.categoryName,
@@ -627,19 +640,39 @@ export function createApiRouter(io: SocketServer) {
             uom: p.uom,
             dineInPrice: p.dineInPrice,
             deliveryPrice: p.deliveryPrice,
+            swiggyPrice: p.swiggyPrice || p.deliveryPrice || p.dineInPrice,
+            zomatoPrice: p.zomatoPrice || p.deliveryPrice || p.dineInPrice,
+            gstPercent: p.gstPercent ?? 5.0,
+            addons: Array.isArray(p.addons) ? p.addons : (typeof p.addons === 'string' ? JSON.parse(p.addons || '[]') : []),
             packingCharge: p.packingCharge,
             description: p.description,
             price: p.dineInPrice,
             unit: p.uom,
             stockQuantity: 40,
-            image: p.image || `/dishes/${p.id}.jpg`
+            image: p.image || `/dishes/${p.id}.jpg`,
+            isAvailable: p.isAvailable !== false,
+            recipe: p.recipe ? {
+              productId: p.id,
+              productName: p.recipe.productName,
+              servingQty: p.recipe.servingQty,
+              servingUom: p.recipe.servingUom,
+              status: p.recipe.status,
+              finalProcess: p.recipe.finalProcess,
+              ingredients: (p.recipe.items || []).map((it: any) => ({
+                rawMaterialId: it.inventoryItemId || it.id,
+                rawMaterialName: it.rawMaterialName,
+                quantity: it.quantity,
+                uom: it.uom,
+                process: it.process
+              }))
+            } : null
           }));
 
           return res.json({
             success: true,
             branchId,
-            totalCount: mappedProducts.length, // 59
-            categories: dbCategories,          // 9
+            totalCount: mappedProducts.length,
+            categories: dbCategories,
             products: mappedProducts
           });
         }
@@ -652,9 +685,241 @@ export function createApiRouter(io: SocketServer) {
     res.json({
       success: true,
       branchId,
-      totalCount: branchData.products.length, // 59
-      categories: branchData.categories,      // 9
+      totalCount: branchData.products.length,
+      categories: branchData.categories,
       products: branchData.products
+    });
+  });
+
+  // 3b. POST /api/products (Create New Menu Item directly from POS with BOM & Addons)
+  router.post('/products', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const {
+      name,
+      categoryId,
+      categoryName,
+      servingQty = 1,
+      uom = 'Nos.',
+      dineInPrice,
+      deliveryPrice,
+      swiggyPrice,
+      zomatoPrice,
+      gstPercent = 5.0,
+      addons = [],
+      description = '',
+      image = '',
+      isAvailable = true,
+      recipe = null
+    } = req.body || {};
+
+    const cleanName = (name || '').trim();
+    if (!cleanName) {
+      return res.status(400).json({ success: false, error: 'Product name is required.' });
+    }
+
+    const numDineInPrice = parseFloat(dineInPrice);
+    if (isNaN(numDineInPrice) || numDineInPrice < 0) {
+      return res.status(400).json({ success: false, error: 'Valid dining / in-store price is required.' });
+    }
+
+    if (!categoryId) {
+      return res.status(400).json({ success: false, error: 'Category is required.' });
+    }
+
+    // Determine categoryName from PRODUCT_CATEGORIES if not passed
+    const matchedCategory = PRODUCT_CATEGORIES.find(c => c.id === categoryId);
+    const finalCategoryName = categoryName || matchedCategory?.name || 'General';
+
+    const numSwiggyPrice = swiggyPrice !== undefined && swiggyPrice !== '' ? parseFloat(swiggyPrice) : numDineInPrice;
+    const numZomatoPrice = zomatoPrice !== undefined && zomatoPrice !== '' ? parseFloat(zomatoPrice) : numDineInPrice;
+    const numDeliveryPrice = deliveryPrice !== undefined && deliveryPrice !== '' ? parseFloat(deliveryPrice) : numSwiggyPrice;
+    const numGstPercent = gstPercent !== undefined && gstPercent !== '' ? parseFloat(gstPercent) : 5.0;
+
+    try {
+      if (prisma) {
+        // 1. Validate Duplicate Product Name (case-insensitive)
+        const existing = await prisma.product.findFirst({
+          where: {
+            name: { equals: cleanName, mode: 'insensitive' }
+          }
+        });
+
+        if (existing) {
+          return res.status(400).json({
+            success: false,
+            error: `A menu item named "${cleanName}" already exists. Please choose a unique name.`
+          });
+        }
+
+        // 2. Find current last product number in PostgreSQL (e.g. prod-59 -> next is prod-60)
+        const allProducts = await prisma.product.findMany({ select: { id: true } });
+        let maxNumber = 0;
+        for (const p of allProducts) {
+          const match = p.id.match(/prod-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > maxNumber) maxNumber = num;
+          }
+        }
+        const nextId = `prod-${maxNumber + 1}`;
+
+        // Ensure ProductCategory exists in DB if custom
+        await prisma.productCategory.upsert({
+          where: { id: categoryId },
+          update: { name: finalCategoryName },
+          create: {
+            id: categoryId,
+            name: finalCategoryName,
+            slug: categoryId.replace('cat-', ''),
+            icon: matchedCategory?.icon || '🍽️',
+            displayOrder: matchedCategory ? PRODUCT_CATEGORIES.indexOf(matchedCategory) : 99
+          }
+        });
+
+        // 3. Insert Product into PostgreSQL
+        const createdProduct = await prisma.product.create({
+          data: {
+            id: nextId,
+            branchId,
+            categoryId,
+            categoryName: finalCategoryName,
+            name: cleanName,
+            servingQty: parseFloat(servingQty) || 1,
+            uom: uom || 'Nos.',
+            dineInPrice: numDineInPrice,
+            deliveryPrice: numDeliveryPrice,
+            swiggyPrice: numSwiggyPrice,
+            zomatoPrice: numZomatoPrice,
+            gstPercent: numGstPercent,
+            addons: addons || [],
+            packingCharge: 5.0,
+            description: description || '',
+            image: image || null,
+            isAvailable: Boolean(isAvailable)
+          }
+        });
+
+        // 4. If BOM Recipe provided, save Recipe & RecipeItem records in PostgreSQL
+        let savedRecipe = null;
+        if (recipe && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0) {
+          const validIngredients = recipe.ingredients.filter((ing: any) => 
+            (ing.rawMaterialName || ing.name) && (parseFloat(ing.quantity || ing.qty || 0) > 0)
+          );
+
+          if (validIngredients.length > 0) {
+            savedRecipe = await prisma.recipe.create({
+              data: {
+                id: `recipe-${nextId}`,
+                productId: nextId,
+                productName: cleanName,
+                servingQty: parseFloat(recipe.servingQty || servingQty || 1),
+                servingUom: recipe.servingUom || uom || 'Nos.',
+                status: 'COMPLETE',
+                finalProcess: recipe.finalProcess || `Prepare and serve ${cleanName}`,
+                items: {
+                  create: validIngredients.map((ing: any, idx: number) => ({
+                    id: `ri-${nextId}-${idx + 1}`,
+                    stepNumber: idx + 1,
+                    rawMaterialName: (ing.rawMaterialName || ing.name).trim(),
+                    inventoryItemId: ing.rawMaterialId || ing.inventoryItemId || null,
+                    quantity: parseFloat(ing.quantity || ing.qty || 0),
+                    uom: ing.uom || ing.unit || 'units',
+                    process: ing.process || 'Add'
+                  }))
+                }
+              },
+              include: { items: true }
+            });
+          }
+        }
+
+        const mappedResult = {
+          id: createdProduct.id,
+          name: createdProduct.name,
+          category: createdProduct.categoryName,
+          categoryName: createdProduct.categoryName,
+          categoryId: createdProduct.categoryId,
+          servingQty: createdProduct.servingQty,
+          uom: createdProduct.uom,
+          dineInPrice: createdProduct.dineInPrice,
+          deliveryPrice: createdProduct.deliveryPrice,
+          swiggyPrice: createdProduct.swiggyPrice,
+          zomatoPrice: createdProduct.zomatoPrice,
+          gstPercent: createdProduct.gstPercent,
+          addons: createdProduct.addons,
+          packingCharge: createdProduct.packingCharge,
+          description: createdProduct.description,
+          price: createdProduct.dineInPrice,
+          unit: createdProduct.uom,
+          stockQuantity: 40,
+          image: createdProduct.image || `/dishes/${createdProduct.id}.jpg`,
+          isAvailable: createdProduct.isAvailable,
+          recipe: savedRecipe ? {
+            productId: nextId,
+            productName: cleanName,
+            servingQty: savedRecipe.servingQty,
+            servingUom: savedRecipe.servingUom,
+            status: savedRecipe.status,
+            finalProcess: savedRecipe.finalProcess,
+            ingredients: (savedRecipe.items || []).map((it: any) => ({
+              rawMaterialId: it.inventoryItemId || it.id,
+              rawMaterialName: it.rawMaterialName,
+              quantity: it.quantity,
+              uom: it.uom,
+              process: it.process
+            }))
+          } : null
+        };
+
+        // Broadcast real-time Socket.IO event to all clients
+        io.emit('product_created', { product: mappedResult, branchId });
+        io.emit('stock_updated', { branchId });
+
+        console.log(`✅ [POST /api/products] Successfully created menu item: ${cleanName} (${nextId})`);
+        return res.status(201).json({
+          success: true,
+          message: `Menu item "${cleanName}" created successfully.`,
+          product: mappedResult
+        });
+      }
+    } catch (err: any) {
+      console.error('[API /products] Error creating menu item:', err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to create menu item' });
+    }
+
+    // In-memory fallback
+    const branchData = branchDb.getBranchData(branchId);
+    const nextNum = branchData.products.length + 1;
+    const fallbackId = `prod-${nextNum}`;
+    const fallbackProd = {
+      id: fallbackId,
+      name: cleanName,
+      category: finalCategoryName,
+      categoryName: finalCategoryName,
+      categoryId,
+      servingQty: parseFloat(servingQty) || 1,
+      uom: uom || 'Nos.',
+      dineInPrice: numDineInPrice,
+      deliveryPrice: numDeliveryPrice,
+      swiggyPrice: numSwiggyPrice,
+      zomatoPrice: numZomatoPrice,
+      gstPercent: numGstPercent,
+      addons: addons || [],
+      packingCharge: 5.0,
+      description: description || '',
+      price: numDineInPrice,
+      unit: uom || 'Nos.',
+      stockQuantity: 40,
+      image: image || null,
+      isAvailable: Boolean(isAvailable)
+    };
+    branchData.products.push(fallbackProd as any);
+    io.emit('product_created', { product: fallbackProd, branchId });
+
+    res.status(201).json({
+      success: true,
+      message: `Menu item "${cleanName}" created successfully.`,
+      product: fallbackProd
     });
   });
 

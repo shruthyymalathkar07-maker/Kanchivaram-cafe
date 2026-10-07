@@ -81,6 +81,10 @@ model Product {
   uom                  String           // 'Nos.', 'g', 'ml'
   dineInPrice          Float            // Dine-In Price (e.g. ₹35.00)
   deliveryPrice        Float            // Delivery Partner Price (e.g. ₹53.00, or 0 where specified)
+  swiggyPrice          Float?           // Swiggy Price (e.g. ₹140.00)
+  zomatoPrice          Float?           // Zomato Price (e.g. ₹145.00)
+  gstPercent           Float?           @default(5.0) // Applicable GST percentage
+  addons               Json?            @default("[]") // Optional add-ons/extras array
   packingCharge        Float            @default(5.0) // Common Packing Charge (₹5.00, or 0 where specified)
   description          String?
   image                String?

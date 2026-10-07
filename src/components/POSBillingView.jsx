@@ -24,8 +24,9 @@ import { createSaleTransaction } from '../services/api';
 import { PrintService } from '../services/printService';
 import { inventoryStore } from '../services/inventoryStore';
 import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER } from '../data/masterData';
+import AddMenuItemModal from './AddMenuItemModal';
 
-export default function POSBillingView({ products = [], categories = [], onSaleCompleted, searchQuery = '', onSearchChange, selectedBranch }) {
+export default function POSBillingView({ products = [], categories = [], onSaleCompleted, onProductCreated, searchQuery = '', onSearchChange, selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
   const [activeCategory, setActiveCategory] = useState('all');
@@ -33,6 +34,10 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('CASH'); // CASH, UPI, CARD
   
+  // Add Menu Item Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [localCustomProducts, setLocalCustomProducts] = useState([]);
+
   // Checkout & Customer State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isPrintPaperChecked, setIsPrintPaperChecked] = useState(true);
@@ -68,16 +73,39 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   };
 
   const fallbackCategories = categories.length > 0 ? categories : PRODUCT_CATEGORIES;
-  const fallbackProducts = products.length > 0 ? products : CLIENT_PRODUCTS_MASTER;
+  
+  // Combine props products + local newly created products (deduplicated by id, order preserved)
+  const combinedProducts = React.useMemo(() => {
+    const base = products.length > 0 ? products : CLIENT_PRODUCTS_MASTER;
+    const map = new Map();
+    base.forEach(p => map.set(p.id, p));
+    localCustomProducts.forEach(p => map.set(p.id, p));
+    return Array.from(map.values());
+  }, [products, localCustomProducts]);
 
   // Filter products by category & search query
-  const filteredProducts = fallbackProducts.filter(p => {
+  const filteredProducts = combinedProducts.filter(p => {
+    if (p.isAvailable === false) return false;
     const matchesCategory = activeCategory === 'all' || p.categoryId === activeCategory;
     const matchesSearch = !searchQuery || 
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       p.categoryName?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const handleProductCreated = (newProd) => {
+    if (!newProd) return;
+    setLocalCustomProducts(prev => {
+      if (prev.some(p => p.id === newProd.id)) return prev;
+      return [...prev, newProd];
+    });
+    if (newProd.categoryId) {
+      setActiveCategory(newProd.categoryId);
+    }
+    if (onProductCreated) {
+      onProductCreated(newProd);
+    }
+  };
 
   // Cart operations
   const addToCart = (product) => {
@@ -274,12 +302,12 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       <div className="bg-[#ebdcc8] text-[#122c20] rounded-2xl p-2.5 sm:p-3.5 px-3 sm:px-4 border border-[#cabb9e] shadow-sm flex flex-row items-center justify-between gap-2 sm:gap-3 shrink-0 relative overflow-hidden">
         
-        {/* Left Side: Coffee Cup Accent & Header Titles */}
+        {/* Left Side: Coffee Cup Accent & Header Titles & Add Menu Item Button */}
         <div className="flex items-center gap-2 sm:gap-3 z-10 py-0.5 min-w-0 flex-1">
           <div className={`p-1.5 sm:p-2.5 ${isBrownBranch ? 'bg-[#3E2312] border-[#542A16]' : 'bg-[#0f3823] border-[#194c31]'} text-white rounded-xl shadow-md border shrink-0`}>
             <Coffee className={`w-4 h-4 sm:w-5 sm:h-5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <h2 className="text-sm min-[380px]:text-base sm:text-lg font-serif font-black text-[#11291f] leading-tight whitespace-nowrap">
               POS / Billing
             </h2>
@@ -288,6 +316,18 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <span className="inline-block whitespace-nowrap">Bill Smarter.</span>
             </p>
           </div>
+
+          {/* Add Menu Item Button integrated naturally into POS Header */}
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className={`ml-1.5 sm:ml-3 px-2.5 sm:px-3.5 py-1.5 sm:py-2 ${
+              isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#0f3823] hover:bg-[#0a2618] border-[#194c31]'
+            } text-white font-black text-[11px] sm:text-xs rounded-xl shadow-md border flex items-center gap-1.5 cursor-pointer transition-all shrink-0 hover:scale-[1.02]`}
+          >
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4ade80]" />
+            <span className="whitespace-nowrap">Add Menu Item</span>
+          </button>
         </div>
 
         {/* Right Side: Header POS Billing Illustration */}
@@ -864,6 +904,17 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
         </div>,
         document.body
       )}
+
+      {/* ========================================================================= */}
+      {/* ADD NEW MENU ITEM MODAL DIRECTLY FROM POS                                 */}
+      {/* ========================================================================= */}
+      <AddMenuItemModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onProductCreated={handleProductCreated}
+        existingProducts={combinedProducts}
+        selectedBranch={selectedBranch}
+      />
 
     </div>
   );

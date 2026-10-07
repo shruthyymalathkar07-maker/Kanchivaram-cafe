@@ -63,6 +63,27 @@ export async function fetchProducts() {
   }
 }
 
+export async function createProduct(productPayload, branchId = 'branch-1') {
+  try {
+    const finalBranchId = productPayload?.branchId || branchId;
+    const res = await fetch(`${API_BASE_URL}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': finalBranchId,
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ ...productPayload, branchId: finalBranchId })
+    });
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.warn('[API] Create product error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+
 export async function createSaleTransaction(salePayload, branchId = 'branch-1') {
   try {
     const finalBranchId = salePayload?.branchId || branchId;

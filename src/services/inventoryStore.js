@@ -53,6 +53,7 @@ class InventoryStore {
       }
     };
     this.currentBranchId = 'branch-1';
+    this.customRecipes = {};
     this.listeners = new Set();
     this.isHydrating = false;
     this.hydrationSequence = 0;
@@ -652,21 +653,34 @@ class InventoryStore {
         const matchedBOM = CLIENT_BOM_MASTER.find(b => 
           (b.productId === it.id) || 
           (b.productName.toLowerCase() === it.name.toLowerCase())
-        );
+        ) || this.customRecipes?.[it.id] || this.customRecipes?.[it.name?.toLowerCase()] || (it.recipe ? {
+          productId: it.id,
+          productName: it.name,
+          status: 'COMPLETE',
+          processes: (it.recipe.ingredients || []).map(ing => ({
+            rawMaterialId: ing.rawMaterialId,
+            rawMaterialName: ing.rawMaterialName,
+            qty: parseFloat(ing.quantity || ing.qty || 0),
+            uom: ing.uom || ing.unit || 'units',
+            process: ing.process || 'Add'
+          }))
+        } : null);
 
-        if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.processes.length > 0) {
-          // Deduct each BOM ingredient
+        if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.processes && matchedBOM.processes.length > 0) {
+          // Deduct each verified BOM ingredient
           matchedBOM.processes.forEach(proc => {
-            const rawQtyToDeduct = proc.qty * productQty;
-            this.recordStockOut({
-              itemId: proc.rawMaterialId,
-              itemName: proc.rawMaterialName,
-              qty: rawQtyToDeduct,
-              unit: proc.uom,
-              source: 'POS / Recipe BOM',
-              ref: finalBillNumber,
-              notes: `BOM: ${productQty} x ${it.name} (${proc.process})`
-            });
+            const rawQtyToDeduct = (parseFloat(proc.qty) || 0) * productQty;
+            if (rawQtyToDeduct > 0) {
+              this.recordStockOut({
+                itemId: proc.rawMaterialId,
+                itemName: proc.rawMaterialName,
+                qty: rawQtyToDeduct,
+                unit: proc.uom,
+                source: 'POS / Recipe BOM',
+                ref: finalBillNumber,
+                notes: `BOM: ${productQty} x ${it.name} (${proc.process || 'Recipe Outflow'})`
+              });
+            }
           });
         }
         // If no BOM exists: leave raw-material deduction pending without fake inventory deductions.

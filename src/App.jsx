@@ -163,9 +163,14 @@ export default function App() {
       loadInitialData();
     }
 
-    // Listen to real-time sales & inventory updates over Socket.IO
+    // Listen to real-time sales, product & inventory updates over Socket.IO
     socket.on('sale_created', (newSale) => {
       console.log('[Socket.IO] New sale received live:', newSale);
+      loadInitialData();
+    });
+
+    socket.on('product_created', (data) => {
+      console.log('[Socket.IO] New product created live:', data);
       loadInitialData();
     });
 
@@ -180,6 +185,7 @@ export default function App() {
 
     return () => {
       socket.off('sale_created');
+      socket.off('product_created');
       socket.off('stock_updated');
       socket.off('inventory_updated');
     };
@@ -697,6 +703,10 @@ export default function App() {
                 selectedBranch={selectedBranch}
                 onSaleCompleted={() => {
                   fetchDashboardStats(salesTimeframe).then(setStats);
+                }}
+                onProductCreated={async (newProduct) => {
+                  const liveProducts = await fetchProducts();
+                  if (liveProducts) setProductsData(liveProducts);
                 }}
               />
             )}
