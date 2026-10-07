@@ -445,6 +445,7 @@ export default function AddMenuItemModal({
   const handleConfirmRemove = async () => {
     if (!productToEdit || isDeleting) return;
     setIsDeleting(true);
+    setErrorMessage('');
     try {
       const branchId = selectedBranch?.id || 'branch-1';
       const res = await deleteProduct(productToEdit.id, branchId);
@@ -458,7 +459,8 @@ export default function AddMenuItemModal({
       onClose();
     } catch (err) {
       console.error('[AddMenuItemModal] Delete error:', err);
-      alert(err.message || 'Failed to remove menu item. Please try again.');
+      setErrorMessage(err.message || 'Failed to remove menu item. Please check the server connection.');
+      setIsConfirmRemoveOpen(false);
     } finally {
       setIsDeleting(false);
     }

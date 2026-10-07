@@ -75,11 +75,22 @@ export async function createProduct(productPayload, branchId = 'branch-1') {
       },
       body: JSON.stringify({ ...productPayload, branchId: finalBranchId })
     });
-    const json = await res.json();
-    return json;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (!res.ok && json && json.error) {
+        return { success: false, error: json.error };
+      }
+      return json;
+    }
+    const rawText = await res.text();
+    if (!res.ok) {
+      return { success: false, error: 'Unable to save menu item. Please check the server connection.' };
+    }
+    return { success: true, message: rawText };
   } catch (err) {
     console.warn('[API] Create product error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: 'Unable to save menu item. Please check the server connection.' };
   }
 }
 
@@ -95,11 +106,22 @@ export async function updateProduct(productId, productPayload, branchId = 'branc
       },
       body: JSON.stringify({ ...productPayload, branchId: finalBranchId })
     });
-    const json = await res.json();
-    return json;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (!res.ok && json && json.error) {
+        return { success: false, error: json.error };
+      }
+      return json;
+    }
+    const rawText = await res.text();
+    if (!res.ok) {
+      return { success: false, error: 'Unable to update menu item. Please check the server connection.' };
+    }
+    return { success: true, message: rawText };
   } catch (err) {
     console.warn('[API] Update product error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: 'Unable to update menu item. Please check the server connection.' };
   }
 }
 
@@ -112,11 +134,22 @@ export async function deleteProduct(productId, branchId = 'branch-1') {
         ...getAuthHeaders()
       }
     });
-    const json = await res.json();
-    return json;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const json = await res.json();
+      if (!res.ok && json && json.error) {
+        return { success: false, error: json.error };
+      }
+      return json;
+    }
+    const rawText = await res.text();
+    if (!res.ok) {
+      return { success: false, error: 'Unable to remove menu item. Please check the server connection.' };
+    }
+    return { success: true, message: rawText };
   } catch (err) {
     console.warn('[API] Delete product error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: 'Unable to remove menu item. Please check the server connection.' };
   }
 }
 

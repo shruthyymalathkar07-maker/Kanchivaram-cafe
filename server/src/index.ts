@@ -23,6 +23,14 @@ app.use(express.json());
 // API Router with Socket.IO instance
 app.use('/api', createApiRouter(io));
 
+// API 404 JSON fallback handler (NEVER return HTML from /api)
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `API endpoint not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
 import path from 'path';
 import fs from 'fs';
 

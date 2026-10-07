@@ -626,9 +626,11 @@ export function createApiRouter(io: SocketServer) {
 
         if (dbProducts.length > 0) {
           // Sort products naturally by their numerical suffix (prod-1, prod-2, ..., prod-59, prod-60)
-          const sortedDbProducts = [...dbProducts].sort((a, b) => {
-            const numA = parseInt((a.id.match(/\d+/) || [0])[0], 10);
-            const numB = parseInt((b.id.match(/\d+/) || [0])[0], 10);
+          const sortedDbProducts = [...dbProducts].sort((a: any, b: any) => {
+            const matchA = String(a.id || '').match(/\d+/);
+            const matchB = String(b.id || '').match(/\d+/);
+            const numA = matchA ? parseInt(matchA[0], 10) : 0;
+            const numB = matchB ? parseInt(matchB[0], 10) : 0;
             return numA - numB;
           });
 
