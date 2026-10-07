@@ -866,10 +866,7 @@ export default function ExpensesView({ selectedBranch }) {
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-black text-[12.5px]">
-                          <div>{item.category}</div>
-                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-[#ebdcc8] text-[#11291f] border border-[#cabb9e] inline-block mt-0.5">
-                            {item.paymentMode || 'Cash'}
-                          </span>
+                          {item.category} / {item.paymentMode || 'Cash'}
                         </td>
 
                         <td className="py-2.5 px-2 text-center font-semibold text-[12.5px] text-red-700 whitespace-nowrap">
