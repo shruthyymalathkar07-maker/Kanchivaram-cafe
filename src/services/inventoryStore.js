@@ -8,6 +8,7 @@ import {
   createStockOutTransaction,
   deleteInventoryPurchase,
   updateItemThreshold as apiUpdateItemThreshold,
+  updateItemOpeningStock as apiUpdateItemOpeningStock,
   fetchCustomers,
   socket 
 } from './api';
@@ -105,6 +106,19 @@ class InventoryStore {
             const item = b.items.find(i => i.id === data.id);
             if (item) {
               item.minThreshold = Number(data.minThreshold || 0);
+              this.notify();
+            }
+          }
+        }
+      });
+
+      socket.on('inventory_opening_updated', (data) => {
+        if (data?.id) {
+          const b = this.branches[data.branchId || this.currentBranchId];
+          if (b) {
+            const item = b.items.find(i => i.id === data.id);
+            if (item) {
+              item.openingStock = Number(data.openingStock || 0);
               this.notify();
             }
           }
@@ -421,6 +435,34 @@ class InventoryStore {
       return { success: true };
     } catch (err) {
       console.warn('[InventoryStore] Error persisting threshold:', err);
+      throw err;
+    }
+  }
+
+  // UPDATE OPENING STOCK FOR AN ITEM
+  async updateItemOpeningStock(itemId, newOpeningStock, branchId = this.currentBranchId) {
+    const numOpening = Math.max(0, parseFloat(newOpeningStock) || 0);
+    const targetBranch = branchId || this.currentBranchId;
+    const b = this.branches[targetBranch];
+    
+    if (b) {
+      const item = b.items.find(i => i.id === itemId);
+      if (item) {
+        item.openingStock = numOpening;
+        this.notify();
+      }
+    }
+
+    // Persist to PostgreSQL backend via API
+    try {
+      const res = await apiUpdateItemOpeningStock(itemId, numOpening, targetBranch);
+      if (res && res.success === false) {
+        throw new Error(res.message || 'Failed to update opening stock');
+      }
+      await this.hydrateFromBackend(targetBranch);
+      return { success: true };
+    } catch (err) {
+      console.warn('[InventoryStore] Error persisting opening stock:', err);
       throw err;
     }
   }

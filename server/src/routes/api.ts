@@ -1754,6 +1754,80 @@ export function createApiRouter(io: SocketServer) {
   router.put('/inventory/items/:id/threshold', handleThresholdUpdate);
   router.patch('/inventory/items/:id/threshold', handleThresholdUpdate);
 
+  // 4f. PUT/PATCH /api/inventory/items/:id/opening-stock (Secure update for item openingStock in PostgreSQL)
+  const handleOpeningStockUpdate = async (req: Request, res: Response) => {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : String(req.params.id);
+    const branchId = getBranchId(req);
+    const { openingStock } = req.body;
+
+    if (openingStock === undefined || isNaN(Number(openingStock)) || Number(openingStock) < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid non-negative number is required for openingStock'
+      });
+    }
+
+    const openingStockNum = parseFloat(Number(openingStock).toFixed(2));
+
+    try {
+      if (prisma) {
+        // Update in PostgreSQL
+        const updatedItem = await prisma.inventoryItem.update({
+          where: { id },
+          data: {
+            openingStock: openingStockNum,
+            updatedAt: new Date()
+          }
+        });
+
+        // Broadcast opening stock change to connected clients
+        io.emit('inventory_opening_updated', {
+          id,
+          branchId,
+          openingStock: openingStockNum
+        });
+        io.emit('inventory_updated', { branchId });
+
+        return res.json({
+          success: true,
+          message: `Opening stock for ${updatedItem.name} updated to ${openingStockNum} ${updatedItem.unit}`,
+          item: updatedItem
+        });
+      }
+    } catch (err: any) {
+      console.warn(`[API opening stock update] PostgreSQL write fallback for ${id}:`, err.message);
+    }
+
+    // Fallback in-memory update
+    const branchData = branchDb.getBranchData(branchId);
+    const item = branchData.inventoryItems.find(i => i.id === id);
+    if (item) {
+      item.openingStock = openingStockNum;
+      io.emit('inventory_opening_updated', {
+        id,
+        branchId,
+        openingStock: openingStockNum
+      });
+      io.emit('inventory_updated', { branchId });
+      return res.json({
+        success: true,
+        message: `Opening stock for ${item.name} updated to ${openingStockNum} ${item.unit}`,
+        item,
+        fallback: true
+      });
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: `Inventory item with ID ${id} not found`
+    });
+  };
+
+  router.put('/inventory/items/:id/opening-stock', handleOpeningStockUpdate);
+  router.patch('/inventory/items/:id/opening-stock', handleOpeningStockUpdate);
+  router.put('/inventory/items/:id/opening', handleOpeningStockUpdate);
+  router.patch('/inventory/items/:id/opening', handleOpeningStockUpdate);
+
   // 5. GET /api/recipes (Returns BOM / Recipes Master: 2 Complete, 7 Awaiting Details from PostgreSQL)
   router.get('/recipes', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);

@@ -44,11 +44,17 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
+  const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = useState(false);
 
   // Form states for Threshold Edit
   const [thresholdItem, setThresholdItem] = useState(null);
   const [thresholdInput, setThresholdInput] = useState('');
   const [isSavingThreshold, setIsSavingThreshold] = useState(false);
+
+  // Form states for Opening Stock Edit
+  const [openingStockItem, setOpeningStockItem] = useState(null);
+  const [openingStockInput, setOpeningStockInput] = useState('');
+  const [isSavingOpeningStock, setIsSavingOpeningStock] = useState(false);
 
   // Form states for Purchase / Stock In
   const [selectedItemId, setSelectedItemId] = useState('');
@@ -284,6 +290,40 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
       alert('Failed to save minimum threshold. Please check your connection and try again.');
     } finally {
       setIsSavingThreshold(false);
+    }
+  };
+
+  // Open Opening Stock Edit Modal
+  const handleOpenOpeningStockModal = (item) => {
+    setOpeningStockItem(item);
+    setOpeningStockInput(item.openingStock !== undefined ? String(item.openingStock) : '0');
+    setIsOpeningStockModalOpen(true);
+  };
+
+  // Handle Save Opening Stock to PostgreSQL & InventoryStore
+  const handleSaveOpeningStock = async (e) => {
+    e.preventDefault();
+    if (!openingStockItem || isSavingOpeningStock) return;
+
+    const numVal = parseFloat(openingStockInput);
+    if (isNaN(numVal) || numVal < 0) {
+      alert("Please enter a valid non-negative number for the opening stock.");
+      return;
+    }
+
+    setIsSavingOpeningStock(true);
+
+    try {
+      const branchId = selectedBranch?.id || 'branch-1';
+      await inventoryStore.updateItemOpeningStock(openingStockItem.id, numVal, branchId);
+      // Close modal and clear state ONLY AFTER successful save
+      setIsOpeningStockModalOpen(false);
+      setOpeningStockItem(null);
+    } catch (err) {
+      console.warn('Could not persist opening stock to backend:', err);
+      alert('Failed to save opening stock. Please check your connection and try again.');
+    } finally {
+      setIsSavingOpeningStock(false);
     }
   };
 
@@ -723,7 +763,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                         </td>
 
                         <td className="py-2.5 px-3 text-center text-[12.5px] text-black font-semibold">
-                          {item.openingStock}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenOpeningStockModal(item)}
+                            className="inline-flex items-center justify-center gap-1 hover:text-black hover:bg-[#ebdcc8]/60 px-1.5 py-0.5 rounded transition-all cursor-pointer group mx-auto"
+                            title="Click to edit opening stock quantity"
+                          >
+                            <span>{item.openingStock}</span>
+                            <Edit2 className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                          </button>
                         </td>
 
                         <td className="py-2.5 px-3 text-center text-[12.5px] font-semibold text-emerald-700">
@@ -890,7 +938,15 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                     <div className="grid grid-cols-3 gap-2 bg-[#ebdcc8]/30 p-2.5 rounded-xl border border-[#cabb9e]/50 text-xs">
                       <div>
                         <span className="text-[10.5px] uppercase font-semibold text-[#547363] block">Opening</span>
-                        <span className="font-semibold text-[12.5px] text-black">{item.openingStock} {item.unit}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenOpeningStockModal(item)}
+                          className="inline-flex items-center gap-1 font-semibold text-[12.5px] text-black hover:underline cursor-pointer"
+                          title="Click to edit opening stock quantity"
+                        >
+                          <span>{item.openingStock} {item.unit}</span>
+                          <Edit2 className="w-2.5 h-2.5 opacity-60" />
+                        </button>
                       </div>
                       <div className="text-center">
                         <span className="text-[10.5px] uppercase font-semibold text-emerald-700 block">Stock In (+)</span>
@@ -1522,6 +1578,107 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
                 >
                   <CheckCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
                   <span>{isSavingThreshold ? 'Saving...' : 'Save Threshold'}</span>
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* 8. MODAL: EDIT OPENING STOCK QUANTITY                                      */}
+      {/* ========================================================================= */}
+      {isOpeningStockModalOpen && openingStockItem && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 modal-backdrop-overlay flex items-center justify-center p-3 z-50 animate-fadeIn">
+          <div className="bg-[#fdfbf7] w-full max-w-md rounded-2xl border-2 border-[#cabb9e] shadow-2xl p-4 sm:p-5 space-y-4 animate-fadeIn">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-[#ebdcc8]">
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl ${isBrownBranch ? 'bg-[#542A16] text-[#C69A4B]' : 'bg-[#0f3823] text-[#4ade80]'}`}>
+                  <Package className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-serif font-black text-[#11291f]">Set Opening Stock</h3>
+                  <p className="text-xs font-bold text-[#547363]">Initial Base Quantity Configuration</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpeningStockModalOpen(false);
+                  setOpeningStockItem(null);
+                }}
+                className="p-1 rounded-lg text-[#547363] hover:text-[#11291f] hover:bg-[#ebdcc8] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOpeningStock} className="space-y-3.5">
+              <div className="bg-[#ebdcc8]/40 p-3 rounded-xl border border-[#cabb9e]/60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-[#547363] uppercase">Item Name</span>
+                  <span className="px-2 py-0.5 bg-[#ebe0cb] text-[#456351] text-[10px] font-extrabold rounded">
+                    {openingStockItem.category}
+                  </span>
+                </div>
+                <p className="text-sm font-black text-[#11291f]">{openingStockItem.name}</p>
+                <div className="flex items-center justify-between pt-1 border-t border-[#cabb9e]/30 text-xs">
+                  <span className="text-[#547363] font-bold">Current Remaining Stock:</span>
+                  <span className="font-mono font-black text-[#0f3823]">{openingStockItem.remainingStock} {openingStockItem.unit}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-extrabold text-[#11291f] mb-1">
+                  Opening Stock Quantity ({openingStockItem.unit})
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    required
+                    autoFocus
+                    value={openingStockInput}
+                    onChange={(e) => setOpeningStockInput(e.target.value)}
+                    placeholder="e.g. 10"
+                    className={`w-full pl-3 pr-20 py-2 bg-white text-[#11291f] font-mono font-black text-sm rounded-xl border-2 ${
+                      isBrownBranch ? 'focus:border-[#7A4325]' : 'focus:border-[#0f3823]'
+                    } border-[#cabb9e] focus:outline-none`}
+                  />
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-bold text-[#547363] pointer-events-none select-none">
+                    {openingStockItem.unit}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#547363] mt-1 font-medium">
+                  • Updates the base initial quantity for this item.<br />
+                  • Remaining stock auto-recalculates: <span className="font-bold text-[#11291f]">Opening + Stock In − Stock Out</span>.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcc8]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpeningStockModalOpen(false);
+                    setOpeningStockItem(null);
+                  }}
+                  className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#decfa7] text-[#11291f] font-bold text-xs rounded-xl border border-[#cabb9e] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingOpeningStock}
+                  className={`px-5 py-2 ${
+                    isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2A170C]' : 'bg-[#0f3823] hover:bg-[#0a2618]'
+                  } text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50`}
+                >
+                  <CheckCircle className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
+                  <span>{isSavingOpeningStock ? 'Saving...' : 'Save Opening Stock'}</span>
                 </button>
               </div>
             </form>

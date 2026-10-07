@@ -222,6 +222,23 @@ export async function updateItemThreshold(itemId, minThreshold, branchId = 'bran
   }
 }
 
+export async function updateItemOpeningStock(itemId, openingStock, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/inventory/items/${itemId}/opening-stock`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify({ openingStock: Number(openingStock) })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update item opening stock error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 export async function fetchCustomers(branchId = 'branch-1') {
   try {
     const res = await fetch(`${API_BASE_URL}/customers`, {
