@@ -52,6 +52,8 @@ export default function ExpensesView({ selectedBranch }) {
   const [dateFilter, setDateFilter] = useState('ALL'); // ALL, TODAY, THIS_MONTH
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [selectedCardPaymentMode, setSelectedCardPaymentMode] = useState('');
+  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
+  const paymentDropdownRef = React.useRef(null);
   const categoryScrollRef = React.useRef(null);
 
   // Daily Opening & Closing Balance States
@@ -130,6 +132,17 @@ export default function ExpensesView({ selectedBranch }) {
       unsubscribeExpense();
       unsubscribeInventory();
     };
+  }, []);
+
+  // Click-outside handler for Payment Mode dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (paymentDropdownRef.current && !paymentDropdownRef.current.contains(e.target)) {
+        setIsPaymentDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Map Stock-In Purchases from Purchase Module automatically as "Raw Ingredients"
@@ -396,9 +409,6 @@ export default function ExpensesView({ selectedBranch }) {
                 <h3 className="font-serif font-black text-sm text-[#11291f] truncate">
                   Daily Opening & Closing Balance
                 </h3>
-                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${isOpeningSet ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-amber-100 text-amber-900 border-amber-300'}`}>
-                  {isOpeningSet ? '✓ Set for this Day' : 'Suggested Mode'}
-                </span>
               </div>
               <p className="text-[11px] font-bold text-[#456351] truncate">
                 Reconciliation: <span className="font-mono font-bold text-[#11291f]">Closing Balance = Opening Balance − Total Day Outflows</span>
@@ -445,7 +455,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-lg font-mono font-medium text-[#0f3823] leading-tight">
+              <p className="text-lg font-mono font-black text-[#0f3823] leading-tight truncate">
                 ₹{activeOpeningBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -475,7 +485,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className="text-lg font-mono font-medium text-rose-700 leading-tight">
+              <p className="text-lg font-mono font-black text-rose-700 leading-tight truncate">
                 ₹{dayTotalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
@@ -484,20 +494,36 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             {/* Interactive Payment Mode Dropdown Selector */}
-            <div className="py-1.5 px-3 bg-white rounded-lg border border-[#cabb9e] text-xs font-bold text-[#11291f] flex items-center justify-between shadow-2xs relative">
+            <div className="py-1.5 px-3 bg-white rounded-lg border border-[#cabb9e] text-xs font-bold text-[#11291f] flex items-center justify-between shadow-2xs relative" ref={paymentDropdownRef}>
               <span className="font-extrabold text-[#11291f] text-[11px] shrink-0">Payment Mode:</span>
-              <div className="relative flex-1 max-w-[140px]">
-                <select
-                  value={selectedCardPaymentMode}
-                  onChange={(e) => setSelectedCardPaymentMode(e.target.value)}
-                  className="w-full bg-transparent text-[#456351] font-bold text-[11px] focus:outline-none cursor-pointer appearance-none text-right pr-4"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
+                  className="flex items-center gap-1.5 text-[#456351] font-bold text-[11px] hover:text-[#11291f] cursor-pointer"
                 >
-                  <option value="">Cash / UPI / Bank</option>
-                  <option value="Cash">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Bank">Bank</option>
-                </select>
-                <ChevronDown className="w-3 h-3 text-[#547363] absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <span>{selectedCardPaymentMode || 'Cash'}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#547363] transition-transform ${isPaymentDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isPaymentDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-28 bg-white border border-[#cabb9e] rounded-lg shadow-lg z-30 py-1 overflow-hidden">
+                    {['Cash', 'UPI', 'Bank'].map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCardPaymentMode(mode);
+                          setIsPaymentDropdownOpen(false);
+                        }}
+                        className={`w-full text-center py-1.5 text-xs font-bold transition-colors cursor-pointer block ${
+                          (selectedCardPaymentMode || 'Cash') === mode ? 'bg-[#ebdcc8] text-[#11291f]' : 'text-[#456351] hover:bg-[#f8f6f0]'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -515,7 +541,7 @@ export default function ExpensesView({ selectedBranch }) {
             </div>
 
             <div>
-              <p className={`text-lg font-mono font-medium leading-tight ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
+              <p className={`text-lg font-mono font-black leading-tight truncate ${computedClosingBalance >= 0 ? 'text-[#0f3823]' : 'text-red-700'}`}>
                 ₹{computedClosingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <span className="text-[10px] font-bold text-[#456351] block mt-0.5">
