@@ -617,7 +617,7 @@ export async function logoutUserApi() {
 export async function requestPasswordOtpApi(phone) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/request-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -635,7 +635,7 @@ export async function requestPasswordOtpApi(phone) {
 export async function verifyPasswordOtpApi({ phone, otp }) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/verify-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -653,7 +653,7 @@ export async function verifyPasswordOtpApi({ phone, otp }) {
 export async function resetPasswordApi({ resetToken, newPassword, confirmPassword }) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

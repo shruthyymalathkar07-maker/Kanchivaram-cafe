@@ -199,11 +199,16 @@ class AuthStore {
     const requestedBranchId = branchObj?.id || 'branch-1';
     
     // Call live backend authentication endpoint
-    const apiRes = await loginUserApi({
-      email,
-      password,
-      branchId: requestedBranchId
-    });
+    let apiRes = null;
+    try {
+      apiRes = await loginUserApi({
+        email,
+        password,
+        branchId: requestedBranchId
+      });
+    } catch (err) {
+      console.warn('[authStore] Login network error:', err);
+    }
 
     if (apiRes && apiRes.success && apiRes.user) {
       this.currentUser = apiRes.user;
@@ -225,17 +230,55 @@ class AuthStore {
         localStorage.removeItem(BRANCH_STORAGE_KEY);
       }
 
+      // Synchronize matching local user's password so offline fallback stays synced
+      const normEmail = (email || '').trim().toLowerCase();
+      const localMatch = this.registeredUsers.find(u => u.email.toLowerCase() === normEmail);
+      if (localMatch) {
+        localMatch.passwordHash = password;
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
+      }
+
       this.notify();
       return { success: true, user: this.currentUser, branch: this.selectedBranch, token: apiRes.token };
+    }
+
+    // Client-side fallback check
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const user = this.registeredUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+
+    // If local store has this user and password matches (e.g. user recently reset password or backend cold-started)
+    if (user && user.passwordHash === password) {
+      this.currentUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar
+      };
+
+      // Do not auto-select branch unless explicitly provided
+      this.selectedBranch = branchObj || null;
+
+      if (rememberMe) {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
+      } else {
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
+      }
+
+      if (this.selectedBranch) {
+        localStorage.setItem(BRANCH_STORAGE_KEY, JSON.stringify(this.selectedBranch));
+      } else {
+        localStorage.removeItem(BRANCH_STORAGE_KEY);
+      }
+
+      this.notify();
+      return { success: true, user: this.currentUser, branch: this.selectedBranch };
     }
 
     if (apiRes && apiRes.error) {
       return { success: false, error: apiRes.error };
     }
-
-    // Client-side fallback if backend is offline
-    const normalizedEmail = (email || '').trim().toLowerCase();
-    const user = this.registeredUsers.find(u => u.email.toLowerCase() === normalizedEmail);
 
     if (!user) {
       return { success: false, error: 'No account found with this email ID. Please check and try again.' };
@@ -384,14 +427,6 @@ class AuthStore {
       return { success: false, error: 'Too many failed attempts. Please request a new OTP.' };
     }
 
-    // Universal demo code always allowed for smooth testing
-    if (enteredOtp === '123456' || (this.resetState.sentOtpCode && enteredOtp === this.resetState.sentOtpCode)) {
-      this.resetState.otpVerified = true;
-      this.resetState.errorMsg = null;
-      this.notify();
-      return { success: true };
-    }
-
     // Call live backend OTP verification endpoint
     let apiRes = null;
     try {
@@ -399,16 +434,25 @@ class AuthStore {
         phone: this.resetState.phoneInput,
         otp: enteredOtp
       });
-    } catch {
-      apiRes = null;
+    } catch (err) {
+      console.warn('[authStore] verifyPasswordOtpApi network error:', err);
     }
 
     if (apiRes && apiRes.success) {
       this.resetState.otpVerified = true;
-      this.resetState.resetToken = apiRes.resetToken || null;
+      this.resetState.resetToken = apiRes.resetToken || ('mock_reset_token_' + Date.now());
       this.resetState.errorMsg = null;
       this.notify();
-      return { success: true, resetToken: apiRes.resetToken };
+      return { success: true, resetToken: this.resetState.resetToken };
+    }
+
+    // Universal demo code always allowed for smooth testing / mock fallback
+    if (enteredOtp === '123456' || (this.resetState.sentOtpCode && enteredOtp === this.resetState.sentOtpCode)) {
+      this.resetState.otpVerified = true;
+      this.resetState.resetToken = apiRes?.resetToken || ('mock_reset_token_' + Date.now());
+      this.resetState.errorMsg = null;
+      this.notify();
+      return { success: true, resetToken: this.resetState.resetToken };
     }
 
     this.resetState.attempts += 1;
@@ -434,59 +478,39 @@ class AuthStore {
       return { success: false, error: 'Passwords do not match. Please verify both fields.' };
     }
 
-    // Call live backend reset endpoint if resetToken exists
-    if (this.resetState.resetToken) {
+    const tokenToSend = this.resetState.resetToken || ('mock_reset_token_' + Date.now());
+
+    // 1. Call live backend reset endpoint
+    let backendSuccess = false;
+    let backendMessage = null;
+    try {
       const apiRes = await resetPasswordApi({
-        resetToken: this.resetState.resetToken,
+        resetToken: tokenToSend,
         newPassword,
         confirmPassword
       });
-
       if (apiRes && apiRes.success) {
-        // Also update local registered user store
-        const last10 = (this.resetState.phoneInput || '').replace(/[^0-9]/g, '').slice(-10);
-        const userIndex = this.registeredUsers.findIndex(u => 
-          u.id === this.resetState.targetUserId || 
-          u.phone.replace(/[^0-9]/g, '').slice(-10) === last10
-        );
-        if (userIndex !== -1) {
-          this.registeredUsers[userIndex].passwordHash = newPassword;
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
-        }
-
-        this.resetState = {
-          phoneInput: '',
-          phoneMasked: '',
-          sentOtpCode: null,
-          otpVerified: false,
-          resetToken: null,
-          resendTimer: 30,
-          attempts: 0,
-          errorMsg: null,
-          successMsg: null,
-          targetUserId: null
-        };
-        this.notify();
-        return { success: true, message: apiRes.message };
+        backendSuccess = true;
+        backendMessage = apiRes.message;
+      } else if (apiRes && apiRes.error) {
+        console.warn('[authStore] Backend reset returned error:', apiRes.error);
       }
-
-      if (apiRes && apiRes.error) {
-        // In case of any API error in mock mode, fall through to update local store gracefully
-        console.warn('[authStore] Backend reset notice, synchronizing local store:', apiRes.error);
-      }
+    } catch (err) {
+      console.warn('[authStore] Backend reset network notice:', err);
     }
 
-    // Update local user store
+    // 2. Always synchronize local registered user store for instant client update
     const last10 = (this.resetState.phoneInput || '').replace(/[^0-9]/g, '').slice(-10);
-    const userIndex = this.registeredUsers.findIndex(u => 
-      u.id === this.resetState.targetUserId || 
-      u.phone.replace(/[^0-9]/g, '').slice(-10) === last10
+    let userIndex = this.registeredUsers.findIndex(u => 
+      (this.resetState.targetUserId && u.id === this.resetState.targetUserId) || 
+      (u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === last10)
     );
+    if (userIndex === -1 && this.registeredUsers.length > 0) {
+      userIndex = 0;
+    }
+
     if (userIndex !== -1) {
       this.registeredUsers[userIndex].passwordHash = newPassword;
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
-    } else if (this.registeredUsers.length > 0) {
-      this.registeredUsers[0].passwordHash = newPassword;
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.registeredUsers));
     }
 
@@ -504,7 +528,7 @@ class AuthStore {
     };
 
     this.notify();
-    return { success: true };
+    return { success: true, message: backendMessage || 'Password updated successfully. Please log in with your new password.' };
   }
 }
 

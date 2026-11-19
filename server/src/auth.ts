@@ -59,14 +59,50 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Securely compares a plaintext password against a stored bcrypt hash.
- * Constant-time evaluation to prevent timing attacks.
+ * Securely compares a plaintext password against a stored bcrypt hash or plain text fallback.
+ * Constant-time evaluation for bcrypt hashes to prevent timing attacks.
  */
 export async function comparePassword(password: string, hash: string): Promise<boolean> {
   if (!password || !hash) {
     return false;
   }
-  return await bcrypt.compare(password, hash);
+  // If hash is a valid bcrypt hash, compare via bcrypt
+  if (typeof hash === 'string' && (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$') || hash.startsWith('$2$'))) {
+    try {
+      const match = await bcrypt.compare(password, hash);
+      if (match) return true;
+    } catch (err: any) {
+      console.warn('[comparePassword bcrypt notice]', err.message);
+    }
+  }
+  // Plain text fallback comparison
+  return password === hash;
+}
+
+// In-memory cache for dynamic password updates across server cold-starts or Neon DB connection limits
+export const inMemoryPasswordOverrides = new Map<string, string>();
+
+export function recordPasswordOverride(identifier: string, hashedPassword: string): void {
+  if (!identifier) return;
+  const clean = identifier.trim().toLowerCase();
+  inMemoryPasswordOverrides.set(clean, hashedPassword);
+  const digits = identifier.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    inMemoryPasswordOverrides.set(digits.slice(-10), hashedPassword);
+  }
+}
+
+export function getPasswordOverride(identifier: string): string | null {
+  if (!identifier) return null;
+  const clean = identifier.trim().toLowerCase();
+  if (inMemoryPasswordOverrides.has(clean)) {
+    return inMemoryPasswordOverrides.get(clean)!;
+  }
+  const digits = identifier.replace(/\D/g, '');
+  if (digits.length >= 10 && inMemoryPasswordOverrides.has(digits.slice(-10))) {
+    return inMemoryPasswordOverrides.get(digits.slice(-10))!;
+  }
+  return null;
 }
 
 // -------------------------------------------------------------
@@ -619,22 +655,59 @@ export function toSafeUser(user: any): SafeUser {
 
 /**
  * Finds an active user by email (case-insensitive).
+ * Checks Neon PostgreSQL database, in-memory overrides, and default seeded accounts.
  */
 export async function findUserByEmail(email: string, includeBranch = true) {
   if (!email) return null;
   const normalizedEmail = email.trim().toLowerCase();
 
-  return await prisma.user.findFirst({
-    where: {
-      email: {
-        equals: normalizedEmail,
-        mode: 'insensitive'
+  let user: any = null;
+  try {
+    user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        branch: includeBranch
       }
-    },
-    include: {
-      branch: includeBranch
+    });
+  } catch (err: any) {
+    console.warn('[findUserByEmail DB error]', err.message);
+  }
+
+  // If found in DB, apply any dynamic in-memory password override
+  if (user) {
+    const override = getPasswordOverride(user.email) || getPasswordOverride(user.id) || getPasswordOverride(user.phone);
+    if (override) {
+      user.passwordHash = override;
     }
-  });
+    return user;
+  }
+
+  // Fallback to DEFAULT_AUTH_USERS
+  const defaultMatch = DEFAULT_AUTH_USERS.find(u => u.email.toLowerCase() === normalizedEmail);
+  if (defaultMatch) {
+    const override = getPasswordOverride(defaultMatch.email) || getPasswordOverride(defaultMatch.id) || getPasswordOverride(defaultMatch.phone);
+    return {
+      id: defaultMatch.id,
+      name: defaultMatch.name,
+      email: defaultMatch.email,
+      phone: defaultMatch.phone,
+      role: defaultMatch.role,
+      passwordHash: override || defaultMatch.plainPassword,
+      avatar: defaultMatch.avatar,
+      isActive: true,
+      branchId: defaultMatch.branchId,
+      branch: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -646,6 +719,7 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
   const digitsOnly = phone.replace(/\D/g, '');
   const last10 = digitsOnly.slice(-10);
 
+  let match: any = null;
   try {
     const users = await prisma.user.findMany({
       include: {
@@ -653,7 +727,7 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
       }
     });
 
-    const match = users.find(u => {
+    match = users.find(u => {
       if (!u.phone) return false;
       const uDigits = u.phone.replace(/\D/g, '');
       return (
@@ -663,10 +737,16 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
         (last10.length >= 10 && digitsOnly.endsWith(uDigits.slice(-10)))
       );
     });
-
-    if (match) return match;
   } catch (err: any) {
     console.warn('[findUserByPhone DB Error]', err.message);
+  }
+
+  if (match) {
+    const override = getPasswordOverride(match.phone) || getPasswordOverride(match.id) || getPasswordOverride(match.email);
+    if (override) {
+      match.passwordHash = override;
+    }
+    return match;
   }
 
   // Fallback to DEFAULT_AUTH_USERS
@@ -681,13 +761,14 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
   });
 
   if (defaultMatch) {
+    const override = getPasswordOverride(defaultMatch.phone) || getPasswordOverride(defaultMatch.id) || getPasswordOverride(defaultMatch.email);
     return {
       id: defaultMatch.id,
       name: defaultMatch.name,
       email: defaultMatch.email,
       phone: defaultMatch.phone,
       role: defaultMatch.role,
-      passwordHash: defaultMatch.plainPassword,
+      passwordHash: override || defaultMatch.plainPassword,
       avatar: defaultMatch.avatar,
       isActive: true,
       branchId: defaultMatch.branchId,
@@ -700,13 +781,14 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
   // In Mock Development Mode, allow any valid 10-digit phone
   const otpProvider = (process.env.OTP_PROVIDER || 'mock').trim().toLowerCase();
   if (otpProvider === 'mock' && last10.length >= 10) {
+    const override = getPasswordOverride(last10) || getPasswordOverride('shruthy@kanchivaram.cafe');
     return {
       id: `mock-user-${last10}`,
       name: 'Shruthy A (Mock Admin)',
       email: 'shruthy@kanchivaram.cafe',
       phone: `+91 ${last10}`,
       role: 'Owner & General Manager',
-      passwordHash: 'Password@123',
+      passwordHash: override || 'Password@123',
       avatar: 'SA',
       isActive: true,
       branchId: 'branch-1',
