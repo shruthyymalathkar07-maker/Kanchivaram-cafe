@@ -271,55 +271,33 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
         </div>
 
         {/* ================================================================= */}
-        {/* 2. CATEGORY TABS & FILTER STRIP                                  */}
+        {/* 2. CATEGORY TABS (ALL CATEGORIES FULLY VISIBLE & UNCLUTTERED)      */}
         {/* ================================================================= */}
-        <div className="bg-[#f5efe6] border-b border-[#ded3c4] p-3 px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          
-          {/* Horizontal Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5">
+        <div className="bg-[#f5efe6] border-b border-[#ded3c4] p-3 px-4 sm:px-6 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5">
             {ALL_RECIPE_CATEGORIES.map(cat => {
               const isActive = selectedCatId === cat.id;
+              const isKitchenSub = cat.id === 'cat-submenu';
               return (
                 <button
                   key={cat.id}
+                  type="button"
                   onClick={() => setSelectedCatId(cat.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap cursor-pointer shadow-2xs ${
                     isActive
                       ? isBrownBranch 
-                        ? 'bg-[#542A16] text-white ring-1 ring-[#C69A4B]/60 shadow-xs' 
-                        : 'bg-[#122c20] text-white ring-1 ring-[#4ade80]/60 shadow-xs'
-                      : 'bg-[#ebdcc8] hover:bg-[#dfd0ba] text-[#122c20] border border-[#cabb9e]'
+                        ? 'bg-[#542A16] text-white ring-2 ring-[#C69A4B] shadow-sm' 
+                        : 'bg-[#122c20] text-white ring-2 ring-[#4ade80] shadow-sm'
+                      : isKitchenSub
+                        ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-black'
+                        : 'bg-[#ebdcc8] hover:bg-[#dfd0ba] text-[#122c20] border border-[#cabb9e]'
                   }`}
                 >
-                  <span>{cat.icon || '☕'}</span>
+                  <span className="text-xs">{cat.icon || '☕'}</span>
                   <span>{cat.name}</span>
                 </button>
               );
             })}
-          </div>
-
-          {/* Status Filter Toggle */}
-          <div className="flex items-center gap-1 bg-[#ebdcc8] p-0.5 rounded-xl border border-[#cabb9e] shrink-0 self-end sm:self-auto text-xs font-bold">
-            <button
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${statusFilter === 'ALL' ? 'bg-white text-[#122c20] shadow-xs' : 'text-[#456351]'}`}
-            >
-              All ({recipeItems.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('COMPLETE')}
-              className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${statusFilter === 'COMPLETE' ? 'bg-white text-emerald-800 shadow-xs' : 'text-[#456351]'}`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Complete</span>
-            </button>
-            <button
-              onClick={() => setStatusFilter('REVIEW')}
-              className={`px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all ${statusFilter === 'REVIEW' ? 'bg-white text-amber-900 shadow-xs' : 'text-[#456351]'}`}
-            >
-              <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-              <span>Needs Review</span>
-            </button>
           </div>
         </div>
 
@@ -331,8 +309,8 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
           {/* LEFT COLUMN: Dish Selector List (35% width on desktop) */}
           <div className="w-full md:w-80 lg:w-96 border-r border-[#ded3c4] flex flex-col bg-[#fdfbf7] shrink-0 h-48 md:h-auto overflow-hidden">
             
-            {/* Search Input */}
-            <div className="p-3 border-b border-[#ded3c4] bg-[#f8f3ea]">
+            {/* Search Input & Status Filters */}
+            <div className="p-3 border-b border-[#ded3c4] bg-[#f8f3ea] space-y-2 shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7b9887]" />
                 <input
@@ -342,6 +320,39 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 bg-white border border-[#ded3c4] rounded-xl text-xs text-[#122c20] focus:outline-none focus:ring-1 focus:ring-[#122c20]"
                 />
+              </div>
+
+              {/* Status Filter Toggle */}
+              <div className="flex items-center gap-1 bg-[#ebdcc8] p-1 rounded-xl border border-[#cabb9e] text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('ALL')}
+                  className={`flex-1 py-1 rounded-lg text-center transition-all cursor-pointer ${
+                    statusFilter === 'ALL' ? 'bg-white text-[#122c20] shadow-xs font-black' : 'text-[#456351] hover:text-[#122c20]'
+                  }`}
+                >
+                  All ({filteredRecipes.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('COMPLETE')}
+                  className={`flex-1 py-1 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    statusFilter === 'COMPLETE' ? 'bg-white text-emerald-800 shadow-xs font-black' : 'text-[#456351] hover:text-emerald-800'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Complete</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('REVIEW')}
+                  className={`flex-1 py-1 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    statusFilter === 'REVIEW' ? 'bg-white text-amber-900 shadow-xs font-black' : 'text-[#456351] hover:text-amber-900'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Review</span>
+                </button>
               </div>
             </div>
 
@@ -604,16 +615,16 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="p-4 px-6 bg-[#f5efe6] border-t border-[#ded3c4] flex items-center justify-between gap-4 shrink-0">
-                  <p className="text-xs text-[#5a7a67]">
+                <div className="p-3.5 px-6 bg-[#f5efe6] border-t border-[#ded3c4] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                  <p className="text-xs text-[#5a7a67] text-center sm:text-left">
                     Updated formulas are instantly active for <strong>Main Branch</strong> and <strong>City Branch</strong>.
                   </p>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => loadRecipeForEdit(selectedRecipe)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-200 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Reset Changes</span>
@@ -622,14 +633,14 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                     <button
                       type="button"
                       onClick={handleSaveRecipe}
-                      className={`px-5 py-2 rounded-xl text-xs font-black text-white shadow-md transition-all flex items-center gap-2 cursor-pointer ${
+                      className={`px-6 py-2.5 rounded-xl text-xs font-black text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
                         isBrownBranch 
                           ? 'bg-[#3E2312] hover:bg-[#542A16] border border-[#704225]' 
                           : 'bg-[#122c20] hover:bg-[#1a3d2d] border border-[#23553e]'
                       }`}
                     >
-                      <Save className="w-4 h-4 text-emerald-400" />
-                      <span>Save & Activate Recipe</span>
+                      <Save className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="whitespace-nowrap">Save & Activate Recipe</span>
                     </button>
                   </div>
                 </div>
