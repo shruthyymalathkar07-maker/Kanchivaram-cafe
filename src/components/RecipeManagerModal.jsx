@@ -64,6 +64,10 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
   // Merge BOM recipes with products catalog
   const recipeItems = useMemo(() => {
     const custom = inventoryStore.customRecipes || {};
+    let customPrices = {};
+    try {
+      customPrices = JSON.parse(localStorage.getItem('kc_dish_prices') || '{}');
+    } catch {}
     return ALL_PRODUCTS_CATALOG.map(prod => {
       // Find matching recipe
       const bomItem = custom[prod.id] || custom[prod.name.toLowerCase()] || CLIENT_BOM_MASTER.find(b => 
@@ -84,7 +88,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
         image: prod.image,
         servingQty: bomItem?.servingQty || prod.servingQty || 1,
         servingUom: bomItem?.servingUom || prod.uom || 'Nos.',
-        price: prod.dineInPrice || prod.price || 0,
+        price: customPrices[prod.id] || prod.dineInPrice || prod.price || 0,
         isComplete,
         processes: procs,
         rawRecipe: bomItem

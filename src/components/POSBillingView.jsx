@@ -40,6 +40,19 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   const [editingProduct, setEditingProduct] = useState(null);
   const [localCustomProducts, setLocalCustomProducts] = useState([]);
 
+  // Dish Prices State (Persisted for dishes like CurryLeaf Rice and Avarakai Rice)
+  const [dishPrices, setDishPrices] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kc_dish_prices');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [priceModalDish, setPriceModalDish] = useState(null);
+  const [priceInput, setPriceInput] = useState('');
+  const [priceSaveError, setPriceSaveError] = useState('');
+
   // Checkout & Customer State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isPrintPaperChecked, setIsPrintPaperChecked] = useState(true);
@@ -76,14 +89,69 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
   const fallbackCategories = categories.length > 0 ? categories : PRODUCT_CATEGORIES;
   
-  // Combine props products + local newly created products (deduplicated by id, order preserved)
+  // Combine props products + local newly created products + dynamic dish prices (deduplicated by id, order preserved)
   const combinedProducts = React.useMemo(() => {
     const base = products.length > 0 ? products : CLIENT_PRODUCTS_MASTER;
     const map = new Map();
-    base.forEach(p => map.set(p.id, p));
-    localCustomProducts.forEach(p => map.set(p.id, p));
+    base.forEach(p => {
+      const customPrice = dishPrices[p.id];
+      if (customPrice !== undefined && customPrice !== null && customPrice > 0) {
+        map.set(p.id, { 
+          ...p, 
+          price: customPrice, 
+          dineInPrice: customPrice, 
+          deliveryPrice: customPrice 
+        });
+      } else {
+        map.set(p.id, p);
+      }
+    });
+    localCustomProducts.forEach(p => {
+      const customPrice = dishPrices[p.id];
+      if (customPrice !== undefined && customPrice !== null && customPrice > 0) {
+        map.set(p.id, { 
+          ...p, 
+          price: customPrice, 
+          dineInPrice: customPrice, 
+          deliveryPrice: customPrice 
+        });
+      } else {
+        map.set(p.id, p);
+      }
+    });
     return Array.from(map.values());
-  }, [products, localCustomProducts]);
+  }, [products, localCustomProducts, dishPrices]);
+
+  const handleOpenPriceModal = (e, product) => {
+    if (e) e.stopPropagation();
+    setPriceModalDish(product);
+    setPriceInput(product.price > 0 ? String(product.price) : '');
+    setPriceSaveError('');
+  };
+
+  const handleSavePrice = (e) => {
+    if (e) e.preventDefault();
+    const val = parseFloat(priceInput);
+    if (isNaN(val) || val <= 0) {
+      setPriceSaveError('Please enter a valid price greater than ₹0');
+      return;
+    }
+    const updated = { ...dishPrices, [priceModalDish.id]: val };
+    setDishPrices(updated);
+    try {
+      localStorage.setItem('kc_dish_prices', JSON.stringify(updated));
+    } catch (err) {
+      console.warn('[POS] Failed to save dish price:', err);
+    }
+    const dishWithPrice = {
+      ...priceModalDish,
+      price: val,
+      dineInPrice: val,
+      deliveryPrice: val
+    };
+    addToCart(dishWithPrice);
+    setPriceModalDish(null);
+  };
 
   // Filter products by category & search query
   const filteredProducts = combinedProducts.filter(p => {
@@ -433,11 +501,19 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               const stockColor = stockQty > 20 ? 'bg-emerald-600' : stockQty >= 10 ? 'bg-amber-500' : 'bg-red-600';
               const stockPercent = Math.min(100, Math.max(10, (stockQty / 50) * 100));
               const isCustom = !isOriginalProduct(product.id);
+              const isPriceEditable = product.id === 'prod-68' || product.id === 'prod-69';
+              const hasNoPrice = (product.price || 0) <= 0;
 
               return (
                 <div
                   key={product.id}
-                  onClick={() => addToCart(product)}
+                  onClick={() => {
+                    if (hasNoPrice) {
+                      handleOpenPriceModal(null, product);
+                    } else {
+                      addToCart(product);
+                    }
+                  }}
                   className="group relative bg-[#fdfbf7] hover:bg-[#f5ebd9] p-2 sm:p-2.5 rounded-xl border border-[#cabb9e] hover:border-[#d4af37] shadow-xs transition-all duration-200 cursor-pointer flex flex-col justify-between transform hover:-translate-y-0.5 h-[148px] md:h-[195px]"
                 >
                   {/* Food/Product Image: Enhanced Desktop Height & Clear Visibility */}
@@ -451,7 +527,16 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                       {product.categoryName}
                     </span>
                     <div className="absolute top-1 right-1 flex items-center gap-1">
-                      {isCustom && (
+                      {isPriceEditable ? (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenPriceModal(e, product)}
+                          title="Edit Selling Price"
+                          className="p-1 bg-[#1a1a1a]/85 hover:bg-amber-600 text-amber-300 hover:text-white rounded-md transition-all shadow-xs cursor-pointer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      ) : isCustom ? (
                         <button
                           type="button"
                           onClick={(e) => handleOpenEditModal(e, product)}
@@ -460,12 +545,16 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                         >
                           <Edit2 className="w-3 h-3" />
                         </button>
-                      )}
+                      ) : null}
                       <button 
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          addToCart(product);
+                          if (hasNoPrice) {
+                            handleOpenPriceModal(e, product);
+                          } else {
+                            addToCart(product);
+                          }
                         }}
                         className="p-1 bg-[#0f3823] group-hover:bg-[#d4af37] text-white group-hover:text-[#0d2b1d] rounded-md transition-all shadow-xs"
                       >
@@ -480,7 +569,28 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                       {product.name}
                     </h4>
                     <div className="flex items-center justify-between pt-0.5">
-                      <span className="text-xs font-black text-[#0f3823] font-mono">₹{product.price.toFixed(2)}</span>
+                      {product.price > 0 ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-black text-[#0f3823] font-mono">₹{product.price.toFixed(2)}</span>
+                          {isPriceEditable && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenPriceModal(e, product)}
+                              className="text-[9.5px] font-bold text-amber-700 hover:text-amber-900 underline cursor-pointer"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenPriceModal(e, product)}
+                          className="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-md shadow-2xs transition-all animate-pulse cursor-pointer"
+                        >
+                          Set Price
+                        </button>
+                      )}
                       <span className="text-[9px] font-bold text-[#557361]">{product.servingQty} {product.uom}</span>
                     </div>
 
@@ -947,6 +1057,116 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <span>Go to Next Order</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* QUICK SELLING PRICE MODAL (CURRY LEAF RICE / AVARAKKAI RICE)              */}
+      {/* ========================================================================= */}
+      {priceModalDish && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-[#fbf8f3] w-full max-w-md rounded-3xl border border-[#ded3c4] shadow-2xl overflow-hidden">
+            
+            {/* Header */}
+            <div className={`p-4 border-b flex items-center justify-between ${
+              isBrownBranch ? 'bg-[#3E2312] text-white border-[#542A16]' : 'bg-[#122c20] text-white border-[#1c4532]'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`p-2 rounded-xl border ${
+                  isBrownBranch ? 'bg-[#542A16] border-[#704225] text-[#C69A4B]' : 'bg-[#1b4331] border-[#296349] text-[#4ade80]'
+                }`}>
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black font-serif">Set Selling Price</h3>
+                  <p className="text-[11px] text-white/70">{priceModalDish.name} • {priceModalDish.categoryName}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPriceModalDish(null)}
+                className="p-1 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content & Form */}
+            <form onSubmit={handleSavePrice} className="p-5 space-y-4">
+              
+              {/* Dish Preview & Auto-BOM Badge */}
+              <div className="flex items-center gap-3 p-3 bg-[#ebdcc8]/50 rounded-2xl border border-[#cabb9e]">
+                <img 
+                  src={priceModalDish.image} 
+                  alt={priceModalDish.name}
+                  className="w-14 h-14 rounded-xl object-cover border border-[#cabb9e] shadow-xs" 
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-black text-[#11291f]">{priceModalDish.name}</h4>
+                  <p className="text-xs text-[#547363]">Serving: {priceModalDish.servingQty} {priceModalDish.uom}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-md border border-emerald-300">
+                    🟢 Excel Recipe Pre-loaded & Active in BOM
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs text-[#547363] leading-relaxed">
+                The authentic preparation ingredients (rice, dal, spices, and fresh herbs) from your recipe catalog are already linked for automatic stock deduction. You only need to enter your selling price.
+              </div>
+
+              {/* Price Input Field */}
+              <div>
+                <label className="block text-xs font-black text-[#11291f] mb-1.5">
+                  Selling Price (Dine-in / POS) <span className="text-rose-600">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-[#122c20]">₹</span>
+                  <input
+                    type="number"
+                    step="any"
+                    min="1"
+                    autoFocus
+                    required
+                    value={priceInput}
+                    onChange={(e) => {
+                      setPriceInput(e.target.value);
+                      setPriceSaveError('');
+                    }}
+                    placeholder="e.g. 40"
+                    className={`w-full pl-8 pr-4 py-2.5 bg-white text-[#11291f] font-mono font-black text-base rounded-xl border-2 ${
+                      isBrownBranch ? 'focus:border-[#7A4325]' : 'focus:border-[#0f3823]'
+                    } border-[#cabb9e] focus:outline-none`}
+                  />
+                </div>
+                {priceSaveError && (
+                  <p className="text-xs text-rose-600 font-bold mt-1">{priceSaveError}</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcc8]">
+                <button
+                  type="button"
+                  onClick={() => setPriceModalDish(null)}
+                  className="px-4 py-2 bg-[#ebe0cb] hover:bg-[#decfa7] text-[#11291f] font-bold text-xs rounded-xl border border-[#cabb9e] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`px-5 py-2 ${
+                    isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2A170C]' : 'bg-[#0f3823] hover:bg-[#0a2618]'
+                  } text-white font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all cursor-pointer`}
+                >
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  <span>Save Price & Activate Dish</span>
+                </button>
+              </div>
+
+            </form>
+
           </div>
         </div>,
         document.body
