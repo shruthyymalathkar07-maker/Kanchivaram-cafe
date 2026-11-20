@@ -984,7 +984,7 @@ export default function AddMenuItemModal({
                     className="py-1.5 px-3 bg-white hover:bg-[#faf6ee] text-[#11291f] border border-[#cabb9e] rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
                     <Plus className="w-3.5 h-3.5 text-[#0f3823]" />
-                    <span>+ Add Ingredient</span>
+                    <span>Add Ingredient</span>
                   </button>
 
                   <div className="flex items-center gap-2">
@@ -1103,7 +1103,7 @@ export default function AddMenuItemModal({
                   className="py-1.5 px-3 bg-white hover:bg-[#faf6ee] text-[#11291f] border border-[#cabb9e] rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5 text-[#0f3823]" />
-                  <span>+ Add Extra / Topping</span>
+                  <span>Add Extra / Topping</span>
                 </button>
               </div>
             ) : null}

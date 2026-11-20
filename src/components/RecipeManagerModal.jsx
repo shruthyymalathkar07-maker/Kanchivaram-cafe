@@ -493,7 +493,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                       className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#eef7f2] hover:bg-[#d8efe2] text-[#122c20] border border-[#a4dcbc] text-xs font-bold transition-all cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>+ Add Ingredient</span>
+                      <span>Add Ingredient</span>
                     </button>
                   </div>
 
