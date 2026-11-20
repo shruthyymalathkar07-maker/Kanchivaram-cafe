@@ -55,6 +55,7 @@ class InventoryStore {
     };
     this.currentBranchId = 'branch-1';
     this.customRecipes = {};
+    this.loadCustomRecipes();
     this.listeners = new Set();
     this.isHydrating = false;
     this.hydrationSequence = 0;
@@ -819,6 +820,36 @@ class InventoryStore {
 
     this.notify();
     return completedTransaction;
+  }
+
+  loadCustomRecipes() {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('kc_custom_recipes');
+        if (saved) {
+          this.customRecipes = JSON.parse(saved);
+        }
+      }
+    } catch (e) {
+      console.warn('[InventoryStore] Error loading custom recipes:', e);
+    }
+  }
+
+  saveCustomRecipe(productId, recipePayload) {
+    if (!productId || !recipePayload) return;
+    this.customRecipes[productId] = recipePayload;
+    if (recipePayload.productName) {
+      this.customRecipes[recipePayload.productName.toLowerCase()] = recipePayload;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kc_custom_recipes', JSON.stringify(this.customRecipes));
+      }
+    } catch (e) {
+      console.warn('[InventoryStore] Error saving custom recipes:', e);
+    }
+    this.notify();
+    return true;
   }
 }
 

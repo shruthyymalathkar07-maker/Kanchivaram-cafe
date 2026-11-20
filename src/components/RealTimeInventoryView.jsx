@@ -21,10 +21,12 @@ import {
   ShoppingBag,
   RotateCcw,
   AlertCircle,
-  Edit2
+  Edit2,
+  ChefHat
 } from 'lucide-react';
 import { inventoryStore } from '../services/inventoryStore';
 import { updateItemThreshold } from '../services/api';
+import RecipeManagerModal from './RecipeManagerModal';
 
 
 export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
@@ -45,6 +47,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
   const [isStockOutModalOpen, setIsStockOutModalOpen] = useState(false);
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
   const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = useState(false);
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
 
   // Form states for Threshold Edit
   const [thresholdItem, setThresholdItem] = useState(null);
@@ -369,6 +372,17 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 z-10 self-start md:self-center">
           <button
+            onClick={() => setIsRecipeModalOpen(true)}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border ${
+              isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#183a2c] hover:bg-[#0f291e] border-[#27523f]'
+            }`}
+            title="View & Edit Recipe Portions (Commercial grams / ingredients per dish)"
+          >
+            <ChefHat className={`w-4 h-4 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
+            <span>Recipe & Portion Formulas</span>
+          </button>
+
+          <button
             onClick={() => onNavigate ? onNavigate('purchase') : setIsStockInModalOpen(true)}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer border ${
               isBrownBranch ? 'bg-[#542A16] hover:bg-[#3D1E0F] border-[#7A4325]' : 'bg-[#103825] hover:bg-[#0a2618] border-[#194c31]'
@@ -411,7 +425,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
           </div>
         </div>
 
-        {/* Row 2: Action Buttons (Two Clean, Tap-Friendly Buttons Side-by-Side) */}
+        {/* Row 2: Action Buttons */}
         <div className="grid grid-cols-2 gap-2 pt-0.5">
           <button
             onClick={() => onNavigate ? onNavigate('purchase') : setIsStockInModalOpen(true)}
@@ -432,7 +446,20 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
           </button>
         </div>
 
-        {/* Row 3: Status Badge (Centered Horizontally Directly Below Action Buttons) */}
+        {/* Row 3: Recipe & Portion Formulas Button */}
+        <div>
+          <button
+            onClick={() => setIsRecipeModalOpen(true)}
+            className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-98 cursor-pointer border ${
+              isBrownBranch ? 'bg-[#3E2312] hover:bg-[#2D190D] border-[#542A16]' : 'bg-[#183a2c] hover:bg-[#0f291e] border-[#27523f]'
+            }`}
+          >
+            <ChefHat className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#C69A4B]' : 'text-[#4ade80]'}`} />
+            <span>Recipe & Portion Formulas</span>
+          </button>
+        </div>
+
+        {/* Row 4: Status Badge (Centered Horizontally Directly Below Action Buttons) */}
         <div className="flex items-center justify-center w-full pt-0.5 text-center">
           <span className={`inline-flex items-center justify-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase rounded-full border shadow-2xs ${
             currentDataState === 'EMPTY' ? 'bg-amber-100 text-amber-900 border-amber-300' :
@@ -1687,6 +1714,13 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
         </div>,
         document.body
       )}
+
+      {/* Recipe & Portion Formulas Manager Modal */}
+      <RecipeManagerModal
+        isOpen={isRecipeModalOpen}
+        onClose={() => setIsRecipeModalOpen(false)}
+        selectedBranch={selectedBranch}
+      />
 
     </div>
   );
