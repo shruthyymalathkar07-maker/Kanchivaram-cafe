@@ -50,9 +50,8 @@ export function createApiRouter(io: SocketServer) {
   router.get('/version', (_req: Request, res: Response) => {
     res.json({
       success: true,
-      commit: 'phase14-forgot-password-v1.0.0',
-      deployedAt: new Date().toISOString(),
-      version: '1.0.0-phase14-forgot-password-fast2sms',
+      commit: 'dffbe1c-client-ready-handover',
+      version: '1.0.0-handover-clean',
       database: 'Neon PostgreSQL'
     });
   });
