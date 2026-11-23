@@ -586,6 +586,7 @@ export function createApiRouter(io: SocketServer) {
             data: {
               email: normalizedEmail,
               name: googleProfile.name || 'Staff Member',
+              phone: `+91-${Date.now()}`,
               role: 'CASHIER',
               branchId: 'branch-1',
               isActive: true,

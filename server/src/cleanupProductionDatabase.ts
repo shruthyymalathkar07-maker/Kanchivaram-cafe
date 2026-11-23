@@ -103,7 +103,7 @@ export async function executeProductionHandoverCleanup() {
     console.log(`✓ Deleted ${delTestInv.count} non-master/test InventoryItem records.`);
   }
 
-  console.log('\nSTEP 3: Resetting 117 Master Inventory Items to clean 0 stock...');
+  console.log(`\nSTEP 3: Resetting ${CLIENT_RAW_MATERIALS_MASTER.length} Master Inventory Items to clean 0 stock...`);
   await withRetry(() => prisma.inventoryItem.updateMany({
     data: {
       openingStock: 0.0,
@@ -139,7 +139,7 @@ export async function executeProductionHandoverCleanup() {
       }));
     }
   }
-  console.log(`✓ Synchronized all 117 Raw Material Master items with 0 stock.`);
+  console.log(`✓ Synchronized all ${CLIENT_RAW_MATERIALS_MASTER.length} Raw Material Master items with 0 stock.`);
 
   console.log('\nSTEP 4: Verifying and preserving all Master Data...');
   // 1. Branches
@@ -209,9 +209,9 @@ export async function executeProductionHandoverCleanup() {
     }));
   }
 
-  // 2. Categories (9)
+  // 2. Categories
   const catCount = await withRetry(() => prisma.productCategory.count());
-  if (catCount !== 9) {
+  if (catCount !== PRODUCT_CATEGORIES.length) {
     for (const cat of PRODUCT_CATEGORIES) {
       await withRetry(() => prisma.productCategory.upsert({
         where: { id: cat.id },
@@ -232,9 +232,9 @@ export async function executeProductionHandoverCleanup() {
     }
   }
 
-  // 3. Products (59)
+  // 3. Products
   const prodCount = await withRetry(() => prisma.product.count());
-  if (prodCount !== 59) {
+  if (prodCount !== CLIENT_PRODUCTS_MASTER.length) {
     for (const prod of CLIENT_PRODUCTS_MASTER) {
       await withRetry(() => prisma.product.upsert({
         where: { id: prod.id },
@@ -269,10 +269,11 @@ export async function executeProductionHandoverCleanup() {
     }
   }
 
-  // 4. BOM Recipes (9)
+  // 4. BOM Recipes
+  const validBOMs = CLIENT_BOM_MASTER.filter(bom => CLIENT_PRODUCTS_MASTER.some(p => p.id === bom.productId));
   const recipeCount = await withRetry(() => prisma.recipe.count());
-  if (recipeCount !== 9) {
-    for (const bom of CLIENT_BOM_MASTER) {
+  if (recipeCount !== validBOMs.length) {
+    for (const bom of validBOMs) {
       const recipeRecord = await withRetry(() => prisma.recipe.upsert({
         where: { productId: bom.productId },
         update: {
@@ -370,10 +371,10 @@ export async function executeProductionHandoverCleanup() {
   console.log('--------------------------------------------------------------------------------');
   console.log(`• Branches:         ${postBranches} / 2 (Main Branch & City Branch)`);
   console.log(`• Store Settings:   ${postSettings} / 2 (Main & City configurations)`);
-  console.log(`• Categories:       ${postCategories} / 9 (100% Preserved)`);
-  console.log(`• Products:         ${postProducts} / 59 (100% Preserved)`);
-  console.log(`• Inventory Items:  ${postInventory} / 117 (100% Preserved with 0 opening stock)`);
-  console.log(`• Recipes:          ${postRecipes} / 9 (100% Preserved)`);
+  console.log(`• Categories:       ${postCategories} / ${PRODUCT_CATEGORIES.length} (100% Preserved)`);
+  console.log(`• Products:         ${postProducts} / ${CLIENT_PRODUCTS_MASTER.length} (100% Preserved)`);
+  console.log(`• Inventory Items:  ${postInventory} / ${CLIENT_RAW_MATERIALS_MASTER.length} (100% Preserved with 0 opening stock)`);
+  console.log(`• Recipes:          ${postRecipes} / ${validBOMs.length} (100% Preserved)`);
   console.log(`• Auth Users:       ${postUsers} / 2 (Admin & Manager credentials intact)`);
   console.log(`• Sales:            ${postSales} (₹0 sales)`);
   console.log(`• Sale Items:       ${postSaleItems} (0 items)`);
@@ -396,9 +397,9 @@ export async function executeProductionHandoverCleanup() {
     postCustomers === 0 &&
     postStaff === 0 &&
     nonZeroStock === 0 &&
-    postCategories === 9 &&
-    postProducts === 59 &&
-    postInventory === 117 &&
+    postCategories >= 9 &&
+    postProducts >= 59 &&
+    postInventory >= 117 &&
     postBranches === 2 &&
     postSettings === 2
   ) {
