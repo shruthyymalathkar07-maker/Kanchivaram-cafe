@@ -464,15 +464,15 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       {/* 3. CATEGORY FILTER BAR (Single-line horizontal pills + Add Menu Item)      */}
       {/* ========================================================================= */}
-      <div className="flex items-center justify-between gap-2 shrink-0 py-0.5">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full">
+      <div className="flex items-center gap-2 shrink-0 py-0.5 w-full">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0">
           {fallbackCategories.map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   isActive
                     ? isBrownBranch ? 'bg-[#542A16] text-white ring-1 ring-[#C69A4B]/60 shadow-md font-extrabold' : 'bg-[#0f3823] text-white ring-1 ring-[#d4af37]/60 shadow-md font-extrabold'
                     : 'bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] border border-[#cabb9e]'
@@ -483,22 +483,22 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               </button>
             );
           })}
-
-          {/* Add Menu Item (+) button placed directly next to Juices (the last category) */}
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
-              isBrownBranch
-                ? 'bg-[#3E2312] hover:bg-[#542A16] text-[#E0C097] border-[#704225] shadow-xs hover:scale-[1.02]'
-                : 'bg-[#0f3823] hover:bg-[#15422e] text-[#4ade80] border-[#1b5e3b] shadow-xs hover:scale-[1.02]'
-            }`}
-            title="Add New Menu Item directly from POS"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Menu Item</span>
-          </button>
         </div>
+
+        {/* Add Menu (+) button pinned cleanly with no cutoff */}
+        <button
+          type="button"
+          onClick={handleOpenAddModal}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
+            isBrownBranch
+              ? 'bg-[#3E2312] hover:bg-[#542A16] text-[#E0C097] border-[#704225] shadow-xs hover:scale-[1.02]'
+              : 'bg-[#0f3823] hover:bg-[#15422e] text-[#4ade80] border-[#1b5e3b] shadow-xs hover:scale-[1.02]'
+          }`}
+          title="Add New Menu Item directly from POS"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Menu</span>
+        </button>
       </div>
 
       {/* ========================================================================= */}
