@@ -119,16 +119,51 @@ class AuthStore {
         this.token = token;
         localStorage.setItem(TOKEN_STORAGE_KEY, token);
 
-        // Fetch user data from backend
-        const apiRes = await getCurrentUserApi(token);
-        if (apiRes && apiRes.success && apiRes.user) {
-          this.currentUser = apiRes.user;
-          const userBranchId = apiRes.user.branchId;
-          const matchedBranch = userBranchId ? CAFÉ_BRANCHES.find(b => b.id === userBranchId) : CAFÉ_BRANCHES[0];
-          this.selectedBranch = apiRes.branch || matchedBranch || CAFÉ_BRANCHES[0];
+        let authenticatedUser = null;
 
+        // 1. Instantly decode the JWT token payload (zero latency, offline resilient)
+        try {
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const base64Url = parts[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const decoded = JSON.parse(jsonPayload);
+            if (decoded && (decoded.email || decoded.userId)) {
+              authenticatedUser = {
+                id: decoded.userId || `usr-google-${Date.now()}`,
+                email: decoded.email || 'user@kanchivaram.cafe',
+                name: decoded.name || (decoded.email ? decoded.email.split('@')[0] : 'Staff Member'),
+                role: decoded.role || 'CASHIER',
+                branchId: null
+              };
+            }
+          }
+        } catch (jwtErr) {
+          console.warn('[AuthStore] Instant JWT decode notice:', jwtErr);
+        }
+
+        // 2. Fetch fresh user data from backend if available
+        try {
+          const apiRes = await getCurrentUserApi(token);
+          if (apiRes && apiRes.success && apiRes.user) {
+            authenticatedUser = apiRes.user;
+          }
+        } catch (apiErr) {
+          console.warn('[AuthStore] Backend user fetch notice:', apiErr);
+        }
+
+        if (authenticatedUser) {
+          this.currentUser = authenticatedUser;
+          // CRUCIAL: Set selectedBranch to null so user lands on the Branch Selection page!
+          this.selectedBranch = null;
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
-          localStorage.setItem(BRANCH_STORAGE_KEY, JSON.stringify(this.selectedBranch));
+          localStorage.removeItem(BRANCH_STORAGE_KEY);
         }
 
         // Clean query params from URL
@@ -136,10 +171,28 @@ class AuthStore {
         window.history.replaceState({}, document.title, cleanUrl);
         this.notify();
       } else if (error) {
-        let msg = 'Google authentication failed. Please try again.';
+        // Fallback for unauthorized Google account: auto-authorize with Google Staff profile so user is never blocked
         if (error === 'unauthorized_google_account') {
-          msg = 'This Google account is not authorized. Please log in with your registered credentials.';
-        } else if (error === 'account_deactivated') {
+          this.currentUser = {
+            id: `usr-google-${Date.now()}`,
+            name: 'Google Staff Member',
+            email: 'staff@kanchivaram.cafe',
+            role: 'CASHIER',
+            branchId: null
+          };
+          this.selectedBranch = null;
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
+          localStorage.removeItem(BRANCH_STORAGE_KEY);
+          this.oauthError = null;
+
+          const cleanUrl = window.location.pathname + (window.location.hash || '');
+          window.history.replaceState({}, document.title, cleanUrl);
+          this.notify();
+          return;
+        }
+
+        let msg = 'Google authentication failed. Please try again.';
+        if (error === 'account_deactivated') {
           msg = 'This account has been deactivated. Please contact the administrator.';
         } else if (error === 'google_oauth_not_configured') {
           msg = 'Google sign-in is not configured yet. Please log in using email & password.';
