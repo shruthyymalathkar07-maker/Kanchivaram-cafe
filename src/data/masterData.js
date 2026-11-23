@@ -2535,6 +2535,42 @@ export const ALL_PRODUCTS_CATALOG = [
     "image": "/dishes/prod-70.jpg",
     "isSubRecipe": true,
     "isKitchenPrep": true
+  },
+  {
+    "id": "prod-71",
+    "name": "Daily Sambar",
+    "category": "SubMenu",
+    "categoryName": "SubMenu",
+    "categoryId": "cat-submenu",
+    "servingQty": 20,
+    "uom": "L",
+    "dineInPrice": 0,
+    "deliveryPrice": 0,
+    "packingCharge": 0,
+    "description": "Daily Bulk Batch Kitchen Prep (Sambar)",
+    "price": 0,
+    "unit": "L",
+    "image": "/branch_main.jpg",
+    "isSubRecipe": true,
+    "isKitchenPrep": true
+  },
+  {
+    "id": "prod-72",
+    "name": "Daily Rasam",
+    "category": "SubMenu",
+    "categoryName": "SubMenu",
+    "categoryId": "cat-submenu",
+    "servingQty": 15,
+    "uom": "L",
+    "dineInPrice": 0,
+    "deliveryPrice": 0,
+    "packingCharge": 0,
+    "description": "Daily Bulk Batch Kitchen Prep (Rasam)",
+    "price": 0,
+    "unit": "L",
+    "image": "/branch_main.jpg",
+    "isSubRecipe": true,
+    "isKitchenPrep": true
   }
 ];
 export const KITCHEN_SUB_RECIPES = [
@@ -8515,7 +8551,43 @@ export const CLIENT_BOM_MASTER = [
         "process": "Measure & Add"
       }
     ],
-    "finalProcess": "Prepare as per recipe and serve"
+  },
+  {
+    "productId": "prod-71",
+    "productName": "Daily Sambar",
+    "servingQty": 20,
+    "servingUom": "L",
+    "status": "COMPLETE",
+    "processes": [
+      { "step": 1, "rawMaterialName": "Toor Dal", "rawMaterialId": "rm-170", "qty": 2000, "uom": "g", "process": "Boil" },
+      { "step": 2, "rawMaterialName": "Tamarind", "rawMaterialId": "rm-160", "qty": 500, "uom": "g", "process": "Extract Juice" },
+      { "step": 3, "rawMaterialName": "Tomato", "rawMaterialId": "rm-168", "qty": 1000, "uom": "g", "process": "Chop and Boil" },
+      { "step": 4, "rawMaterialName": "Onion", "rawMaterialId": "rm-115", "qty": 1000, "uom": "g", "process": "Saute and Add" },
+      { "step": 5, "rawMaterialName": "Chilli Powder", "rawMaterialId": "rm-41", "qty": 150, "uom": "g", "process": "Season" },
+      { "step": 6, "rawMaterialName": "Turmeric", "rawMaterialId": "rm-178", "qty": 25, "uom": "g", "process": "Add" },
+      { "step": 7, "rawMaterialName": "Kadugu (Mustard Seeds)", "rawMaterialId": "rm-97", "qty": 30, "uom": "g", "process": "Temper" },
+      { "step": 8, "rawMaterialName": "Curry Leaves", "rawMaterialId": "rm-57", "qty": 50, "uom": "g", "process": "Temper" },
+      { "step": 9, "rawMaterialName": "Uppu (Salt)", "rawMaterialId": "rm-138", "qty": 250, "uom": "g", "process": "Dissolve" }
+    ],
+    "finalProcess": "Simmer in bulk 20L pot and transfer to serving counter"
+  },
+  {
+    "productId": "prod-72",
+    "productName": "Daily Rasam",
+    "servingQty": 15,
+    "servingUom": "L",
+    "status": "COMPLETE",
+    "processes": [
+      { "step": 1, "rawMaterialName": "Toor Dal", "rawMaterialId": "rm-170", "qty": 500, "uom": "g", "process": "Dal Water" },
+      { "step": 2, "rawMaterialName": "Tamarind", "rawMaterialId": "rm-160", "qty": 400, "uom": "g", "process": "Extract Juice" },
+      { "step": 3, "rawMaterialName": "Tomato", "rawMaterialId": "rm-168", "qty": 1000, "uom": "g", "process": "Crush and Boil" },
+      { "step": 4, "rawMaterialName": "Kadugu (Mustard Seeds)", "rawMaterialId": "rm-97", "qty": 20, "uom": "g", "process": "Temper" },
+      { "step": 5, "rawMaterialName": "Curry Leaves", "rawMaterialId": "rm-57", "qty": 30, "uom": "g", "process": "Temper" },
+      { "step": 6, "rawMaterialName": "Turmeric", "rawMaterialId": "rm-178", "qty": 15, "uom": "g", "process": "Add" },
+      { "step": 7, "rawMaterialName": "Uppu (Salt)", "rawMaterialId": "rm-138", "qty": 180, "uom": "g", "process": "Dissolve" },
+      { "step": 8, "rawMaterialName": "Kothamalli (Coriander Leaves)", "rawMaterialId": "rm-52", "qty": 100, "uom": "g", "process": "Garnish" }
+    ],
+    "finalProcess": "Bring to light foam and transfer to serving counter"
   }
 ];
 

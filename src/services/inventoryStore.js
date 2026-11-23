@@ -56,6 +56,8 @@ class InventoryStore {
     this.currentBranchId = 'branch-1';
     this.customRecipes = {};
     this.loadCustomRecipes();
+    this.deletedProductIds = new Set();
+    this.loadDeletedProducts();
     this.listeners = new Set();
     this.isHydrating = false;
     this.hydrationSequence = 0;
@@ -847,6 +849,65 @@ class InventoryStore {
       }
     } catch (e) {
       console.warn('[InventoryStore] Error saving custom recipes:', e);
+    }
+    this.notify();
+    return true;
+  }
+
+  loadDeletedProducts() {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('kc_deleted_product_ids');
+        if (saved) {
+          const arr = JSON.parse(saved);
+          if (Array.isArray(arr)) {
+            this.deletedProductIds = new Set(arr);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[InventoryStore] Error loading deleted products:', e);
+    }
+  }
+
+  isProductDeleted(productId) {
+    if (!productId) return false;
+    return this.deletedProductIds.has(productId);
+  }
+
+  getDeletedProductIds() {
+    return Array.from(this.deletedProductIds);
+  }
+
+  deleteProductEverywhere(productId, productName) {
+    if (!productId) return false;
+    this.deletedProductIds.add(productId);
+    if (productName) {
+      this.deletedProductIds.add(productName.toLowerCase());
+    }
+    // Remove from custom recipes if any
+    if (this.customRecipes) {
+      delete this.customRecipes[productId];
+      if (productName) {
+        delete this.customRecipes[productName.toLowerCase()];
+      }
+    }
+    // Also remove from localCustomProducts if present
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kc_deleted_product_ids', JSON.stringify(Array.from(this.deletedProductIds)));
+        localStorage.setItem('kc_custom_recipes', JSON.stringify(this.customRecipes || {}));
+        const customProds = localStorage.getItem('kc_custom_products');
+        if (customProds) {
+          const list = JSON.parse(customProds);
+          if (Array.isArray(list)) {
+            const filtered = list.filter(p => p.id !== productId && (!productName || p.name?.toLowerCase() !== productName.toLowerCase()));
+            localStorage.setItem('kc_custom_products', JSON.stringify(filtered));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[InventoryStore] Error saving deleted products:', e);
     }
     this.notify();
     return true;

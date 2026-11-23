@@ -52,6 +52,18 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
   const [priceModalDish, setPriceModalDish] = useState(null);
   const [priceInput, setPriceInput] = useState('');
   const [priceSaveError, setPriceSaveError] = useState('');
+  const [storeRevision, setStoreRevision] = useState(0);
+
+  useEffect(() => {
+    const unsub = inventoryStore.subscribe(() => {
+      setStoreRevision(r => r + 1);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    setCart(prev => prev.filter(item => !inventoryStore.isProductDeleted(item.id)));
+  }, [storeRevision]);
 
   // Checkout & Customer State
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -94,6 +106,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     const base = products.length > 0 ? products : CLIENT_PRODUCTS_MASTER;
     const map = new Map();
     base.forEach(p => {
+      if (inventoryStore.isProductDeleted(p.id)) return;
       const customPrice = dishPrices[p.id];
       if (customPrice !== undefined && customPrice !== null && customPrice > 0) {
         map.set(p.id, { 
@@ -107,6 +120,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       }
     });
     localCustomProducts.forEach(p => {
+      if (inventoryStore.isProductDeleted(p.id)) return;
       const customPrice = dishPrices[p.id];
       if (customPrice !== undefined && customPrice !== null && customPrice > 0) {
         map.set(p.id, { 
@@ -120,7 +134,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       }
     });
     return Array.from(map.values());
-  }, [products, localCustomProducts, dishPrices]);
+  }, [products, localCustomProducts, dishPrices, storeRevision]);
 
   const handleOpenPriceModal = (e, product) => {
     if (e) e.stopPropagation();
@@ -195,6 +209,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
   const handleProductDeleted = (deletedProdId) => {
     if (!deletedProdId) return;
+    inventoryStore.deleteProductEverywhere(deletedProdId);
     setLocalCustomProducts(prev => prev.filter(p => p.id !== deletedProdId));
     setCart(prev => prev.filter(p => p.id !== deletedProdId));
   };

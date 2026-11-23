@@ -48,6 +48,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
   const [newUom, setNewUom] = useState('g');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [recipeRevision, setRecipeRevision] = useState(0);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     const unsub = inventoryStore.subscribe(() => {
@@ -68,7 +69,9 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
     try {
       customPrices = JSON.parse(localStorage.getItem('kc_dish_prices') || '{}');
     } catch {}
-    return ALL_PRODUCTS_CATALOG.map(prod => {
+    return ALL_PRODUCTS_CATALOG
+      .filter(prod => !inventoryStore.isProductDeleted(prod.id))
+      .map(prod => {
       // Find matching recipe
       const bomItem = custom[prod.id] || custom[prod.name.toLowerCase()] || CLIENT_BOM_MASTER.find(b => 
         b.productId === prod.id || b.productName.toLowerCase() === prod.name.toLowerCase()
@@ -229,6 +232,23 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
     setTimeout(() => {
       setSaveSuccessMsg('');
     }, 3500);
+  };
+
+  // Handle Delete Dish and Recipe from Recipe Manager and POS
+  const handleDeleteDishAndRecipe = () => {
+    if (!selectedRecipe) return;
+    const deletedName = selectedRecipe.name;
+    const deletedId = selectedRecipe.id;
+
+    inventoryStore.deleteProductEverywhere(deletedId, deletedName);
+    setRecipeRevision(r => r + 1);
+    setIsConfirmDeleteOpen(false);
+    setActiveRecipeKey(null);
+    setSaveSuccessMsg(`Dish "${deletedName}" and its recipe have been discontinued and removed from POS Billing.`);
+
+    setTimeout(() => {
+      setSaveSuccessMsg('');
+    }, 4000);
   };
 
   // Modal Content
@@ -616,9 +636,20 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
 
                 {/* Footer Action Bar */}
                 <div className="p-3.5 px-6 bg-[#f5efe6] border-t border-[#ded3c4] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-                  <p className="text-xs text-[#5a7a67] text-center sm:text-left">
-                    Updated formulas are instantly active for <strong>Main Branch</strong> and <strong>City Branch</strong>.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmDeleteOpen(true)}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
+                      title="Discontinue dish and delete from Recipe Manager and POS Billing"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Delete Dish & Recipe</span>
+                    </button>
+                    <p className="text-[11px] text-[#5a7a67] hidden md:block">
+                      Formulas sync instantly across branches.
+                    </p>
+                  </div>
 
                   <div className="flex items-center gap-2.5 shrink-0">
                     <button
@@ -654,6 +685,48 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
           </div>
 
         </div>
+
+        {/* Safety Confirmation Dialog for Discontinuing / Deleting Dish */}
+        {isConfirmDeleteOpen && selectedRecipe && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-[#fdfbf7] max-w-md w-full rounded-2xl border-2 border-rose-300 p-5 shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-100 text-rose-700 shrink-0 border border-rose-200">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#122c20] font-serif">
+                    Discontinue & Delete Dish?
+                  </h3>
+                  <p className="text-xs text-[#5a7a67] mt-1 leading-relaxed">
+                    Are you sure you want to discontinue <strong className="text-rose-700">"{selectedRecipe.name}"</strong>?
+                  </p>
+                  <p className="text-[11px] text-stone-500 mt-1">
+                    This will permanently remove the dish and its recipe formula from both the <strong>Recipe Manager</strong> and the <strong>POS Billing screen</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#ded3c4]">
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmDeleteOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteDishAndRecipe}
+                  className="px-4 py-2 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-700 shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Yes, Delete Dish & Recipe</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>,

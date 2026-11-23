@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Search, Plus, UtensilsCrossed } from 'lucide-react';
 import { CLIENT_PRODUCTS_MASTER } from '../data/masterData';
+import { inventoryStore } from '../services/inventoryStore';
 
 export default function MenuProductsView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
   const [searchQuery, setSearchQuery] = useState('');
 
-  const menuItems = CLIENT_PRODUCTS_MASTER.map(p => ({
+  const menuItems = CLIENT_PRODUCTS_MASTER
+    .filter(p => !inventoryStore.isProductDeleted(p.id))
+    .map(p => ({
     id: p.id,
     name: p.name,
     sku: `KC-${p.categoryId.replace('cat-', '').toUpperCase().slice(0, 3)}-${p.id.replace('prod-', '').padStart(3, '0')}`,
