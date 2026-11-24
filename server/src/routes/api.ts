@@ -4120,12 +4120,8 @@ export function createApiRouter(io: SocketServer) {
         authenticatedUser = verifyAccessToken(token);
       }
 
-      // Determine authorized branchId
-      let branchId = getBranchId(req);
-      if (authenticatedUser?.branchId) {
-        // Enforce user's branch if user is locked to a branch
-        branchId = authenticatedUser.branchId;
-      }
+      // Determine authorized branchId: prioritize explicit request branch (x-branch-id, query, or body)
+      const branchId = getBranchId(req);
 
       const rawQuery = req.body?.query || req.body?.message || req.body?.prompt || '';
       const cleanQuery = typeof rawQuery === 'string' ? rawQuery.trim() : '';

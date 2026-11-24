@@ -26,7 +26,7 @@ export const getKVCMResponse = (query, state, expenseState, selectedBranch) => {
   const todayIso = new Date().toISOString().split('T')[0];
   const currentMonthPrefix = todayIso.slice(0, 7);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const branchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch' : 'Main Branch');
+  const branchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
 
   // 1. Filter ONLY valid completed sales (strictly exclude cancelled, refunded, or returned)
   const validSales = (state.sales || []).filter(
@@ -460,11 +460,13 @@ const QUICK_QUESTIONS = [
 export default function KVCMAssistantView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
+  const currentBranchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'bot',
-      text: "Hello! I'm KVCM Assistant. How can I help you with your café today? ☕",
+      text: `Hello! I'm KVCM Assistant for ${currentBranchName}. How can I help you with your café today? ☕`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       icon: Coffee
     }
@@ -473,13 +475,23 @@ export default function KVCMAssistantView({ selectedBranch }) {
   const [isTyping, setIsTyping] = useState(false);
   const chatScrollContainerRef = useRef(null);
 
-  // Sync selected branch to stores
+  // Sync selected branch to stores & update active branch welcome message
   useEffect(() => {
     if (selectedBranch?.id) {
       inventoryStore.setBranch(selectedBranch.id);
       expenseStore.setBranch(selectedBranch.id);
+      const activeName = selectedBranch.name || (selectedBranch.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+      setMessages([
+        {
+          id: `welcome-${selectedBranch.id}`,
+          sender: 'bot',
+          text: `Hello! I'm KVCM Assistant for ${activeName}. How can I help you with your café today? ☕`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          icon: Coffee
+        }
+      ]);
     }
-  }, [selectedBranch?.id]);
+  }, [selectedBranch?.id, selectedBranch?.name]);
 
   // Auto-scroll strictly inside the conversation container ONLY (prevents page/window scroll)
   useEffect(() => {

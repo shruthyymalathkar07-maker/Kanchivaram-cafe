@@ -182,6 +182,53 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     setIsAddModalOpen(true);
   };
 
+  // Horizontal drag-to-scroll implementation for Category Bar (Pure horizontal, zero scrollbar line, draggable)
+  const categoryScrollRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const handleCategoryMouseDown = (e) => {
+    if (!categoryScrollRef.current) return;
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - categoryScrollRef.current.offsetLeft;
+    scrollLeftRef.current = categoryScrollRef.current.scrollLeft;
+  };
+
+  const handleCategoryMouseMove = (e) => {
+    if (!isDraggingRef.current || !categoryScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.5;
+    if (Math.abs(x - startXRef.current) > 5) {
+      hasDraggedRef.current = true;
+    }
+    categoryScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleCategoryMouseUpOrLeave = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleCategoryWheel = (e) => {
+    if (!categoryScrollRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      categoryScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleSafeAction = (actionFn) => (e) => {
+    if (hasDraggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    actionFn();
+  };
+
   const handleOpenEditModal = (e, product) => {
     e.stopPropagation();
     setEditingProduct(product);
@@ -464,15 +511,24 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       {/* ========================================================================= */}
       {/* 3. CATEGORY FILTER BAR (Single-line horizontal pills + Add Menu Item)      */}
       {/* ========================================================================= */}
-      <div className="flex items-center gap-2 shrink-0 py-0.5 w-full">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1 min-w-0">
+      <div className="shrink-0 py-0.5 w-full overflow-hidden">
+        <div 
+          ref={categoryScrollRef}
+          onMouseDown={handleCategoryMouseDown}
+          onMouseMove={handleCategoryMouseMove}
+          onMouseUp={handleCategoryMouseUpOrLeave}
+          onMouseLeave={handleCategoryMouseUpOrLeave}
+          onWheel={handleCategoryWheel}
+          className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden no-scrollbar py-0.5 w-full select-none cursor-grab active:cursor-grabbing touch-pan-x"
+        >
           {fallbackCategories.map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                type="button"
+                onClick={handleSafeAction(() => setActiveCategory(cat.id))}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   isActive
                     ? isBrownBranch ? 'bg-[#542A16] text-white ring-1 ring-[#C69A4B]/60 shadow-md font-extrabold' : 'bg-[#0f3823] text-white ring-1 ring-[#d4af37]/60 shadow-md font-extrabold'
                     : 'bg-[#ebe0cb] hover:bg-[#dfd3bc] text-[#122c20] border border-[#cabb9e]'
@@ -483,22 +539,22 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               </button>
             );
           })}
-        </div>
 
-        {/* Add Menu (+) button pinned cleanly with no cutoff */}
-        <button
-          type="button"
-          onClick={handleOpenAddModal}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
-            isBrownBranch
-              ? 'bg-[#3E2312] hover:bg-[#542A16] text-[#E0C097] border-[#704225] shadow-xs hover:scale-[1.02]'
-              : 'bg-[#0f3823] hover:bg-[#15422e] text-[#4ade80] border-[#1b5e3b] shadow-xs hover:scale-[1.02]'
-          }`}
-          title="Add New Menu Item directly from POS"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Menu</span>
-        </button>
+          {/* Add Menu (+) button directly inside the draggable container at the end */}
+          <button
+            type="button"
+            onClick={handleSafeAction(handleOpenAddModal)}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
+              isBrownBranch
+                ? 'bg-[#3E2312] hover:bg-[#542A16] text-[#E0C097] border-[#704225] shadow-xs hover:scale-[1.02]'
+                : 'bg-[#0f3823] hover:bg-[#15422e] text-[#4ade80] border-[#1b5e3b] shadow-xs hover:scale-[1.02]'
+            }`}
+            title="Add New Menu Item directly from POS"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Menu</span>
+          </button>
+        </div>
       </div>
 
       {/* ========================================================================= */}
