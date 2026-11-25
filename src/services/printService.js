@@ -103,7 +103,7 @@ export class PrintService {
 
         <div>
           <div class="flex"><span>Subtotal:</span> <span>₹${Number(sale.subtotal || 0).toFixed(2)}</span></div>
-          <div class="flex"><span>GST / Taxes:</span> <span>₹${Number(sale.tax || 0).toFixed(2)}</span></div>
+          ${Number(sale.tax || 0) > 0 ? `<div class="flex"><span>GST / Taxes:</span> <span>₹${Number(sale.tax).toFixed(2)}</span></div>` : '<div class="flex"><span>Taxes (0%):</span> <span>₹0.00</span></div>'}
           ${Number(sale.discount || 0) > 0 ? `<div class="flex"><span>Discount:</span> <span>-₹${Number(sale.discount).toFixed(2)}</span></div>` : ''}
           <div class="double-divider"></div>
           <div class="flex total-row">

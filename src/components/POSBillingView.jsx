@@ -21,7 +21,7 @@ import {
   ArrowRight,
   Edit2
 } from 'lucide-react';
-import { createSaleTransaction } from '../services/api';
+import { createSaleTransaction, fetchStoreSettings, socket } from '../services/api';
 import { PrintService } from '../services/printService';
 import { inventoryStore } from '../services/inventoryStore';
 import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER, isOriginalProduct } from '../data/masterData';
@@ -49,6 +49,50 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       return {};
     }
   });
+  // Dynamic Branch Store & Tax Settings
+  const [storeSettings, setStoreSettings] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const branchKey = selectedBranch?.id || 'branch-1';
+
+    const loadSettings = async () => {
+      try {
+        const data = await fetchStoreSettings(branchKey);
+        if (isMounted && data) {
+          setStoreSettings(data);
+          if (data.defaultPaymentMode) {
+            setPaymentMethod(data.defaultPaymentMode);
+          }
+        }
+      } catch (err) {
+        console.warn('[POS] Failed to load store settings:', err);
+      }
+    };
+
+    loadSettings();
+
+    if (socket) {
+      const handleSettingsUpdated = (payload) => {
+        if (!payload?.branchId || payload.branchId === branchKey) {
+          if (payload?.settings) {
+            setStoreSettings(payload.settings);
+            if (payload.settings.defaultPaymentMode) {
+              setPaymentMethod(payload.settings.defaultPaymentMode);
+            }
+          }
+        }
+      };
+      socket.on('settings_updated', handleSettingsUpdated);
+      return () => {
+        isMounted = false;
+        socket.off('settings_updated', handleSettingsUpdated);
+      };
+    }
+
+    return () => { isMounted = false; };
+  }, [selectedBranch?.id]);
+
   const [priceModalDish, setPriceModalDish] = useState(null);
   const [priceInput, setPriceInput] = useState('');
   const [priceSaveError, setPriceSaveError] = useState('');
@@ -294,7 +338,12 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + ((item.dineInPrice || item.price || 0) * item.quantity), 0);
-  const taxRate = 0.05; // 5% GST
+  
+  // Dynamic Tax Calculation from Branch Store Settings
+  const cgstVal = typeof storeSettings?.cgstPercent !== 'undefined' ? parseFloat(storeSettings.cgstPercent) : 0.0;
+  const sgstVal = typeof storeSettings?.sgstPercent !== 'undefined' ? parseFloat(storeSettings.sgstPercent) : 0.0;
+  const totalTaxPercent = (isNaN(cgstVal) ? 0 : cgstVal) + (isNaN(sgstVal) ? 0 : sgstVal);
+  const taxRate = totalTaxPercent / 100;
   const tax = subtotal * taxRate;
   const grandTotal = Math.max(0, subtotal + tax - discountAmount);
 
@@ -860,7 +909,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
               <span className="text-[#11291f] font-mono">₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold">
-              <span>GST (5%)</span>
+              <span>{totalTaxPercent > 0 ? `GST (${totalTaxPercent.toFixed(1)}%)` : 'Tax (0%)'}</span>
               <span className="text-[#11291f] font-mono">₹{tax.toFixed(2)}</span>
             </div>
             {discountAmount > 0 && (

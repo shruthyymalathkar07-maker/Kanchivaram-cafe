@@ -89,7 +89,7 @@ export function formatReceiptMessage(receipt: DigitalReceiptPayload): string {
 ${itemsList}
 ━━━━━━━━━━━━━━━━━━━━
 Subtotal: ₹${receipt.subtotal.toFixed(2)}${discountLine}
-GST (5%): ₹${receipt.tax.toFixed(2)}
+${receipt.tax > 0 ? `GST / Taxes: ₹${receipt.tax.toFixed(2)}` : 'Taxes: ₹0.00'}
 *TOTAL PAID: ₹${receipt.grandTotal.toFixed(2)}*
 *Payment Mode:* ${receipt.paymentMethod || 'CASH'}
 ━━━━━━━━━━━━━━━━━━━━

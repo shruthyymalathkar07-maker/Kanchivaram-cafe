@@ -113,6 +113,7 @@ export class BranchDataManager {
     ledger: StockLedgerEntry[];
   }>;
   integrations: Record<string, BranchIntegrations>;
+  settings: Record<string, any>;
 
   constructor() {
     this.branches = {
@@ -137,6 +138,34 @@ export class BranchDataManager {
         swiggyApiKey: process.env.SWIGGY_API_KEY_CITY || '',
         zomatoMerchantId: process.env.ZOMATO_MERCHANT_ID_CITY || 'ZOMATO-KCB-CITY',
         zomatoApiKey: process.env.ZOMATO_API_KEY_CITY || ''
+      }
+    };
+    this.settings = {
+      'branch-1': {
+        branchId: 'branch-1',
+        storeName: 'Kanchivaram Café',
+        branchName: 'Main Branch - Gandhi Road',
+        gstin: '',
+        fssaiNo: '12421008000142',
+        contactPhone: '+91 98765 43210',
+        contactEmail: 'contact@kanchivaram.cafe',
+        cgstPercent: 0.0,
+        sgstPercent: 0.0,
+        autoPrintReceipt: true,
+        defaultPaymentMode: 'CASH'
+      },
+      'branch-2': {
+        branchId: 'branch-2',
+        storeName: 'Kanchivaram Café',
+        branchName: 'City Branch - Anna Salai',
+        gstin: '',
+        fssaiNo: '12421008000142',
+        contactPhone: '+91 98765 43210',
+        contactEmail: 'contact@kanchivaram.cafe',
+        cgstPercent: 0.0,
+        sgstPercent: 0.0,
+        autoPrintReceipt: true,
+        defaultPaymentMode: 'CASH'
       }
     };
   }
@@ -181,6 +210,34 @@ export class BranchDataManager {
       ...updates
     };
     return this.integrations[branchId];
+  }
+
+  getSettings(branchId: string = 'branch-1') {
+    if (!this.settings[branchId]) {
+      this.settings[branchId] = {
+        branchId,
+        storeName: 'Kanchivaram Café',
+        branchName: branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road',
+        gstin: '',
+        fssaiNo: '12421008000142',
+        contactPhone: '+91 98765 43210',
+        contactEmail: 'contact@kanchivaram.cafe',
+        cgstPercent: 0.0,
+        sgstPercent: 0.0,
+        autoPrintReceipt: true,
+        defaultPaymentMode: 'CASH'
+      };
+    }
+    return this.settings[branchId];
+  }
+
+  updateSettings(branchId: string = 'branch-1', updates: Record<string, any>) {
+    const current = this.getSettings(branchId);
+    this.settings[branchId] = {
+      ...current,
+      ...updates
+    };
+    return this.settings[branchId];
   }
 }
 

@@ -35,14 +35,14 @@ export default function SettingsView({ selectedBranch }) {
   // Store Information State
   const [storeName, setStoreName] = useState('Kanchivaram Café');
   const [branchName, setBranchName] = useState(selectedBranch?.name || 'Main Branch - Gandhi Road');
-  const [gstin, setGstin] = useState('33AAACK1234F1Z9');
+  const [gstin, setGstin] = useState('');
   const [fssaiNo, setFssaiNo] = useState('12421008000142');
   const [contactPhone, setContactPhone] = useState('+91 98765 43210');
   const [contactEmail, setContactEmail] = useState('contact@kanchivaram.cafe');
 
   // Billing & Tax Preferences State
-  const [cgstPercent, setCgstPercent] = useState('2.5');
-  const [sgstPercent, setSgstPercent] = useState('2.5');
+  const [cgstPercent, setCgstPercent] = useState('0.0');
+  const [sgstPercent, setSgstPercent] = useState('0.0');
   const [enableServiceCharge, setEnableServiceCharge] = useState(false);
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(true);
   const [defaultPaymentMode, setDefaultPaymentMode] = useState('CASH');
@@ -267,8 +267,10 @@ export default function SettingsView({ selectedBranch }) {
                   type="text"
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value)}
+                  placeholder="Leave blank if not GST registered"
                   className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
                 />
+                <p className="text-[10px] text-[#6b7280] mt-1">Leave empty or UNREGISTERED if café is not GST registered.</p>
               </div>
 
               <div>
@@ -311,16 +313,45 @@ export default function SettingsView({ selectedBranch }) {
               GST Tax &amp; Billing Configuration
             </h3>
 
+            {/* Live Effective Combined Tax Rate Indicator */}
+            <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs ${
+              ((parseFloat(cgstPercent) || 0) + (parseFloat(sgstPercent) || 0)) === 0
+                ? 'bg-amber-50/80 border-amber-200 text-amber-950'
+                : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="font-bold">Effective Tax Rate on Bills:</span>
+                <span className="font-black font-mono text-base px-2 py-0.5 rounded-lg bg-white border shadow-xs">
+                  {((parseFloat(cgstPercent) || 0) + (parseFloat(sgstPercent) || 0)).toFixed(1)}%
+                </span>
+                {((parseFloat(cgstPercent) || 0) + (parseFloat(sgstPercent) || 0)) === 0 ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/70 text-amber-900 border border-amber-300">
+                    ● Non-GST / Unregistered (₹0.00 Tax on Bills)
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/70 text-emerald-900 border border-emerald-300">
+                    ● GST Registered ({cgstPercent}% CGST + {sgstPercent}% SGST)
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#555] font-medium">
+                Changes apply instantly across POS Billing, thermal prints, online orders &amp; WhatsApp bills.
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>CGST (%) Rate</label>
                 <input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="50"
                   value={cgstPercent}
                   onChange={(e) => setCgstPercent(e.target.value)}
                   className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
                 />
+                <p className="text-[10px] text-[#6b7280] mt-1">Set to 0 if not GST registered, or 2.5 for standard restaurant rate.</p>
               </div>
 
               <div>
@@ -328,10 +359,13 @@ export default function SettingsView({ selectedBranch }) {
                 <input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="50"
                   value={sgstPercent}
                   onChange={(e) => setSgstPercent(e.target.value)}
                   className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-bold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
                 />
+                <p className="text-[10px] text-[#6b7280] mt-1">Set to 0 if not GST registered, or 2.5 for standard restaurant rate.</p>
               </div>
 
               <div>
