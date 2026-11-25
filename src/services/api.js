@@ -569,6 +569,38 @@ export async function updateStoreSettings(settingsPayload, branchId = 'branch-1'
   }
 }
 
+export async function fetchIntegrationSettings(branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings/integrations?branchId=${branchId}`, {
+      headers: {
+        'x-branch-id': branchId
+      }
+    });
+    const json = await res.json();
+    return json?.integrations || null;
+  } catch (err) {
+    console.warn('[API] Fetch integration settings error:', err);
+    return null;
+  }
+}
+
+export async function updateIntegrationSettings(payload, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/settings/integrations`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId
+      },
+      body: JSON.stringify({ ...payload, branchId })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update integration settings error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 // ============================================================
 // AUTHENTICATION API CLIENT
 // ============================================================

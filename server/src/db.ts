@@ -92,6 +92,16 @@ export interface StockLedgerEntry {
   createdAt: string;
 }
 
+export interface BranchIntegrations {
+  whatsappToken: string;
+  whatsappPhoneId: string;
+  smsApiKey: string;
+  swiggyRestaurantId: string;
+  swiggyApiKey: string;
+  zomatoMerchantId: string;
+  zomatoApiKey: string;
+}
+
 // Multi-Branch In-Memory State Container (for runtime cache & fallbacks)
 export class BranchDataManager {
   branches: Record<string, {
@@ -102,11 +112,32 @@ export class BranchDataManager {
     sales: SaleRecord[];
     ledger: StockLedgerEntry[];
   }>;
+  integrations: Record<string, BranchIntegrations>;
 
   constructor() {
     this.branches = {
       'branch-1': this.createBranchState('branch-1'),
       'branch-2': this.createBranchState('branch-2')
+    };
+    this.integrations = {
+      'branch-1': {
+        whatsappToken: process.env.WHATSAPP_TOKEN || '',
+        whatsappPhoneId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+        smsApiKey: process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY || '',
+        swiggyRestaurantId: process.env.SWIGGY_RESTAURANT_ID || 'SWIGGY-KCB-MAIN',
+        swiggyApiKey: process.env.SWIGGY_API_KEY || '',
+        zomatoMerchantId: process.env.ZOMATO_MERCHANT_ID || 'ZOMATO-KCB-MAIN',
+        zomatoApiKey: process.env.ZOMATO_API_KEY || ''
+      },
+      'branch-2': {
+        whatsappToken: process.env.WHATSAPP_TOKEN || '',
+        whatsappPhoneId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+        smsApiKey: process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY || '',
+        swiggyRestaurantId: process.env.SWIGGY_RESTAURANT_ID_CITY || 'SWIGGY-KCB-CITY',
+        swiggyApiKey: process.env.SWIGGY_API_KEY_CITY || '',
+        zomatoMerchantId: process.env.ZOMATO_MERCHANT_ID_CITY || 'ZOMATO-KCB-CITY',
+        zomatoApiKey: process.env.ZOMATO_API_KEY_CITY || ''
+      }
     };
   }
 
@@ -126,6 +157,30 @@ export class BranchDataManager {
       this.branches[branchId] = this.createBranchState(branchId);
     }
     return this.branches[branchId];
+  }
+
+  getIntegrations(branchId: string = 'branch-1'): BranchIntegrations {
+    if (!this.integrations[branchId]) {
+      this.integrations[branchId] = {
+        whatsappToken: '',
+        whatsappPhoneId: '',
+        smsApiKey: '',
+        swiggyRestaurantId: `SWIGGY-${branchId.toUpperCase()}`,
+        swiggyApiKey: '',
+        zomatoMerchantId: `ZOMATO-${branchId.toUpperCase()}`,
+        zomatoApiKey: ''
+      };
+    }
+    return this.integrations[branchId];
+  }
+
+  updateIntegrations(branchId: string = 'branch-1', updates: Partial<BranchIntegrations>): BranchIntegrations {
+    const current = this.getIntegrations(branchId);
+    this.integrations[branchId] = {
+      ...current,
+      ...updates
+    };
+    return this.integrations[branchId];
   }
 }
 

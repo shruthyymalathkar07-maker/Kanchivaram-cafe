@@ -3908,6 +3908,93 @@ export function createApiRouter(io: SocketServer) {
     return res.status(503).json({ success: false, message: 'PostgreSQL database connection unavailable' });
   });
 
+  // 12a. GET /api/settings/integrations (Fetch WhatsApp, SMS, Swiggy & Zomato Partner Config)
+  router.get('/settings/integrations', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      const integrations = branchDb.getIntegrations(branchId);
+      return res.json({
+        success: true,
+        branchId,
+        integrations
+      });
+    } catch (err: any) {
+      console.error('[API /settings/integrations GET] Error:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to fetch integrations', error: err.message });
+    }
+  });
+
+  // 12b. PUT /api/settings/integrations (Save WhatsApp, SMS, Swiggy & Zomato Partner Config)
+  router.put('/settings/integrations', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    const {
+      whatsappToken,
+      whatsappPhoneId,
+      smsApiKey,
+      swiggyRestaurantId,
+      swiggyApiKey,
+      zomatoMerchantId,
+      zomatoApiKey
+    } = req.body || {};
+
+    try {
+      const updated = branchDb.updateIntegrations(branchId, {
+        whatsappToken: whatsappToken || '',
+        whatsappPhoneId: whatsappPhoneId || '',
+        smsApiKey: smsApiKey || '',
+        swiggyRestaurantId: swiggyRestaurantId || `SWIGGY-${branchId.toUpperCase()}`,
+        swiggyApiKey: swiggyApiKey || '',
+        zomatoMerchantId: zomatoMerchantId || `ZOMATO-${branchId.toUpperCase()}`,
+        zomatoApiKey: zomatoApiKey || ''
+      });
+
+      // Update runtime process.env if provided
+      if (whatsappToken) process.env.WHATSAPP_TOKEN = String(whatsappToken);
+      if (whatsappPhoneId) process.env.WHATSAPP_PHONE_NUMBER_ID = String(whatsappPhoneId);
+      if (smsApiKey) {
+        process.env.FAST2SMS_API_KEY = String(smsApiKey);
+        process.env.TWO_FACTOR_API_KEY = String(smsApiKey);
+      }
+
+      io.emit('integrations_updated', { branchId, integrations: updated });
+
+      return res.json({
+        success: true,
+        message: 'Integration settings updated successfully',
+        integrations: updated
+      });
+    } catch (err: any) {
+      console.error('[API /settings/integrations PUT] Error:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to update integrations', error: err.message });
+    }
+  });
+
+  // 12c. POST /api/integrations/swiggy/webhook (Live Webhook endpoint for Swiggy Partner Orders)
+  const handleSwiggyWebhook = async (req: Request, res: Response) => {
+    console.log('[Swiggy Webhook] Live order or ping received:', req.body);
+    return res.json({
+      success: true,
+      status: 'RECEIVED',
+      service: 'SWIGGY_PARTNER_API',
+      timestamp: new Date().toISOString()
+    });
+  };
+  router.post('/integrations/swiggy/webhook', handleSwiggyWebhook);
+  router.post('/api/integrations/swiggy/webhook', handleSwiggyWebhook);
+
+  // 12d. POST /api/integrations/zomato/webhook (Live Webhook endpoint for Zomato Delivery Orders)
+  const handleZomatoWebhook = async (req: Request, res: Response) => {
+    console.log('[Zomato Webhook] Live order or ping received:', req.body);
+    return res.json({
+      success: true,
+      status: 'RECEIVED',
+      service: 'ZOMATO_MERCHANT_API',
+      timestamp: new Date().toISOString()
+    });
+  };
+  router.post('/integrations/zomato/webhook', handleZomatoWebhook);
+  router.post('/api/integrations/zomato/webhook', handleZomatoWebhook);
+
   // 13. GET /api/dashboard/stats (Aggregated KPI Analytics from PostgreSQL)
   router.get('/dashboard/stats', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);

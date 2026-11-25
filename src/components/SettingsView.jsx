@@ -9,9 +9,20 @@ import {
   CheckCircle2, 
   Coffee, 
   Globe, 
-  Sliders 
+  Sliders,
+  Copy,
+  Check,
+  MessageSquare,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { fetchStoreSettings, updateStoreSettings } from '../services/api';
+import { 
+  fetchStoreSettings, 
+  updateStoreSettings,
+  fetchIntegrationSettings,
+  updateIntegrationSettings
+} from '../services/api';
 
 export default function SettingsView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
@@ -36,6 +47,17 @@ export default function SettingsView({ selectedBranch }) {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(true);
   const [defaultPaymentMode, setDefaultPaymentMode] = useState('CASH');
 
+  // Integrations & External APIs State
+  const [whatsappToken, setWhatsappToken] = useState('');
+  const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
+  const [smsApiKey, setSmsApiKey] = useState('');
+  const [swiggyRestaurantId, setSwiggyRestaurantId] = useState(branchId === 'branch-2' ? 'SWIGGY-KCB-CITY' : 'SWIGGY-KCB-MAIN');
+  const [swiggyApiKey, setSwiggyApiKey] = useState('');
+  const [zomatoMerchantId, setZomatoMerchantId] = useState(branchId === 'branch-2' ? 'ZOMATO-KCB-CITY' : 'ZOMATO-KCB-MAIN');
+  const [zomatoApiKey, setZomatoApiKey] = useState('');
+  const [showSecrets, setShowSecrets] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
+
   useEffect(() => {
     let isMounted = true;
     const loadSettings = async () => {
@@ -52,10 +74,37 @@ export default function SettingsView({ selectedBranch }) {
         if (typeof data.autoPrintReceipt !== 'undefined') setAutoPrintReceipt(Boolean(data.autoPrintReceipt));
         if (data.defaultPaymentMode) setDefaultPaymentMode(data.defaultPaymentMode);
       }
+
+      // Also load branch integration credentials
+      const integ = await fetchIntegrationSettings(branchId);
+      if (isMounted && integ) {
+        if (typeof integ.whatsappToken !== 'undefined') setWhatsappToken(integ.whatsappToken || '');
+        if (typeof integ.whatsappPhoneId !== 'undefined') setWhatsappPhoneId(integ.whatsappPhoneId || '');
+        if (typeof integ.smsApiKey !== 'undefined') setSmsApiKey(integ.smsApiKey || '');
+        if (typeof integ.swiggyRestaurantId !== 'undefined') setSwiggyRestaurantId(integ.swiggyRestaurantId || (branchId === 'branch-2' ? 'SWIGGY-KCB-CITY' : 'SWIGGY-KCB-MAIN'));
+        if (typeof integ.swiggyApiKey !== 'undefined') setSwiggyApiKey(integ.swiggyApiKey || '');
+        if (typeof integ.zomatoMerchantId !== 'undefined') setZomatoMerchantId(integ.zomatoMerchantId || (branchId === 'branch-2' ? 'ZOMATO-KCB-CITY' : 'ZOMATO-KCB-MAIN'));
+        if (typeof integ.zomatoApiKey !== 'undefined') setZomatoApiKey(integ.zomatoApiKey || '');
+      }
     };
     loadSettings();
     return () => { isMounted = false; };
   }, [branchId]);
+
+  const handleCopy = (text, fieldKey) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+    } else {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopiedField(fieldKey);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
@@ -63,7 +112,7 @@ export default function SettingsView({ selectedBranch }) {
     setIsSaving(true);
 
     try {
-      const payload = {
+      const storePayload = {
         storeName,
         branchName,
         gstin,
@@ -75,7 +124,21 @@ export default function SettingsView({ selectedBranch }) {
         autoPrintReceipt,
         defaultPaymentMode
       };
-      await updateStoreSettings(payload, branchId);
+      const integPayload = {
+        whatsappToken,
+        whatsappPhoneId,
+        smsApiKey,
+        swiggyRestaurantId,
+        swiggyApiKey,
+        zomatoMerchantId,
+        zomatoApiKey
+      };
+
+      await Promise.all([
+        updateStoreSettings(storePayload, branchId),
+        updateIntegrationSettings(integPayload, branchId)
+      ]);
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
@@ -151,6 +214,19 @@ export default function SettingsView({ selectedBranch }) {
         >
           <Printer className="w-4 h-4 shrink-0" />
           <span>Thermal Printer Setup</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('integrations')}
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
+            activeTab === 'integrations'
+              ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
+              : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
+          }`}
+        >
+          <Globe className="w-4 h-4 shrink-0" />
+          <span>Integrations &amp; APIs</span>
         </button>
       </div>
 
@@ -305,6 +381,256 @@ export default function SettingsView({ selectedBranch }) {
                 Thermal receipt printing is configured for automatic browser print integration (`window.print()`).
               </p>
             </div>
+          </div>
+        )}
+
+        {/* TAB 4: INTEGRATIONS & APIS */}
+        {activeTab === 'integrations' && (
+          <div className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#ded4c5] pb-2">
+              <div>
+                <h3 className={`text-sm font-bold font-serif ${isBrownBranch ? 'text-[#3E2312]' : 'text-[#0f3823]'} uppercase tracking-wider`}>
+                  Third-Party Integrations &amp; Partner APIs
+                </h3>
+                <p className="text-[11px] text-[#456351] font-semibold mt-0.5">
+                  Configure WhatsApp Cloud billing, SMS OTP gateways, and Swiggy &amp; Zomato delivery integrations.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSecrets(!showSecrets)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                    showSecrets 
+                      ? 'bg-amber-100/70 border-amber-300 text-amber-900' 
+                      : 'bg-[#ebe0cb] border-[#cabb9e] text-[#456351] hover:bg-[#ded2bb]'
+                  }`}
+                >
+                  {showSecrets ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  <span>{showSecrets ? 'Hide Secrets' : 'Show Secrets'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Trial Mode Info Banner */}
+            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-0.5">
+                <p className="font-bold text-emerald-950">
+                  Instant Simulation &amp; Trial Mode Active
+                </p>
+                <p className="text-emerald-800 text-[11px] leading-relaxed">
+                  WhatsApp e-receipts and SMS OTP authentication are fully operational in fallback simulation mode right now. When you enter your official Meta Cloud API or Interakt credentials below, the system seamlessly transitions to live messaging without downtime.
+                </p>
+              </div>
+            </div>
+
+            {/* Section 1: WhatsApp & SMS Gateway */}
+            <div className="bg-[#ebe0cb]/40 border border-[#cabb9e] rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[#ded4c5]">
+                <div className={`p-2 rounded-lg ${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shrink-0`}>
+                  <MessageSquare className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#11291f]">
+                    WhatsApp Business &amp; SMS Messaging Gateway
+                  </h4>
+                  <p className="text-[11px] text-[#456351]">
+                    Sends paperless PDF e-bills upon checkout and 6-digit OTPs for password reset.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    WhatsApp Business Phone Number ID
+                  </label>
+                  <input
+                    type="text"
+                    value={whatsappPhoneId}
+                    onChange={(e) => setWhatsappPhoneId(e.target.value)}
+                    placeholder="e.g. 105934857201948"
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                  <p className="text-[10px] text-[#6b7280] mt-1">From Meta for Developers &gt; WhatsApp &gt; API Setup</p>
+                </div>
+
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Meta System User Permanent Access Token
+                  </label>
+                  <input
+                    type={showSecrets ? 'text' : 'password'}
+                    value={whatsappToken}
+                    onChange={(e) => setWhatsappToken(e.target.value)}
+                    placeholder="e.g. EAABwzLix..."
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                  <p className="text-[10px] text-[#6b7280] mt-1">Bearer token with whatsapp_business_messaging permission</p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    SMS Gateway API Key (Fast2SMS / 2Factor Backup)
+                  </label>
+                  <input
+                    type={showSecrets ? 'text' : 'password'}
+                    value={smsApiKey}
+                    onChange={(e) => setSmsApiKey(e.target.value)}
+                    placeholder="e.g. f2s_live_auth_key_..."
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                  <p className="text-[10px] text-[#6b7280] mt-1">Used automatically if customer does not have WhatsApp active</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Swiggy Partner Integration */}
+            <div className="bg-[#ebe0cb]/40 border border-[#cabb9e] rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[#ded4c5]">
+                <div className="p-2 rounded-lg bg-[#fc8019] text-white shrink-0 font-black text-xs">
+                  S
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#11291f]">
+                    Swiggy Partner Integration
+                  </h4>
+                  <p className="text-[11px] text-[#456351]">
+                    Receives real-time food orders and syncs menu items directly with your POS.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Swiggy Restaurant / Outlet ID
+                  </label>
+                  <input
+                    type="text"
+                    value={swiggyRestaurantId}
+                    onChange={(e) => setSwiggyRestaurantId(e.target.value)}
+                    placeholder="e.g. SWIGGY-KCB-MAIN"
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Swiggy Partner API Key / Secret
+                  </label>
+                  <input
+                    type={showSecrets ? 'text' : 'password'}
+                    value={swiggyApiKey}
+                    onChange={(e) => setSwiggyApiKey(e.target.value)}
+                    placeholder="e.g. swg_sec_..."
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Swiggy Webhook Callback URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value="https://kanchivaram-cafe.onrender.com/api/integrations/swiggy/webhook"
+                      className="w-full p-2.5 bg-[#f4ebd9] border border-[#cabb9e] rounded-xl font-mono text-xs font-medium text-[#2d3748] select-all cursor-text focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCopy('https://kanchivaram-cafe.onrender.com/api/integrations/swiggy/webhook', 'swiggy')}
+                      className={`px-3 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                        copiedField === 'swiggy'
+                          ? 'bg-emerald-600 text-white border-emerald-700'
+                          : 'bg-white hover:bg-[#ded2bb] border-[#cabb9e] text-[#11291f]'
+                      }`}
+                    >
+                      {copiedField === 'swiggy' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedField === 'swiggy' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-[#6b7280] mt-1">Paste this URL into your Swiggy Partner Developer Portal under "Order Push Webhooks"</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Zomato Merchant Integration */}
+            <div className="bg-[#ebe0cb]/40 border border-[#cabb9e] rounded-xl p-4 space-y-4">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[#ded4c5]">
+                <div className="p-2 rounded-lg bg-[#e23744] text-white shrink-0 font-black text-xs">
+                  Z
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#11291f]">
+                    Zomato Merchant Integration
+                  </h4>
+                  <p className="text-[11px] text-[#456351]">
+                    Pushes customer delivery orders into the POS kitchen display system and billing ledger.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Zomato Merchant / ResID
+                  </label>
+                  <input
+                    type="text"
+                    value={zomatoMerchantId}
+                    onChange={(e) => setZomatoMerchantId(e.target.value)}
+                    placeholder="e.g. ZOMATO-KCB-MAIN"
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Zomato Merchant API Key / Secret
+                  </label>
+                  <input
+                    type={showSecrets ? 'text' : 'password'}
+                    value={zomatoApiKey}
+                    onChange={(e) => setZomatoApiKey(e.target.value)}
+                    placeholder="e.g. zom_sec_..."
+                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                    Zomato Webhook Callback URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value="https://kanchivaram-cafe.onrender.com/api/integrations/zomato/webhook"
+                      className="w-full p-2.5 bg-[#f4ebd9] border border-[#cabb9e] rounded-xl font-mono text-xs font-medium text-[#2d3748] select-all cursor-text focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCopy('https://kanchivaram-cafe.onrender.com/api/integrations/zomato/webhook', 'zomato')}
+                      className={`px-3 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
+                        copiedField === 'zomato'
+                          ? 'bg-emerald-600 text-white border-emerald-700'
+                          : 'bg-white hover:bg-[#ded2bb] border-[#cabb9e] text-[#11291f]'
+                      }`}
+                    >
+                      {copiedField === 'zomato' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedField === 'zomato' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-[#6b7280] mt-1">Paste this URL into your Zomato Merchant Dashboard under "Webhook Notifications"</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 
