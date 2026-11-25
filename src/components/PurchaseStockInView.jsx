@@ -76,8 +76,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
   // Form State for Purchase Invoice
   const [formData, setFormData] = useState({
     invoiceRef: '',
-    supplier: SUPPLIERS[0],
-    customSupplier: '',
+    supplier: '',
     date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     notes: '',
     items: [
@@ -113,8 +112,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
     const firstItem = storeState.items.length > 0 ? storeState.items[0] : null;
     setFormData({
       invoiceRef: autoRef,
-      supplier: SUPPLIERS[0],
-      customSupplier: '',
+      supplier: '',
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       notes: '',
       items: [
@@ -137,8 +135,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
     setEditingPurchase(purchase);
     setFormData({
       invoiceRef: purchase.invoiceRef,
-      supplier: SUPPLIERS.includes(purchase.supplier) ? purchase.supplier : 'Other',
-      customSupplier: SUPPLIERS.includes(purchase.supplier) ? '' : purchase.supplier,
+      supplier: purchase.supplier || '',
       date: purchase.date,
       notes: purchase.notes || '',
       items: purchase.items.map(i => ({
@@ -257,7 +254,7 @@ export default function PurchaseStockInView({ selectedBranch }) {
     }
 
     setIsSaving(true);
-    const finalSupplier = formData.supplier === 'Other' ? (formData.customSupplier || 'Custom Supplier') : formData.supplier;
+    const finalSupplier = formData.supplier?.trim() || 'Direct Purchase';
 
     const payload = {
       invoiceRef: formData.invoiceRef || `PO #${Date.now().toString().slice(-4)}`,
@@ -914,40 +911,27 @@ export default function PurchaseStockInView({ selectedBranch }) {
                   />
                 </div>
 
-                {/* Supplier */}
+                {/* Dealer / Supplier */}
                 <div>
                   <label className="block text-[11px] font-extrabold text-[#11291f] mb-1">
-                    Supplier Name
-                  </label>
-                  <select
-                    value={formData.supplier}
-                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e] focus:outline-none focus:ring-2 focus:ring-[#0f3823] cursor-pointer"
-                  >
-                    {SUPPLIERS.map(sup => (
-                      <option key={sup} value={sup}>{sup}</option>
-                    ))}
-                    <option value="Other">+ Custom Supplier...</option>
-                  </select>
-                </div>
-
-              </div>
-
-              {formData.supplier === 'Other' && (
-                <div className="bg-[#ebdcc8] p-3 rounded-xl border border-[#cabb9e]">
-                  <label className="block text-[11px] font-extrabold text-[#11291f] mb-1">
-                    Specify Custom Supplier Name
+                    Dealer / Supplier Name
                   </label>
                   <input
                     type="text"
-                    required
-                    value={formData.customSupplier}
-                    onChange={(e) => setFormData({ ...formData, customSupplier: e.target.value })}
-                    placeholder="Enter supplier company name"
-                    className="w-full px-3 py-1.5 bg-white text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e]"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    placeholder="Enter dealer / supplier name..."
+                    className="w-full px-3 py-1.5 bg-white text-[#11291f] text-xs font-bold rounded-lg border border-[#cabb9e] focus:outline-none focus:ring-2 focus:ring-[#0f3823]"
+                    list="dealer-suggestions"
                   />
+                  <datalist id="dealer-suggestions">
+                    {SUPPLIERS.map(sup => (
+                      <option key={sup} value={sup} />
+                    ))}
+                  </datalist>
                 </div>
-              )}
+
+              </div>
 
               {/* LINE ITEMS SECTION */}
               <div className="space-y-2">

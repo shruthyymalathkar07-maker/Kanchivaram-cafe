@@ -200,7 +200,7 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
         category: categoryInput,
         qty: qtyInput,
         unit: selectedItemObj ? selectedItemObj.unit : unitInput,
-        supplier: supplierInput || (selectedItemObj ? selectedItemObj.supplier : 'Local Vendor'),
+        supplier: supplierInput?.trim() || (selectedItemObj?.supplier && selectedItemObj.supplier !== 'Unassigned' ? selectedItemObj.supplier : 'Direct Purchase'),
         invoiceRef: invoiceRefInput || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
         cost: priceInput,
         notes: notesInput
@@ -1350,12 +1350,12 @@ export default function RealTimeInventoryView({ selectedBranch, onNavigate }) {
               {/* Supplier & Ref PO # */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-extrabold text-[#11291f] mb-1">Supplier Name</label>
+                  <label className="block text-[11px] font-extrabold text-[#11291f] mb-1">Dealer / Supplier Name</label>
                   <input
                     type="text"
                     value={supplierInput}
                     onChange={(e) => setSupplierInput(e.target.value)}
-                    placeholder="e.g. Kumbakonam Spice Co."
+                    placeholder="Enter dealer or supplier name..."
                     className="w-full px-3 py-1.5 bg-white text-[#11291f] font-bold rounded-lg border border-[#cabb9e]"
                   />
                 </div>

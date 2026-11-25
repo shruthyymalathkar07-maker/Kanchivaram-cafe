@@ -1396,7 +1396,7 @@ export function createApiRouter(io: SocketServer) {
     const displayDate = date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const purchaseId = `PUR-${Date.now().toString().slice(-6)}`;
     const finalInvoiceRef = invoiceRef || `PO #${purchaseId}`;
-    const finalSupplier = (supplier && supplier !== 'Other') ? supplier : 'General Supplier';
+    const finalSupplier = (supplier && supplier !== 'Other' && supplier.trim()) ? supplier.trim() : 'Direct Purchase';
 
     let totalAmount = 0;
     const processedLineItems: any[] = [];

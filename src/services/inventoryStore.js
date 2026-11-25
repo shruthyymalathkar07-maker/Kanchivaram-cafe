@@ -520,7 +520,7 @@ class InventoryStore {
   async recordStockIn(stockInPayload, branchId = this.currentBranchId) {
     const formattedPurchasePayload = {
       invoiceRef: stockInPayload.invoiceRef || `PO #SUP-${Math.floor(1000 + Math.random() * 9000)}`,
-      supplier: stockInPayload.supplier || 'Local Vendor',
+      supplier: stockInPayload.supplier?.trim() || 'Direct Purchase',
       date: stockInPayload.date || getDisplayDate(),
       notes: stockInPayload.notes || 'Incoming stock',
       items: [
