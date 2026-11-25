@@ -33,6 +33,21 @@ export interface WhatsAppSendResult {
   messageId?: string;
   isMock?: boolean;
   formattedText?: string;
+  channel?: string;
+  fallbackTriggered?: boolean;
+}
+
+export interface IntegrationCredentials {
+  whatsappToken?: string;
+  whatsappPhoneId?: string;
+  smsApiKey?: string;
+}
+
+export interface SmsSendResult {
+  success: boolean;
+  message: string;
+  messageId?: string;
+  isMock?: boolean;
 }
 
 /**
@@ -99,23 +114,124 @@ _Thank you for dining with us!_`
 }
 
 /**
+ * Formats a concise, branded SMS receipt within 160 characters.
+ */
+export function formatSmsReceiptMessage(receipt: DigitalReceiptPayload): string {
+  const branchTitle = receipt.branchName || (receipt.branchId === 'branch-2' ? 'City Branch' : 'Main Branch');
+  const total = Number(receipt.grandTotal || 0).toFixed(2);
+  const cust = (receipt.customerName && receipt.customerName.trim() && !receipt.customerName.includes('Customer'))
+    ? ` Dear ${receipt.customerName.trim()},`
+    : '';
+  return `Kanchivaram Cafe (${branchTitle}):${cust} Thank you for your visit! Bill #${receipt.billNumber} of Rs.${total} is generated. Good Food, Happier People!`;
+}
+
+/**
+ * Sends a digital receipt via standard SMS (Fast2SMS or 2Factor).
+ */
+export async function sendSmsReceipt(
+  cleanPhone: string,
+  receipt: DigitalReceiptPayload,
+  explicitApiKey?: string
+): Promise<SmsSendResult> {
+  const phone10 = cleanPhone.replace(/\D/g, '').slice(-10);
+  if (phone10.length !== 10) {
+    return { success: false, message: 'Invalid 10-digit phone number for SMS delivery.' };
+  }
+
+  const messageText = formatSmsReceiptMessage(receipt);
+  const apiKey = explicitApiKey || process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY;
+
+  const isMock = !apiKey || apiKey === 'YOUR_FAST2SMS_API_KEY' || apiKey === 'YOUR_2FACTOR_API_KEY';
+
+  if (isMock) {
+    console.log('\n============================================================');
+    console.log(`💬 [SMS DIGITAL RECEIPT - TRIAL MODE] To: +91 ${phone10}`);
+    console.log('------------------------------------------------------------');
+    console.log(messageText);
+    console.log('============================================================\n');
+
+    return {
+      success: true,
+      message: `SMS receipt logged in Trial Mode to +91 ${phone10}.`,
+      messageId: `mock_sms_${Date.now()}`,
+      isMock: true
+    };
+  }
+
+  // 1. Try Fast2SMS (Quick transactional route)
+  try {
+    const fast2smsUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(apiKey)}&route=q&message=${encodeURIComponent(messageText)}&flash=0&numbers=${phone10}`;
+    const fRes = await fetch(fast2smsUrl, { method: 'GET' });
+    const fData: any = await fRes.json().catch(() => ({}));
+    if (fRes.ok && (fData.return === true || fData.status_code === 200)) {
+      console.log(`[Fast2SMS Sent] Bill #${receipt.billNumber} delivered to +91 ${phone10}`);
+      return {
+        success: true,
+        message: 'Digital receipt dispatched successfully via SMS (Fast2SMS).',
+        messageId: fData.request_id || `f2s_${Date.now()}`,
+        isMock: false
+      };
+    }
+  } catch (err: any) {
+    console.warn('[Fast2SMS Receipt Notice]', err.message);
+  }
+
+  // 2. Try 2Factor TSMS route
+  try {
+    const twoFactorUrl = `https://2factor.in/API/V1/${encodeURIComponent(apiKey)}/ADDON_SERVICES/SEND/TSMS`;
+    const tfRes = await fetch(twoFactorUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        From: 'KANCLE',
+        To: phone10,
+        Msg: messageText
+      })
+    });
+    const tfData: any = await tfRes.json().catch(() => ({}));
+    if (tfRes.ok && tfData.Status === 'Success') {
+      console.log(`[2Factor SMS Sent] Bill #${receipt.billNumber} delivered to +91 ${phone10}`);
+      return {
+        success: true,
+        message: 'Digital receipt dispatched successfully via SMS (2Factor).',
+        messageId: tfData.Details || `2fa_${Date.now()}`,
+        isMock: false
+      };
+    }
+  } catch (err: any) {
+    console.warn('[2Factor Receipt Notice]', err.message);
+  }
+
+  return {
+    success: false,
+    message: 'Could not deliver SMS via configured gateway.'
+  };
+}
+
+/**
  * Sends a digital receipt to the customer's WhatsApp.
  * Supports Meta Cloud API, Interakt BSP, or Mock Development Mode.
+ * AUTOMATIC FALLBACK: If customer does not have WhatsApp, automatically delivers standard SMS!
  */
-export async function sendWhatsAppReceipt(receipt: DigitalReceiptPayload): Promise<WhatsAppSendResult> {
+export async function sendWhatsAppReceipt(
+  receipt: DigitalReceiptPayload,
+  customConfig?: IntegrationCredentials
+): Promise<WhatsAppSendResult> {
   const formattedPhone = normalizeWhatsAppNumber(receipt.customerPhone);
   if (!formattedPhone || formattedPhone.length < 10) {
     return {
       success: false,
-      message: 'Invalid customer phone number provided for WhatsApp digital receipt.'
+      message: 'Invalid customer phone number provided for digital receipt.'
     };
   }
 
+  const clean10Phone = formattedPhone.slice(-10);
   const messageText = formatReceiptMessage(receipt);
 
   const provider = (process.env.WHATSAPP_PROVIDER || 'mock').trim().toLowerCase();
-  const metaToken = process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_API_KEY || process.env.META_WHATSAPP_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID;
+  const metaToken = customConfig?.whatsappToken || process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_API_KEY || process.env.META_WHATSAPP_TOKEN;
+  const phoneNumberId = customConfig?.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID;
+  const smsApiKey = customConfig?.smsApiKey || process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY;
   const interaktApiKey = process.env.INTERAKT_API_KEY;
 
   const isMockMode = (
@@ -125,22 +241,49 @@ export async function sendWhatsAppReceipt(receipt: DigitalReceiptPayload): Promi
     interaktApiKey === 'YOUR_INTERAKT_API_KEY'
   );
 
-  // 1. Mock Development Mode (Logs formatted WhatsApp bill to console)
+  // 1. Mock Development Mode (Logs formatted WhatsApp bill & SMS fallback preview)
   if (isMockMode) {
     console.log('\n============================================================');
     console.log(`📱 [WHATSAPP DIGITAL RECEIPT] Dispatched to +${formattedPhone}:`);
     console.log('------------------------------------------------------------');
     console.log(messageText);
+    console.log('------------------------------------------------------------');
+    console.log(`💬 [AUTO SMS FALLBACK READY] If recipient is not on WhatsApp:`);
+    console.log(formatSmsReceiptMessage(receipt));
     console.log('============================================================\n');
 
     return {
       success: true,
-      message: `Digital receipt dispatched to WhatsApp (+${formattedPhone}) [Trial / Mock Mode].`,
+      message: `Digital receipt dispatched to WhatsApp (+${formattedPhone}) [Trial Mode: Auto SMS fallback enabled].`,
       messageId: `mock_wa_${Date.now()}`,
       isMock: true,
+      channel: 'WhatsApp',
       formattedText: messageText
     };
   }
+
+  // Helper to run automatic SMS fallback when WhatsApp is unavailable or recipient has no WhatsApp
+  const triggerSmsFallback = async (reason: string): Promise<WhatsAppSendResult> => {
+    console.log(`[Auto SMS Fallback] Triggering standard SMS fallback for bill #${receipt.billNumber} to +91 ${clean10Phone} (Reason: ${reason})...`);
+    const smsRes = await sendSmsReceipt(clean10Phone, receipt, smsApiKey);
+    if (smsRes.success) {
+      return {
+        success: true,
+        message: `Customer is not on WhatsApp. Digital bill delivered successfully via standard SMS!`,
+        messageId: smsRes.messageId,
+        channel: 'SMS Fallback',
+        fallbackTriggered: true,
+        isMock: smsRes.isMock,
+        formattedText: messageText
+      };
+    }
+    return {
+      success: false,
+      message: `WhatsApp delivery failed (${reason}), and SMS fallback could not be delivered.`,
+      channel: 'Failed',
+      fallbackTriggered: true
+    };
+  };
 
   // 2. Meta WhatsApp Cloud API
   if (metaToken && phoneNumberId) {
@@ -171,21 +314,24 @@ export async function sendWhatsAppReceipt(receipt: DigitalReceiptPayload): Promi
           success: true,
           message: 'Digital receipt sent via WhatsApp successfully.',
           messageId: data.messages[0].id,
+          channel: 'WhatsApp',
           isMock: false
         };
       }
 
+      const isNotOnWhatsApp = (
+        data?.error?.code === 131026 ||
+        (data?.error?.message && /not.*whatsapp/i.test(data.error.message)) ||
+        (data?.error?.error_data?.details && /not.*whatsapp/i.test(data.error.error_data.details))
+      );
+
       console.warn('[Meta WhatsApp Error]', data?.error?.message || data);
-      return {
-        success: false,
-        message: data?.error?.message || 'Failed to deliver receipt via WhatsApp Cloud API.'
-      };
+
+      // Recipient is not on WhatsApp or delivery failed -> Fallback to SMS!
+      return await triggerSmsFallback(isNotOnWhatsApp ? 'Recipient not on WhatsApp' : (data?.error?.message || 'Meta Cloud API Error'));
     } catch (err: any) {
       console.error('[Meta WhatsApp Network Error]', err.message);
-      return {
-        success: false,
-        message: 'Network error connecting to WhatsApp Cloud API.'
-      };
+      return await triggerSmsFallback('Network error connecting to WhatsApp');
     }
   }
 
@@ -200,7 +346,7 @@ export async function sendWhatsAppReceipt(receipt: DigitalReceiptPayload): Promi
         },
         body: JSON.stringify({
           countryCode: '+91',
-          phoneNumber: formattedPhone.slice(-10),
+          phoneNumber: clean10Phone,
           type: 'Text',
           data: {
             message: messageText
@@ -214,28 +360,20 @@ export async function sendWhatsAppReceipt(receipt: DigitalReceiptPayload): Promi
           success: true,
           message: 'Digital receipt sent via Interakt WhatsApp successfully.',
           messageId: data.id || `interakt_${Date.now()}`,
+          channel: 'WhatsApp',
           isMock: false
         };
       }
 
-      return {
-        success: false,
-        message: data?.message || 'Failed to deliver receipt via Interakt.'
-      };
+      return await triggerSmsFallback(data?.message || 'Interakt delivery failure');
     } catch (err: any) {
       console.error('[Interakt Network Error]', err.message);
-      return {
-        success: false,
-        message: 'Network error connecting to Interakt API.'
-      };
+      return await triggerSmsFallback('Network error connecting to Interakt');
     }
   }
 
-  return {
-    success: true,
-    message: 'Receipt logged in trial mode.',
-    isMock: true
-  };
+  // Direct fallback if no provider configured
+  return await triggerSmsFallback('No WhatsApp provider configured');
 }
 
 /**

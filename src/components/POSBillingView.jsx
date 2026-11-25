@@ -428,7 +428,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
     if (cart.length === 0 || isSubmitting) return;
 
     if (isSendSmsChecked && !phoneInput.trim()) {
-      alert("Please enter customer's mobile number to send the SMS digital bill.");
+      alert("Please enter customer's mobile number to send the WhatsApp / SMS digital bill.");
       return;
     }
 
@@ -964,6 +964,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                 <button
                   type="button"
                   onClick={() => { setIsSendSmsChecked(true); setIsPrintPaperChecked(false); }}
+                  title="Sends bill via WhatsApp (auto-falls back to SMS if recipient has no WhatsApp)"
                   className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     isSendSmsChecked
                       ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-2xs`
@@ -971,7 +972,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
                   }`}
                 >
                   <Smartphone className="w-3 h-3" />
-                  Send via SMS
+                  WhatsApp / SMS
                 </button>
               </div>
             </div>

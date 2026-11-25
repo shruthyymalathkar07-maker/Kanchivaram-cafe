@@ -171,7 +171,8 @@ export class PrintService {
         success: data.success ?? true,
         billNumber: sale.billNumber,
         customerPhone: phoneNumber,
-        channel: 'WhatsApp',
+        channel: data.channel || 'WhatsApp',
+        fallbackTriggered: data.fallbackTriggered || false,
         sentAt: new Date().toISOString(),
         message: data.message || 'Receipt dispatched via WhatsApp'
       };
@@ -181,7 +182,7 @@ export class PrintService {
         success: true,
         billNumber: sale.billNumber,
         customerPhone: phoneNumber,
-        channel: 'WhatsApp (Trial mode)',
+        channel: 'WhatsApp / SMS (Trial mode)',
         sentAt: new Date().toISOString()
       };
     }

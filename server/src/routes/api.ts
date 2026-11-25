@@ -2569,6 +2569,7 @@ export function createApiRouter(io: SocketServer) {
       }
 
       const branchName = branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road';
+      const integrations = branchDb.getIntegrations(branchId);
       const payload: DigitalReceiptPayload = {
         billNumber: billNumber || sale?.billNumber || `KC-2026-${Date.now().toString().slice(-4)}`,
         customerName: sale?.customerName,
@@ -2583,12 +2584,14 @@ export function createApiRouter(io: SocketServer) {
         branchId
       };
 
-      const result = await sendWhatsAppReceipt(payload);
+      const result = await sendWhatsAppReceipt(payload, integrations);
 
       return res.json({
         success: result.success,
         message: result.message,
         messageId: result.messageId,
+        channel: result.channel,
+        fallbackTriggered: result.fallbackTriggered,
         isMock: result.isMock,
         formattedText: result.formattedText
       });
@@ -2631,12 +2634,15 @@ export function createApiRouter(io: SocketServer) {
         branchId
       };
 
-      const result = await sendWhatsAppReceipt(payload);
+      const integrations = branchDb.getIntegrations(branchId);
+      const result = await sendWhatsAppReceipt(payload, integrations);
 
       return res.json({
         success: result.success,
         message: result.message,
         messageId: result.messageId,
+        channel: result.channel,
+        fallbackTriggered: result.fallbackTriggered,
         isMock: result.isMock
       });
     } catch (err: any) {
