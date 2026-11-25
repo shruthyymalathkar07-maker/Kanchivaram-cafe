@@ -365,6 +365,28 @@ export async function sendTwoFactorOtp(mobile: string): Promise<{ success: boole
     };
   }
 
+  // Production Fast2SMS OTP Provider (Quick SMS route)
+  const isFast2Sms = Boolean(process.env.FAST2SMS_API_KEY || (apiKey && apiKey.length > 25 && !apiKey.includes('-')));
+  if (isFast2Sms && apiKey) {
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    mockOtpStore.set(cleanMobile, { otp: generatedOtp, expiresAt });
+
+    try {
+      const msg = `Your Kanchivaram Cafe login verification OTP is ${generatedOtp}. Valid for 10 minutes. Do not share this code.`;
+      const fUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(apiKey)}&route=q&message=${encodeURIComponent(msg)}&flash=0&numbers=${cleanMobile}`;
+      const fRes = await fetch(fUrl, { method: 'GET' });
+      const fData: any = await fRes.json().catch(() => ({}));
+      if (fRes.ok && (fData.return === true || fData.status_code === 200)) {
+        console.log(`[Fast2SMS OTP Sent] To +91 ${cleanMobile} | Code: ${generatedOtp}`);
+        return { success: true, message: 'OTP sent successfully via SMS.' };
+      }
+      console.warn('[Fast2SMS OTP Error]', fData);
+    } catch (err: any) {
+      console.error('[Fast2SMS OTP Network Error]', err.message);
+    }
+  }
+
   // Production 2Factor Send OTP (AUTOGEN)
   try {
     const templateSuffix = templateName ? `/${encodeURIComponent(templateName)}` : '';
@@ -414,16 +436,9 @@ export async function verifyTwoFactorOtp(mobile: string, otp: string): Promise<{
     apiKey === 'YOUR_FAST2SMS_API_KEY'
   );
 
-  // Development / Test mode verification
-  if (isMockMode) {
-    const stored = mockOtpStore.get(cleanMobile);
-    if (!stored) {
-      if (cleanOtp === '123456') {
-        return { success: true, message: 'OTP verified successfully (Development mode).' };
-      }
-      return { success: false, message: 'No active OTP request found or OTP expired. Please request a new OTP.' };
-    }
-
+  // Check local OTP store first (covers Fast2SMS, WhatsApp, and Mock OTPs)
+  const stored = mockOtpStore.get(cleanMobile);
+  if (stored) {
     if (Date.now() > stored.expiresAt) {
       mockOtpStore.delete(cleanMobile);
       return { success: false, message: 'OTP has expired. Please request a new OTP.' };
@@ -435,7 +450,15 @@ export async function verifyTwoFactorOtp(mobile: string, otp: string): Promise<{
 
     // OTP consumed successfully
     mockOtpStore.delete(cleanMobile);
-    return { success: true, message: 'OTP verified successfully (Development mode).' };
+    return { success: true, message: 'OTP verified successfully.' };
+  }
+
+  // Development / Test mode fallback
+  if (isMockMode) {
+    if (cleanOtp === '123456') {
+      return { success: true, message: 'OTP verified successfully (Development mode).' };
+    }
+    return { success: false, message: 'No active OTP request found or OTP expired. Please request a new OTP.' };
   }
 
   // Production 2Factor Verify
