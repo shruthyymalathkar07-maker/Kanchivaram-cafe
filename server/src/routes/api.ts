@@ -41,6 +41,7 @@ import {
 } from '../auth';
 import { processKVCMQuery } from '../ai';
 import { executeProductionHandoverCleanup } from '../cleanupProductionDatabase';
+import { sendWhatsAppReceipt, DigitalReceiptPayload } from '../whatsapp';
 import { Server as SocketServer } from 'socket.io';
 
 export function createApiRouter(io: SocketServer) {
@@ -2509,6 +2510,96 @@ export function createApiRouter(io: SocketServer) {
         message: 'Failed to write transaction to PostgreSQL database. Transaction was not recorded.',
         details: dbErr.message
       });
+    }
+  });
+
+  // 6b. POST /api/sales/send-receipt (Dispatch Digital Receipt via WhatsApp / SMS)
+  router.post('/sales/send-receipt', async (req: Request, res: Response) => {
+    try {
+      const branchId = getBranchId(req);
+      const { sale, customerPhone, billNumber } = req.body || {};
+      const targetPhone = customerPhone || sale?.customerPhone;
+
+      if (!targetPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer phone number is required to send digital receipt.'
+        });
+      }
+
+      const branchName = branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road';
+      const payload: DigitalReceiptPayload = {
+        billNumber: billNumber || sale?.billNumber || `KC-2026-${Date.now().toString().slice(-4)}`,
+        customerName: sale?.customerName,
+        customerPhone: targetPhone,
+        items: Array.isArray(sale?.items) ? sale.items : [],
+        subtotal: parseFloat(sale?.subtotal) || 0,
+        tax: parseFloat(sale?.tax) || 0,
+        discount: parseFloat(sale?.discount) || 0,
+        grandTotal: parseFloat(sale?.grandTotal) || 0,
+        paymentMethod: sale?.paymentMethod || 'CASH',
+        branchName,
+        branchId
+      };
+
+      const result = await sendWhatsAppReceipt(payload);
+
+      return res.json({
+        success: result.success,
+        message: result.message,
+        messageId: result.messageId,
+        isMock: result.isMock,
+        formattedText: result.formattedText
+      });
+    } catch (err: any) {
+      console.error('[API /sales/send-receipt Error]', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to dispatch digital receipt',
+        error: err.message
+      });
+    }
+  });
+
+  // Alias for receipts endpoint
+  router.post('/receipts/send', async (req: Request, res: Response) => {
+    try {
+      const branchId = getBranchId(req);
+      const { sale, customerPhone, billNumber } = req.body || {};
+      const targetPhone = customerPhone || sale?.customerPhone;
+
+      if (!targetPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Customer phone number is required.'
+        });
+      }
+
+      const branchName = branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road';
+      const payload: DigitalReceiptPayload = {
+        billNumber: billNumber || sale?.billNumber || `KC-2026-${Date.now().toString().slice(-4)}`,
+        customerName: sale?.customerName,
+        customerPhone: targetPhone,
+        items: Array.isArray(sale?.items) ? sale.items : [],
+        subtotal: parseFloat(sale?.subtotal) || 0,
+        tax: parseFloat(sale?.tax) || 0,
+        discount: parseFloat(sale?.discount) || 0,
+        grandTotal: parseFloat(sale?.grandTotal) || 0,
+        paymentMethod: sale?.paymentMethod || 'CASH',
+        branchName,
+        branchId
+      };
+
+      const result = await sendWhatsAppReceipt(payload);
+
+      return res.json({
+        success: result.success,
+        message: result.message,
+        messageId: result.messageId,
+        isMock: result.isMock
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 

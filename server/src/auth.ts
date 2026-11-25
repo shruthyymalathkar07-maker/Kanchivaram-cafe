@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from './db';
+import { sendWhatsAppAuthOtp } from './whatsapp';
 
 // -------------------------------------------------------------
 // 1. INTERFACES & TYPES
@@ -334,6 +335,18 @@ export async function sendTwoFactorOtp(mobile: string): Promise<{ success: boole
     apiKey === 'YOUR_FAST2SMS_API_KEY'
   );
 
+  // Dedicated WhatsApp OTP Provider
+  if (otpProvider === 'whatsapp') {
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    mockOtpStore.set(cleanMobile, { otp: generatedOtp, expiresAt });
+    const waResult = await sendWhatsAppAuthOtp(cleanMobile, generatedOtp);
+    return {
+      success: waResult.success,
+      message: waResult.message || `OTP sent successfully via WhatsApp to +91 ******${cleanMobile.slice(-4)}.`
+    };
+  }
+
   // Development / Test mock mode
   if (isMockMode) {
     // Generate secure 6-digit OTP
@@ -343,6 +356,7 @@ export async function sendTwoFactorOtp(mobile: string): Promise<{ success: boole
 
     // For development only, log the OTP clearly in the backend terminal
     console.log(`[MOCK OTP] phone=${cleanMobile} otp=${generatedOtp}`);
+    await sendWhatsAppAuthOtp(cleanMobile, generatedOtp).catch(() => {});
 
     return {
       success: true,
