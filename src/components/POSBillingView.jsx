@@ -456,10 +456,12 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       const response = await createSaleTransaction(salePayload, branchId);
       const billNumber = response?.sale?.billNumber || `KC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // 2. Record Completed Bill in centralized inventoryStore (Updates Sales, Stock Out, and Customers if details provided)
+      // 2. Record Completed Bill in centralized inventoryStore
+      // If backend API succeeded, backend already applied BOM deductions to PostgreSQL; do not duplicate on client!
       const completedSaleObj = inventoryStore.recordCompletedBill({
         ...salePayload,
-        billNumber
+        billNumber,
+        skipBOMDeduction: Boolean(response && response.success !== false)
       });
 
       setCompletedSale(completedSaleObj);

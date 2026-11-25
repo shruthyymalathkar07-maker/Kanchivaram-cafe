@@ -1926,11 +1926,26 @@ export function createApiRouter(io: SocketServer) {
           orderBy: { createdAt: 'desc' }
         });
 
+        // Deduplicate entries that share the same ref (billNumber) and itemId (keeps verified recipe entry)
+        const seenBillItems = new Set<string>();
+        const dedupedLedger: any[] = [];
+
+        for (const entry of ledger) {
+          if (entry.ref && entry.ref.startsWith('KC-') && entry.itemId) {
+            const key = `${entry.ref}_${entry.itemId}`;
+            if (seenBillItems.has(key)) {
+              continue; // Skip duplicate BOM entry for the same sale
+            }
+            seenBillItems.add(key);
+          }
+          dedupedLedger.push(entry);
+        }
+
         return res.json({
           success: true,
           branchId,
-          count: ledger.length,
-          ledger: ledger.map(m => ({
+          count: dedupedLedger.length,
+          ledger: dedupedLedger.map(m => ({
             ...m,
             createdAt: m.createdAt ? m.createdAt.toISOString() : undefined,
             date: m.createdAt ? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : m.dateIso,
@@ -2334,10 +2349,36 @@ export function createApiRouter(io: SocketServer) {
             }
 
             if (targetItem) {
+              const recipeUnit = (rawUom || 'units').trim();
+              const warehouseUnit = (targetItem.unit || 'NOS').toUpperCase().trim();
+              
+              // Accurate unit conversion for warehouse inventory quantity
+              let qtyToDeductFromInventory = totalRawQty;
+              const rLower = recipeUnit.toLowerCase().trim();
+              const wLower = warehouseUnit.toLowerCase().trim();
+
+              if (rLower !== wLower) {
+                if (rLower === 'ml' && wLower === 'l') {
+                  qtyToDeductFromInventory = totalRawQty / 1000;
+                } else if (rLower === 'l' && wLower === 'ml') {
+                  qtyToDeductFromInventory = totalRawQty * 1000;
+                } else if (rLower === 'g' && wLower === 'kg') {
+                  qtyToDeductFromInventory = totalRawQty / 1000;
+                } else if (rLower === 'kg' && wLower === 'g') {
+                  qtyToDeductFromInventory = totalRawQty * 1000;
+                } else if (rLower.startsWith('tsp') && wLower === 'kg') {
+                  qtyToDeductFromInventory = (totalRawQty * 5) / 1000; // 1 tsp ~ 5g
+                } else if (rLower.startsWith('tbsp') && wLower === 'kg') {
+                  qtyToDeductFromInventory = (totalRawQty * 15) / 1000; // 1 tbsp ~ 15g
+                } else if (rLower === 'cubes' && wLower === 'kg') {
+                  qtyToDeductFromInventory = (totalRawQty * 25) / 1000; // 1 cube ~ 25g
+                }
+              }
+
               const updatedItem = await prisma.inventoryItem.update({
                 where: { id: targetItem.id },
                 data: {
-                  stockOut: { increment: totalRawQty },
+                  stockOut: { increment: qtyToDeductFromInventory },
                   lastMovement: new Date()
                 }
               });
@@ -2352,11 +2393,11 @@ export function createApiRouter(io: SocketServer) {
                   itemName: targetItem.name,
                   type: 'STOCK_OUT',
                   qty: totalRawQty,
-                  unit: normalizeUnit(targetItem.unit || rawUom || 'NOS'),
+                  unit: recipeUnit || normalizeUnit(targetItem.unit || 'NOS'),
                   supplier: '-',
                   ref: billNumber,
                   source: 'POS / Recipe BOM',
-                  notes: `BOM Consumption: ${saleItem.quantity} x ${saleItem.productName} (${procDesc})`,
+                  notes: `BOM: ${saleItem.quantity} x ${saleItem.productName} (${procDesc})`,
                   remainingAfter,
                   dateIso: todayIso
                 }

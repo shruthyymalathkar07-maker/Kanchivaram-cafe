@@ -690,9 +690,8 @@ class InventoryStore {
     this.sales.unshift(completedTransaction);
 
     // 2. PART 7 — POS → INVENTORY LOGIC:
-    // Execute BOM deduction ONLY when a complete BOM exists for that product.
-    // If a product has no BOM, DO NOT invent fake deductions.
-    if (items && items.length > 0) {
+    // Execute BOM deduction ONLY if the backend did not already handle it and when a complete BOM exists.
+    if (!saleData.skipBOMDeduction && items && items.length > 0) {
       items.forEach(it => {
         const productQty = parseFloat(it.quantity || it.qty || 1);
         const matchedBOM = CLIENT_BOM_MASTER.find(b => 
