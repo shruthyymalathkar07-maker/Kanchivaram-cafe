@@ -16,12 +16,12 @@ const TOKEN_STORAGE_KEY = 'kanchivaram_auth_token';
 const DEFAULT_USERS = [
   {
     id: 'user-1',
-    name: 'Shruthy A',
-    email: 'shruthy@kanchivaram.cafe',
-    phone: '+91 98765 43210',
+    name: 'Kanchivaram Café Admin',
+    email: 'kanchivaramcafe3@gmail.com',
+    phone: '+91 82484 26348',
     role: 'Owner & General Manager',
     passwordHash: 'Password@123',
-    avatar: 'SA'
+    avatar: 'KC'
   },
   {
     id: 'user-2',

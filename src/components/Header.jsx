@@ -166,11 +166,11 @@ export default function Header({ onNavigateTab, onOpenNotifications, searchQuery
               ? 'bg-[#3E2312] border-[#542A16] text-[#C69A4B]' 
               : 'bg-[#0f3823] border-[#194c31] text-[#4ade80]'
           }`}>
-            {currentUser?.avatar || 'SA'}
+            {currentUser?.avatar || 'KC'}
           </div>
           <div className="text-left leading-tight hidden sm:block">
-            <p className="font-extrabold text-[11px] text-[#122c20] tracking-tight truncate max-w-[100px]">
-              {currentUser?.name || 'Shruthy A'}
+            <p className="font-extrabold text-[11px] text-[#122c20] tracking-tight truncate max-w-[120px]">
+              {currentUser?.name || 'Kanchivaram Café Admin'}
             </p>
             <p className="text-[9px] font-bold text-[#557361] truncate">
               {currentUser?.role ? currentUser.role.split(' ')[0] : 'Owner'}

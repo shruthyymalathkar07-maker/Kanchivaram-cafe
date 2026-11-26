@@ -271,10 +271,10 @@ export default function MobileNav({
                   <div className={`w-7 h-7 rounded-full text-white font-extrabold text-xs flex items-center justify-center ${
                     isBrownBranch ? 'bg-[#542A16]' : 'bg-[#048450]'
                   }`}>
-                    {currentUser?.avatar || 'SA'}
+                    {currentUser?.avatar || 'KC'}
                   </div>
                   <div className="text-left leading-tight">
-                    <p className="text-xs font-bold text-white truncate">{currentUser?.name || 'Shruthy A'}</p>
+                    <p className="text-xs font-bold text-white truncate">{currentUser?.name || 'Kanchivaram Café Admin'}</p>
                     <p className="text-[9.5px] text-slate-300 font-medium">{currentUser?.role || 'Owner'}</p>
                   </div>
                 </div>

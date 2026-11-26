@@ -1129,7 +1129,7 @@ export default function ExpensesView({ selectedBranch }) {
               <div className="bg-[#ebdcc8] p-3 rounded-xl border border-[#cabb9e] text-[11px] font-bold text-[#11291f] space-y-1.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[#456351]">Recorded By:</span>
-                  <span className="font-black text-[#11291f]">Shruthy A</span>
+                  <span className="font-black text-[#11291f]">Kanchivaram Café Admin</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[#456351]">Day Outflows Paid:</span>

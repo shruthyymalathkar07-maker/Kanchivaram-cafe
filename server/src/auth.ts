@@ -818,15 +818,15 @@ export async function findUserByPhone(phone: string, includeBranch = true) {
   // In Mock Development Mode, allow any valid 10-digit phone
   const otpProvider = (process.env.OTP_PROVIDER || 'mock').trim().toLowerCase();
   if (otpProvider === 'mock' && last10.length >= 10) {
-    const override = getPasswordOverride(last10) || getPasswordOverride('shruthy@kanchivaram.cafe');
+    const override = getPasswordOverride(last10) || getPasswordOverride('kanchivaramcafe3@gmail.com');
     return {
       id: `mock-user-${last10}`,
-      name: 'Shruthy A (Mock Admin)',
-      email: 'shruthy@kanchivaram.cafe',
+      name: 'Kanchivaram Café Admin',
+      email: 'kanchivaramcafe3@gmail.com',
       phone: `+91 ${last10}`,
       role: 'Owner & General Manager',
       passwordHash: override || 'Password@123',
-      avatar: 'SA',
+      avatar: 'KC',
       isActive: true,
       branchId: 'branch-1',
       branch: null,
@@ -866,12 +866,12 @@ export function validateUserActive(user: { isActive?: boolean } | null): boolean
 export const DEFAULT_AUTH_USERS = [
   {
     id: 'user-1',
-    name: 'Shruthy A',
-    email: 'shruthy@kanchivaram.cafe',
-    phone: '+91 98765 43210',
+    name: 'Kanchivaram Café Admin',
+    email: 'kanchivaramcafe3@gmail.com',
+    phone: '+91 82484 26348',
     role: 'Owner & General Manager',
     plainPassword: 'Password@123',
-    avatar: 'SA',
+    avatar: 'KC',
     branchId: 'branch-1'
   },
   {

@@ -24,13 +24,13 @@ export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialSt
   const [authState, setAuthState] = useState(() => authStore.getState());
 
   // Login Form States
-  const [emailInput, setEmailInput] = useState('shruthy@kanchivaram.cafe');
+  const [emailInput, setEmailInput] = useState('kanchivaramcafe3@gmail.com');
   const [passwordInput, setPasswordInput] = useState('Password@123');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
   // Forgot Password & Phone OTP States
-  const [phoneInput, setPhoneInput] = useState('98765 43210');
+  const [phoneInput, setPhoneInput] = useState('82484 26348');
   const [isRequestingOtp, setIsRequestingOtp] = useState(false);
   const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']);
   const otpInputRefs = useRef([]);

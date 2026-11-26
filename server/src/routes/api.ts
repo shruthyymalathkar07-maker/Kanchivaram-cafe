@@ -398,7 +398,7 @@ export function createApiRouter(io: SocketServer) {
       const last10 = digitsOnly.slice(-10);
 
       // Determine target email
-      let targetEmail = 'shruthy@kanchivaram.cafe';
+      let targetEmail = 'kanchivaramcafe3@gmail.com';
       if (tokenPayload.userId === 'user-2' || last10 === '9123456789') {
         targetEmail = 'karthik@kanchivaram.cafe';
       }
@@ -460,12 +460,12 @@ export function createApiRouter(io: SocketServer) {
               await prisma.user.create({
                 data: {
                   id: tokenPayload.userId || (targetEmail.includes('karthik') ? 'user-2' : 'user-1'),
-                  name: targetEmail.includes('karthik') ? 'Karthik Raja' : 'Shruthy A',
+                  name: targetEmail.includes('karthik') ? 'Karthik Raja' : 'Kanchivaram Café Admin',
                   email: targetEmail,
                   phone: targetEmail.includes('karthik') ? '+91 91234 56789' : `+91 ${cleanDigits}`,
                   role: targetEmail.includes('karthik') ? 'Store Manager' : 'Owner & General Manager',
                   passwordHash: hashedPassword,
-                  avatar: targetEmail.includes('karthik') ? 'KR' : 'SA',
+                  avatar: targetEmail.includes('karthik') ? 'KR' : 'KC',
                   isActive: true
                 }
               });

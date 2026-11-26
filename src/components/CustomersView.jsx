@@ -615,7 +615,7 @@ export default function CustomersView({ selectedBranch }) {
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g. Shruthy A"
+                  placeholder="e.g. Ramesh S"
                   className="w-full px-3 py-1.5 bg-white border border-[#cabb9e] rounded-xl text-xs text-[#11291f] font-bold focus:ring-2 focus:ring-[#0f3823]"
                 />
               </div>

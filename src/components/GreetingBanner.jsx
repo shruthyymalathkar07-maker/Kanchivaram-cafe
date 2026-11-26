@@ -5,7 +5,8 @@ export default function GreetingBanner({
   onNewBill, 
   onReceiveStock, 
   onOnlineOrders, 
-  onSalesAudit 
+  onSalesAudit,
+  currentUser
 }) {
   return (
     <div className="space-y-4 mb-4">
@@ -16,7 +17,7 @@ export default function GreetingBanner({
         {/* Left Welcome Text */}
         <div className="space-y-1 z-10">
           <h2 className="text-xl sm:text-2xl font-bold font-sans text-[#10271d] flex items-center gap-2">
-            Good Morning, Shruthy! <span className="text-xl">☕</span>
+            Good Morning, {currentUser?.name || 'Kanchivaram Café Admin'}! <span className="text-xl">☕</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#476655] font-semibold">
             Fresh brews. Smooth operations. You've got this!

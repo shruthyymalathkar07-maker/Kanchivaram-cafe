@@ -132,17 +132,8 @@ export default function POSBillingView({
   // Quick Action States with localStorage persistence per branch
   const branchKey = selectedBranch?.id || 'branch-1';
 
-  // Dynamic Cashier State (Hybrid: Logged-in user default + Quick staff dropdown switcher)
+  // Dynamic Cashier State (Filtered STRICTLY by Staff members with 'Cashier' role)
   const [activeStaffList, setActiveStaffList] = useState([]);
-  const [cashierName, setCashierName] = useState(() => {
-    return localStorage.getItem(`kc_cashier_name_${branchKey}`) || currentUser?.name || 'Cashier';
-  });
-
-  useEffect(() => {
-    if (currentUser?.name && !localStorage.getItem(`kc_cashier_name_${branchKey}`)) {
-      setCashierName(currentUser.name);
-    }
-  }, [currentUser?.name, branchKey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,24 +151,36 @@ export default function POSBillingView({
     return () => { isMounted = false; };
   }, [branchKey]);
 
-  const cashierOptions = useMemo(() => {
-    const list = [];
-    if (currentUser?.name && !list.includes(currentUser.name)) {
-      list.push(currentUser.name);
-    }
-    activeStaffList.forEach(s => {
-      if (s.name && !list.includes(s.name)) {
-        list.push(s.name);
-      }
+  // Filter staff database: strictly include only staff whose role is Cashier
+  const cashierStaffList = useMemo(() => {
+    return activeStaffList.filter(s => {
+      const roleStr = (s.role || '').toLowerCase();
+      return roleStr.includes('cashier');
     });
-    if (cashierName && !list.includes(cashierName)) {
-      list.push(cashierName);
-    }
-    if (!list.includes('Cashier')) {
-      list.push('Cashier');
+  }, [activeStaffList]);
+
+  const cashierOptions = useMemo(() => {
+    const list = cashierStaffList.map(s => s.name ? s.name.trim() : '').filter(Boolean);
+    if (list.length === 0) {
+      list.push('Cashier 1', 'Cashier 2');
     }
     return list;
-  }, [currentUser?.name, cashierName, activeStaffList]);
+  }, [cashierStaffList]);
+
+  const [cashierName, setCashierName] = useState(() => {
+    return localStorage.getItem(`kc_cashier_name_${branchKey}`) || '';
+  });
+
+  useEffect(() => {
+    if (cashierOptions.length > 0) {
+      const saved = localStorage.getItem(`kc_cashier_name_${branchKey}`);
+      if (saved && cashierOptions.includes(saved)) {
+        setCashierName(saved);
+      } else {
+        setCashierName(cashierOptions[0]);
+      }
+    }
+  }, [cashierOptions, branchKey]);
   const [heldBills, setHeldBills] = useState(() => {
     try {
       const saved = localStorage.getItem(`kc_held_bills_${branchKey}`);
@@ -503,7 +506,7 @@ export default function POSBillingView({
       customerName: customerName.trim() || null,
       customerPhone: phoneInput.trim() || null,
       orderNote,
-      cashierName: cashierName || currentUser?.name || 'Cashier',
+      cashierName: cashierName || cashierOptions[0] || 'Cashier 1',
       channel: 'POS',
       branchId
     };
@@ -1062,7 +1065,7 @@ export default function POSBillingView({
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Customer name (e.g. Shruthy A)"
+                placeholder="Customer name (e.g. Ramesh S)"
                 className="w-full px-2.5 py-1 bg-white border border-[#cabb9e] rounded-lg text-xs text-[#11291f] placeholder-[#87a997] focus:outline-none focus:ring-1 focus:ring-[#0f3823] font-bold"
               />
             </div>
