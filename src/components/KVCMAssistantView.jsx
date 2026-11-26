@@ -26,7 +26,7 @@ export const getKVCMResponse = (query, state, expenseState, selectedBranch) => {
   const todayIso = new Date().toISOString().split('T')[0];
   const currentMonthPrefix = todayIso.slice(0, 7);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const branchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+  const branchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch' : 'Main Branch');
 
   // 1. Filter ONLY valid completed sales (strictly exclude cancelled, refunded, or returned)
   const validSales = (state.sales || []).filter(
@@ -460,7 +460,7 @@ const QUICK_QUESTIONS = [
 export default function KVCMAssistantView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
-  const currentBranchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+  const currentBranchName = selectedBranch?.name || (selectedBranch?.id === 'branch-2' ? 'City Branch' : 'Main Branch');
 
   const [messages, setMessages] = useState([
     {
@@ -527,7 +527,7 @@ export default function KVCMAssistantView({ selectedBranch }) {
     if (selectedBranch?.id) {
       inventoryStore.setBranch(selectedBranch.id);
       expenseStore.setBranch(selectedBranch.id);
-      const activeName = selectedBranch.name || (selectedBranch.id === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+      const activeName = selectedBranch.name || (selectedBranch.id === 'branch-2' ? 'City Branch' : 'Main Branch');
       setMessages([
         {
           id: `welcome-${selectedBranch.id}`,

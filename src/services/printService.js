@@ -11,8 +11,8 @@ export class PrintService {
   static printPaperReceipt(sale, branchInfo = null) {
     console.log('[PrintService] Formatting ESC/POS thermal receipt job:', sale.billNumber);
 
-    const branchName = branchInfo?.name || sale.branchName || (sale.branchId === 'branch-2' ? 'City Branch (Chennai)' : 'Main Branch (Kanchipuram)');
-    const branchLocation = sale.branchId === 'branch-2' ? 'Anna Nagar, Chennai, Tamil Nadu' : 'Heritage Street, Kanchipuram, Tamil Nadu';
+    const branchName = branchInfo?.name || sale.branchName || (sale.branchId === 'branch-2' ? 'City Branch' : 'Main Branch');
+    const branchLocation = 'Kanchipuram, Tamil Nadu';
     const saleDate = new Date(sale.createdAt || Date.now());
     const dateFormatted = saleDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const timeFormatted = saleDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -214,14 +214,12 @@ export class PrintService {
       itemsList = `• ${sale.items || 'Cafe Order'}`;
     }
 
-    const branchTitle = sale.branchName || (sale.branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
     const totalAmount = Number(sale.grandTotal || sale.total || 0).toFixed(2);
     const payMode = sale.paymentMethod || 'Cash';
 
     // Formatted WhatsApp message with crystal-clear emojis and polite greeting
     const message = 
 `☕ *Kanchivaram Cafe*
-📍 _${branchTitle}_
 *Good Food, Happier People*
 
 🧾 *INVOICE: #${sale.billNumber}*
@@ -248,7 +246,7 @@ Payment Mode: ${payMode}
    */
   static printKOT(order, branchInfo = null) {
     console.log('[PrintService] Formatting KOT thermal print job for Order:', order.id || order.billNumber);
-    const branchName = branchInfo?.name || (order.branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+    const branchName = branchInfo?.name || (order.branchId === 'branch-2' ? 'City Branch' : 'Main Branch');
     const orderDate = new Date(order.createdAt || Date.now());
     const dateFormatted = orderDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const timeFormatted = orderDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });

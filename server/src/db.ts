@@ -150,7 +150,7 @@ export class BranchDataManager {
       'branch-1': {
         branchId: 'branch-1',
         storeName: 'Kanchivaram Café',
-        branchName: 'Main Branch - Gandhi Road',
+        branchName: 'Main Branch',
         gstin: '',
         fssaiNo: '12421008000142',
         contactPhone: '+91 98765 43210',
@@ -163,7 +163,7 @@ export class BranchDataManager {
       'branch-2': {
         branchId: 'branch-2',
         storeName: 'Kanchivaram Café',
-        branchName: 'City Branch - Anna Salai',
+        branchName: 'City Branch',
         gstin: '',
         fssaiNo: '12421008000142',
         contactPhone: '+91 98765 43210',
@@ -225,7 +225,7 @@ export class BranchDataManager {
       this.settings[branchId] = {
         branchId,
         storeName: 'Kanchivaram Café',
-        branchName: branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road',
+        branchName: branchId === 'branch-2' ? 'City Branch' : 'Main Branch',
         gstin: '',
         fssaiNo: '12421008000142',
         contactPhone: '+91 98765 43210',

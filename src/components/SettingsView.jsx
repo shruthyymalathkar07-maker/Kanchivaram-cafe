@@ -34,7 +34,7 @@ export default function SettingsView({ selectedBranch }) {
 
   // Store Information State
   const [storeName, setStoreName] = useState('Kanchivaram Café');
-  const [branchName, setBranchName] = useState(selectedBranch?.name || 'Main Branch - Gandhi Road');
+  const [branchName, setBranchName] = useState(selectedBranch?.name || 'Main Branch');
   const [gstin, setGstin] = useState('');
   const [fssaiNo, setFssaiNo] = useState('12421008000142');
   const [contactPhone, setContactPhone] = useState('+91 98765 43210');
@@ -118,7 +118,7 @@ export default function SettingsView({ selectedBranch }) {
     try {
       const storePayload = {
         storeName: (storeName || '').trim() || 'Kanchivaram Café',
-        branchName: (branchName || '').trim() || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road'),
+        branchName: (branchName || '').trim() || (branchId === 'branch-2' ? 'City Branch' : 'Main Branch'),
         gstin: (gstin || '').trim(),
         fssaiNo: (fssaiNo || '').trim(),
         contactPhone: (contactPhone || '').trim(),

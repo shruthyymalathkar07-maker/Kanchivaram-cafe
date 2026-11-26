@@ -70,7 +70,6 @@ export function normalizeWhatsAppNumber(rawPhone: string): string {
  * Formats a clean, professional, branded WhatsApp digital receipt message.
  */
 export function formatReceiptMessage(receipt: DigitalReceiptPayload): string {
-  const branchTitle = receipt.branchName || (receipt.branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
   const custName = (receipt.customerName && receipt.customerName.trim() && !receipt.customerName.includes('Customer'))
     ? receipt.customerName.trim()
     : 'Valued Guest';
@@ -96,7 +95,6 @@ export function formatReceiptMessage(receipt: DigitalReceiptPayload): string {
 
   return (
 `🍵 *KANCHIVARAM CAFÉ*
-📍 *${branchTitle}*
 ━━━━━━━━━━━━━━━━━━━━
 🧾 *E-RECEIPT #${receipt.billNumber}*
 📅 *Date:* ${today}

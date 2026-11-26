@@ -132,9 +132,9 @@ export function createApiRouter(io: SocketServer) {
       if (!branchInfo) {
         branchInfo = {
           id: targetBranchId,
-          name: targetBranchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road',
+          name: targetBranchId === 'branch-2' ? 'City Branch' : 'Main Branch',
           badge: targetBranchId === 'branch-2' ? 'City Branch' : 'Main Branch',
-          location: targetBranchId === 'branch-2' ? 'Anna Salai' : 'Gandhi Road',
+          location: 'Kanchipuram',
           status: 'Operational (Live)'
         };
       }
@@ -688,8 +688,8 @@ export function createApiRouter(io: SocketServer) {
       success: true,
       count: 2,
       branches: [
-        { id: 'branch-1', name: 'Main Branch - Gandhi Road', badge: 'Main Branch', location: 'Gandhi Road', status: 'Operational (Live)' },
-        { id: 'branch-2', name: 'City Branch - Anna Salai', badge: 'City Branch', location: 'Anna Salai', status: 'Operational (Live)' }
+        { id: 'branch-1', name: 'Main Branch', badge: 'Main Branch', location: 'Kanchipuram', status: 'Operational (Live)' },
+        { id: 'branch-2', name: 'City Branch', badge: 'City Branch', location: 'Kanchipuram', status: 'Operational (Live)' }
       ]
     });
   });
@@ -2600,7 +2600,7 @@ export function createApiRouter(io: SocketServer) {
         });
       }
 
-      const branchName = branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road';
+      const branchName = branchId === 'branch-2' ? 'City Branch' : 'Main Branch';
       const integrations = branchDb.getIntegrations(branchId);
       const payload: DigitalReceiptPayload = {
         billNumber: billNumber || sale?.billNumber || `KC-2026-${Date.now().toString().slice(-4)}`,
@@ -2651,7 +2651,7 @@ export function createApiRouter(io: SocketServer) {
         });
       }
 
-      const branchName = branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road';
+      const branchName = branchId === 'branch-2' ? 'City Branch' : 'Main Branch';
       const payload: DigitalReceiptPayload = {
         billNumber: billNumber || sale?.billNumber || `KC-2026-${Date.now().toString().slice(-4)}`,
         customerName: sale?.customerName,
@@ -3981,7 +3981,7 @@ export function createApiRouter(io: SocketServer) {
 
     const fallbackPayload = {
       storeName: storeName || 'Kanchivaram Café',
-      branchName: branchName || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road'),
+      branchName: branchName || (branchId === 'branch-2' ? 'City Branch' : 'Main Branch'),
       gstin: typeof gstin !== 'undefined' ? gstin : '',
       fssaiNo: typeof fssaiNo !== 'undefined' ? fssaiNo : '',
       contactPhone: typeof contactPhone !== 'undefined' ? contactPhone : '',
