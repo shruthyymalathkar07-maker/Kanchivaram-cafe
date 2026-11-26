@@ -466,7 +466,7 @@ export default function SettingsView({ selectedBranch }) {
               </div>
             </div>
 
-            {/* Section 1: WhatsApp & SMS Gateway */}
+            {/* Section 1: WhatsApp & SMS Messaging */}
             <div className="bg-[#ebe0cb]/40 border border-[#cabb9e] rounded-xl p-4 space-y-4">
               <div className="flex items-center gap-2.5 pb-2 border-b border-[#ded4c5]">
                 <div className={`p-2 rounded-lg ${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shrink-0`}>
@@ -474,91 +474,32 @@ export default function SettingsView({ selectedBranch }) {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-[#11291f]">
-                    WhatsApp Business &amp; SMS Messaging Gateway
+                    WhatsApp Direct Sharing &amp; SMS Gateway
                   </h4>
                   <p className="text-[11px] text-[#456351]">
-                    Sends paperless PDF e-bills upon checkout and 6-digit OTPs for password reset.
+                    Sends instant digital bills via your professional WhatsApp and handles SMS OTP login.
                   </p>
                 </div>
               </div>
 
-              {/* WhatsApp Provider Selector (Interakt / Wati vs Meta Cloud API) */}
-              <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <span className="text-xs font-bold text-[#11291f]">WhatsApp Provider:</span>
-                <button
-                  type="button"
-                  onClick={() => setWhatsappProvider('interakt')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                    whatsappProvider === 'interakt'
-                      ? (isBrownBranch ? 'bg-[#542A16] text-white shadow-xs' : 'bg-[#0f3823] text-white shadow-xs')
-                      : 'bg-[#ebdcc8]/40 text-[#547363] hover:bg-[#ebdcc8] border border-[#cabb9e]'
-                  }`}
-                >
-                  Interakt / Wati (No Facebook Needed)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWhatsappProvider('meta')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                    whatsappProvider === 'meta'
-                      ? (isBrownBranch ? 'bg-[#542A16] text-white shadow-xs' : 'bg-[#0f3823] text-white shadow-xs')
-                      : 'bg-[#ebdcc8]/40 text-[#547363] hover:bg-[#ebdcc8] border border-[#cabb9e]'
-                  }`}
-                >
-                  Meta Cloud API (Official Developer)
-                </button>
+              {/* Feature 1: WhatsApp 1-Click Direct Share (Active & Free) */}
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="text-xs space-y-0.5">
+                  <p className="font-bold text-emerald-950 flex items-center gap-2">
+                    <span>1-Click WhatsApp Direct Sharing: Active</span>
+                    <span className="px-2 py-0.5 bg-emerald-200/80 text-emerald-800 text-[10px] font-black rounded-full">100% Free Forever</span>
+                  </p>
+                  <p className="text-emerald-800 text-[11px] leading-relaxed">
+                    At POS checkout, click <strong>"Share Bill on WhatsApp"</strong> to instantly send the formatted receipt and cordial greeting to the customer's phone from your WhatsApp Web or mobile app. Zero monthly API fees, and your professional number stays 100% safe on your phone!
+                  </p>
+                </div>
               </div>
 
-              {whatsappProvider === 'interakt' ? (
-                <div className="text-xs">
-                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                    Interakt / Wati API Key
-                  </label>
-                  <input
-                    type={showSecrets ? 'text' : 'password'}
-                    value={interaktApiKey}
-                    onChange={(e) => setInteraktApiKey(e.target.value)}
-                    placeholder="e.g. key_live_abc123xyz... (from interakt.shop or wati.io settings)"
-                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
-                  />
-                  <p className="text-[10px] text-[#6b7280] mt-1">Get this key directly from your Interakt or Wati dashboard &gt; Settings &gt; Developer API. No Facebook login required.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                      WhatsApp Business Phone Number ID
-                    </label>
-                    <input
-                      type="text"
-                      value={whatsappPhoneId}
-                      onChange={(e) => setWhatsappPhoneId(e.target.value)}
-                      placeholder="e.g. 105934857201948"
-                      className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
-                    />
-                    <p className="text-[10px] text-[#6b7280] mt-1">From Meta for Developers &gt; WhatsApp &gt; API Setup</p>
-                  </div>
-
-                  <div>
-                    <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                      Meta System User Permanent Access Token
-                    </label>
-                    <input
-                      type={showSecrets ? 'text' : 'password'}
-                      value={whatsappToken}
-                      onChange={(e) => setWhatsappToken(e.target.value)}
-                      placeholder="e.g. EAABwzLix..."
-                      className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
-                    />
-                    <p className="text-[10px] text-[#6b7280] mt-1">Bearer token with whatsapp_business_messaging permission</p>
-                  </div>
-                </div>
-              )}
-
-              {/* SMS Gateway (Fast2SMS) */}
-              <div className="text-xs">
-                <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                  SMS Gateway API Key (Fast2SMS / 2Factor)
+              {/* Feature 2: SMS Gateway (Fast2SMS) */}
+              <div className="text-xs space-y-1">
+                <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'}`}>
+                  SMS Gateway API Key (Fast2SMS)
                 </label>
                 <input
                   type={showSecrets ? 'text' : 'password'}
@@ -567,7 +508,9 @@ export default function SettingsView({ selectedBranch }) {
                   placeholder="e.g. f2s_live_auth_key_... (from fast2sms.com > Dev API)"
                   className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
                 />
-                <p className="text-[10px] text-[#6b7280] mt-1">Used for cashier/manager OTP login authentication and automatic fallback SMS bills when a customer has no WhatsApp.</p>
+                <p className="text-[10px] text-[#6b7280]">
+                  Powers cashier/manager OTP login authentication and delivers normal SMS bills to customers who do not have WhatsApp.
+                </p>
               </div>
             </div>
 

@@ -198,9 +198,43 @@ export class PrintService {
     const cleanPhone = String(phoneNumber).replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    const itemsList = (sale.items || []).map(it => `• ${it.quantity || it.qty || 1}x ${it.name || it.productName} - ₹${Number((it.unitPrice || it.price || 0) * (it.quantity || it.qty || 1)).toFixed(2)}`).join('\n');
+    const saleDate = new Date(sale.createdAt || Date.now());
+    const dateFormatted = saleDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeFormatted = saleDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    const message = `*Kanchivaram Café* ☕\n_Good Food, Happier People_\n\n*INVOICE: #${sale.billNumber}*\nDate: ${new Date(sale.createdAt || Date.now()).toLocaleDateString('en-IN')}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Paid: ₹${Number(sale.grandTotal || sale.total || 0).toFixed(2)}*\nPayment: ${sale.paymentMethod || 'Cash'}\n\nThank you for dining with us! Have a wonderful day! 🙏`;
+    let itemsList = '';
+    if (Array.isArray(sale.items) && sale.items.length > 0) {
+      itemsList = sale.items.map(it => {
+        const qty = it.quantity || it.qty || 1;
+        const price = Number(it.unitPrice || it.price || 0);
+        const lineTotal = Number(it.subtotal || (price * qty));
+        return `• ${qty}x ${it.name || it.productName} - Rs. ${lineTotal.toFixed(2)}`;
+      }).join('\n');
+    } else {
+      itemsList = `• ${sale.items || 'Cafe Order'}`;
+    }
+
+    const branchTitle = sale.branchName || (sale.branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+    const totalAmount = Number(sale.grandTotal || sale.total || 0).toFixed(2);
+    const payMode = sale.paymentMethod || 'Cash';
+
+    // Formatted WhatsApp message with crystal-clear emojis and polite greeting
+    const message = 
+`☕ *Kanchivaram Cafe*
+📍 _${branchTitle}_
+*Good Food, Happier People*
+
+🧾 *INVOICE: #${sale.billNumber}*
+📅 Date: ${dateFormatted} (${timeFormatted})
+${sale.customerName && sale.customerName !== 'Walk-in Customer' ? `👤 Customer: ${sale.customerName}\n` : ''}--------------------------------
+*ITEMS ORDERED:*
+${itemsList}
+--------------------------------
+*TOTAL PAID: Rs. ${totalAmount}*
+Payment Mode: ${payMode}
+
+✨ _Thank you for dining with us!_
+😊 *Have a wonderful day!* 🙏`;
 
     const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
     if (typeof window !== 'undefined') {
