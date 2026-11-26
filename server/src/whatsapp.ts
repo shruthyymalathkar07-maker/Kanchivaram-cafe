@@ -38,6 +38,8 @@ export interface WhatsAppSendResult {
 }
 
 export interface IntegrationCredentials {
+  whatsappProvider?: string;
+  interaktApiKey?: string;
   whatsappToken?: string;
   whatsappPhoneId?: string;
   smsApiKey?: string;
@@ -228,11 +230,11 @@ export async function sendWhatsAppReceipt(
   const clean10Phone = formattedPhone.slice(-10);
   const messageText = formatReceiptMessage(receipt);
 
-  const provider = (process.env.WHATSAPP_PROVIDER || 'mock').trim().toLowerCase();
+  const provider = (customConfig?.whatsappProvider || process.env.WHATSAPP_PROVIDER || 'interakt').trim().toLowerCase();
   const metaToken = customConfig?.whatsappToken || process.env.WHATSAPP_TOKEN || process.env.WHATSAPP_API_KEY || process.env.META_WHATSAPP_TOKEN;
   const phoneNumberId = customConfig?.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID;
   const smsApiKey = customConfig?.smsApiKey || process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY;
-  const interaktApiKey = process.env.INTERAKT_API_KEY;
+  const interaktApiKey = customConfig?.interaktApiKey || process.env.INTERAKT_API_KEY;
 
   const isMockMode = (
     provider === 'mock' ||

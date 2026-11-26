@@ -4042,6 +4042,8 @@ export function createApiRouter(io: SocketServer) {
   router.put('/settings/integrations', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);
     const {
+      whatsappProvider,
+      interaktApiKey,
       whatsappToken,
       whatsappPhoneId,
       smsApiKey,
@@ -4053,6 +4055,8 @@ export function createApiRouter(io: SocketServer) {
 
     try {
       const updated = branchDb.updateIntegrations(branchId, {
+        whatsappProvider: whatsappProvider || 'interakt',
+        interaktApiKey: interaktApiKey || '',
         whatsappToken: whatsappToken || '',
         whatsappPhoneId: whatsappPhoneId || '',
         smsApiKey: smsApiKey || '',
@@ -4063,6 +4067,8 @@ export function createApiRouter(io: SocketServer) {
       });
 
       // Update runtime process.env if provided
+      if (interaktApiKey) process.env.INTERAKT_API_KEY = String(interaktApiKey);
+      if (whatsappProvider) process.env.WHATSAPP_PROVIDER = String(whatsappProvider);
       if (whatsappToken) process.env.WHATSAPP_TOKEN = String(whatsappToken);
       if (whatsappPhoneId) process.env.WHATSAPP_PHONE_NUMBER_ID = String(whatsappPhoneId);
       if (smsApiKey) {

@@ -93,6 +93,8 @@ export interface StockLedgerEntry {
 }
 
 export interface BranchIntegrations {
+  whatsappProvider: string; // 'interakt' | 'meta' | 'mock'
+  interaktApiKey: string;
   whatsappToken: string;
   whatsappPhoneId: string;
   smsApiKey: string;
@@ -122,6 +124,8 @@ export class BranchDataManager {
     };
     this.integrations = {
       'branch-1': {
+        whatsappProvider: process.env.WHATSAPP_PROVIDER || 'interakt',
+        interaktApiKey: process.env.INTERAKT_API_KEY || '',
         whatsappToken: process.env.WHATSAPP_TOKEN || '',
         whatsappPhoneId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
         smsApiKey: process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY || '',
@@ -131,6 +135,8 @@ export class BranchDataManager {
         zomatoApiKey: process.env.ZOMATO_API_KEY || ''
       },
       'branch-2': {
+        whatsappProvider: process.env.WHATSAPP_PROVIDER || 'interakt',
+        interaktApiKey: process.env.INTERAKT_API_KEY || '',
         whatsappToken: process.env.WHATSAPP_TOKEN || '',
         whatsappPhoneId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
         smsApiKey: process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY || '',
@@ -191,6 +197,8 @@ export class BranchDataManager {
   getIntegrations(branchId: string = 'branch-1'): BranchIntegrations {
     if (!this.integrations[branchId]) {
       this.integrations[branchId] = {
+        whatsappProvider: 'interakt',
+        interaktApiKey: '',
         whatsappToken: '',
         whatsappPhoneId: '',
         smsApiKey: '',

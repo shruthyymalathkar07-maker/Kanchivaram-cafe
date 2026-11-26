@@ -48,6 +48,8 @@ export default function SettingsView({ selectedBranch }) {
   const [defaultPaymentMode, setDefaultPaymentMode] = useState('CASH');
 
   // Integrations & External APIs State
+  const [whatsappProvider, setWhatsappProvider] = useState('interakt');
+  const [interaktApiKey, setInteraktApiKey] = useState('');
   const [whatsappToken, setWhatsappToken] = useState('');
   const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
   const [smsApiKey, setSmsApiKey] = useState('');
@@ -78,6 +80,8 @@ export default function SettingsView({ selectedBranch }) {
       // Also load branch integration credentials
       const integ = await fetchIntegrationSettings(branchId);
       if (isMounted && integ) {
+        if (typeof integ.whatsappProvider !== 'undefined') setWhatsappProvider(integ.whatsappProvider || 'interakt');
+        if (typeof integ.interaktApiKey !== 'undefined') setInteraktApiKey(integ.interaktApiKey || '');
         if (typeof integ.whatsappToken !== 'undefined') setWhatsappToken(integ.whatsappToken || '');
         if (typeof integ.whatsappPhoneId !== 'undefined') setWhatsappPhoneId(integ.whatsappPhoneId || '');
         if (typeof integ.smsApiKey !== 'undefined') setSmsApiKey(integ.smsApiKey || '');
@@ -125,6 +129,8 @@ export default function SettingsView({ selectedBranch }) {
         defaultPaymentMode
       };
       const integPayload = {
+        whatsappProvider,
+        interaktApiKey,
         whatsappToken,
         whatsappPhoneId,
         smsApiKey,
@@ -476,48 +482,92 @@ export default function SettingsView({ selectedBranch }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                    WhatsApp Business Phone Number ID
-                  </label>
-                  <input
-                    type="text"
-                    value={whatsappPhoneId}
-                    onChange={(e) => setWhatsappPhoneId(e.target.value)}
-                    placeholder="e.g. 105934857201948"
-                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
-                  />
-                  <p className="text-[10px] text-[#6b7280] mt-1">From Meta for Developers &gt; WhatsApp &gt; API Setup</p>
-                </div>
+              {/* WhatsApp Provider Selector (Interakt / Wati vs Meta Cloud API) */}
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <span className="text-xs font-bold text-[#11291f]">WhatsApp Provider:</span>
+                <button
+                  type="button"
+                  onClick={() => setWhatsappProvider('interakt')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    whatsappProvider === 'interakt'
+                      ? (isBrownBranch ? 'bg-[#542A16] text-white shadow-xs' : 'bg-[#0f3823] text-white shadow-xs')
+                      : 'bg-[#ebdcc8]/40 text-[#547363] hover:bg-[#ebdcc8] border border-[#cabb9e]'
+                  }`}
+                >
+                  Interakt / Wati (No Facebook Needed)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWhatsappProvider('meta')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    whatsappProvider === 'meta'
+                      ? (isBrownBranch ? 'bg-[#542A16] text-white shadow-xs' : 'bg-[#0f3823] text-white shadow-xs')
+                      : 'bg-[#ebdcc8]/40 text-[#547363] hover:bg-[#ebdcc8] border border-[#cabb9e]'
+                  }`}
+                >
+                  Meta Cloud API (Official Developer)
+                </button>
+              </div>
 
-                <div>
+              {whatsappProvider === 'interakt' ? (
+                <div className="text-xs">
                   <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                    Meta System User Permanent Access Token
+                    Interakt / Wati API Key
                   </label>
                   <input
                     type={showSecrets ? 'text' : 'password'}
-                    value={whatsappToken}
-                    onChange={(e) => setWhatsappToken(e.target.value)}
-                    placeholder="e.g. EAABwzLix..."
+                    value={interaktApiKey}
+                    onChange={(e) => setInteraktApiKey(e.target.value)}
+                    placeholder="e.g. key_live_abc123xyz... (from interakt.shop or wati.io settings)"
                     className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
                   />
-                  <p className="text-[10px] text-[#6b7280] mt-1">Bearer token with whatsapp_business_messaging permission</p>
+                  <p className="text-[10px] text-[#6b7280] mt-1">Get this key directly from your Interakt or Wati dashboard &gt; Settings &gt; Developer API. No Facebook login required.</p>
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                      WhatsApp Business Phone Number ID
+                    </label>
+                    <input
+                      type="text"
+                      value={whatsappPhoneId}
+                      onChange={(e) => setWhatsappPhoneId(e.target.value)}
+                      placeholder="e.g. 105934857201948"
+                      className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                    />
+                    <p className="text-[10px] text-[#6b7280] mt-1">From Meta for Developers &gt; WhatsApp &gt; API Setup</p>
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
-                    SMS Gateway API Key (Fast2SMS / 2Factor Backup)
-                  </label>
-                  <input
-                    type={showSecrets ? 'text' : 'password'}
-                    value={smsApiKey}
-                    onChange={(e) => setSmsApiKey(e.target.value)}
-                    placeholder="e.g. f2s_live_auth_key_..."
-                    className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
-                  />
-                  <p className="text-[10px] text-[#6b7280] mt-1">Used automatically if customer does not have WhatsApp active</p>
+                  <div>
+                    <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                      Meta System User Permanent Access Token
+                    </label>
+                    <input
+                      type={showSecrets ? 'text' : 'password'}
+                      value={whatsappToken}
+                      onChange={(e) => setWhatsappToken(e.target.value)}
+                      placeholder="e.g. EAABwzLix..."
+                      className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                    />
+                    <p className="text-[10px] text-[#6b7280] mt-1">Bearer token with whatsapp_business_messaging permission</p>
+                  </div>
                 </div>
+              )}
+
+              {/* SMS Gateway (Fast2SMS) */}
+              <div className="text-xs">
+                <label className={`block font-bold ${isBrownBranch ? 'text-[#5A321F]' : 'text-[#11291f]'} mb-1`}>
+                  SMS Gateway API Key (Fast2SMS / 2Factor)
+                </label>
+                <input
+                  type={showSecrets ? 'text' : 'password'}
+                  value={smsApiKey}
+                  onChange={(e) => setSmsApiKey(e.target.value)}
+                  placeholder="e.g. f2s_live_auth_key_... (from fast2sms.com > Dev API)"
+                  className={`w-full p-2.5 bg-white border border-[#cabb9e] rounded-xl font-mono text-xs font-semibold text-[#11291f] focus:ring-2 ${isBrownBranch ? 'focus:ring-[#7A4325]' : 'focus:ring-[#0f3823]'} focus:outline-none`}
+                />
+                <p className="text-[10px] text-[#6b7280] mt-1">Used for cashier/manager OTP login authentication and automatic fallback SMS bills when a customer has no WhatsApp.</p>
               </div>
             </div>
 
