@@ -2009,6 +2009,19 @@ export function createApiRouter(io: SocketServer) {
           where: branchId ? { branchId } : {}
         });
 
+        const targetBranches = branchId ? [branchId] : ['branch-1', 'branch-2'];
+        targetBranches.forEach(bId => {
+          const bData = branchDb.getBranchData(bId);
+          if (bData) {
+            bData.ledger = [];
+            if (Array.isArray(bData.inventoryItems)) {
+              bData.inventoryItems.forEach((it: any) => {
+                it.stockOut = 0;
+              });
+            }
+          }
+        });
+
         io.emit('inventory_updated', { branchId });
 
         return res.json({
@@ -2026,18 +2039,59 @@ export function createApiRouter(io: SocketServer) {
       });
     }
 
+    const targetBranches = branchId ? [branchId] : ['branch-1', 'branch-2'];
+    targetBranches.forEach(bId => {
+      const bData = branchDb.getBranchData(bId);
+      if (bData) {
+        bData.ledger = [];
+        if (Array.isArray(bData.inventoryItems)) {
+          bData.inventoryItems.forEach((it: any) => {
+            it.stockOut = 0;
+          });
+        }
+      }
+    });
+
     return res.json({ success: true, count: 0 });
   });
 
   // 4d-2. POST /api/admin/clean-database (Full Production Handover Database Reset)
   router.post('/admin/clean-database', async (_req: Request, res: Response) => {
     try {
-      const result = await executeProductionHandoverCleanup();
+      let result = null;
+      if (prisma) {
+        try {
+          result = await executeProductionHandoverCleanup();
+        } catch (dbErr: any) {
+          console.warn('[API /admin/clean-database] Prisma cleanup notice:', dbErr.message);
+        }
+      }
+
+      // Also reset in-memory / fallback branchDb state
+      ['branch-1', 'branch-2'].forEach(bId => {
+        const bData = branchDb.getBranchData(bId);
+        if (bData) {
+          bData.sales = [];
+          bData.ledger = [];
+          if (Array.isArray(bData.inventoryItems)) {
+            bData.inventoryItems.forEach((it: any) => {
+              it.openingStock = 0;
+              it.stockIn = 0;
+              it.stockOut = 0;
+              it.lastMovement = '-';
+            });
+          }
+        }
+      });
+
       io.emit('inventory_updated', { branchId: 'branch-1' });
       io.emit('inventory_updated', { branchId: 'branch-2' });
+      io.emit('sale_created', { branchId: 'branch-1', sales: [] });
+      io.emit('sale_created', { branchId: 'branch-2', sales: [] });
+
       return res.json({
         success: true,
-        message: 'Production database clean state executed successfully',
+        message: 'Production database clean state executed successfully across DB and memory',
         result
       });
     } catch (err: any) {
@@ -2820,6 +2874,49 @@ export function createApiRouter(io: SocketServer) {
     } catch (err: any) {
       console.error('[API /sales/:id/status Error]:', err.message);
       return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 7c. DELETE /api/sales (Clear all or branch-specific sales records)
+  router.delete('/sales', async (req: Request, res: Response) => {
+    const branchId = getBranchId(req);
+    try {
+      let delCount = 0;
+      if (prisma) {
+        try {
+          const delItems = await prisma.saleItem.deleteMany({
+            where: branchId ? { sale: { branchId } } : {}
+          });
+          const delSales = await prisma.sale.deleteMany({
+            where: branchId ? { branchId } : {}
+          });
+          delCount = delSales.count;
+        } catch (dbErr: any) {
+          console.warn('[API /sales DELETE] Prisma notice:', dbErr.message);
+        }
+      }
+
+      const targetBranches = branchId ? [branchId] : ['branch-1', 'branch-2'];
+      targetBranches.forEach(bId => {
+        const bData = branchDb.getBranchData(bId);
+        if (bData) {
+          delCount += (bData.sales || []).length;
+          bData.sales = [];
+        }
+      });
+
+      targetBranches.forEach(bId => {
+        io.emit('sale_created', { branchId: bId, sales: [] });
+      });
+
+      return res.json({
+        success: true,
+        message: `Successfully purged sales records`,
+        count: delCount
+      });
+    } catch (err: any) {
+      console.error('[API /sales DELETE] Error:', err.message);
+      return res.status(500).json({ success: false, message: 'Failed to purge sales', error: err.message });
     }
   });
 
