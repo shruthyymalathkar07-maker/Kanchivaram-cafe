@@ -48,10 +48,6 @@ export default function SettingsView({ selectedBranch }) {
   const [defaultPaymentMode, setDefaultPaymentMode] = useState('CASH');
 
   // Integrations & External APIs State
-  const [whatsappProvider, setWhatsappProvider] = useState('interakt');
-  const [interaktApiKey, setInteraktApiKey] = useState('');
-  const [whatsappToken, setWhatsappToken] = useState('');
-  const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
   const [smsApiKey, setSmsApiKey] = useState('');
   const [swiggyRestaurantId, setSwiggyRestaurantId] = useState(branchId === 'branch-2' ? 'SWIGGY-KCB-CITY' : 'SWIGGY-KCB-MAIN');
   const [swiggyApiKey, setSwiggyApiKey] = useState('');
@@ -80,10 +76,6 @@ export default function SettingsView({ selectedBranch }) {
       // Also load branch integration credentials
       const integ = await fetchIntegrationSettings(branchId);
       if (isMounted && integ) {
-        if (typeof integ.whatsappProvider !== 'undefined') setWhatsappProvider(integ.whatsappProvider || 'interakt');
-        if (typeof integ.interaktApiKey !== 'undefined') setInteraktApiKey(integ.interaktApiKey || '');
-        if (typeof integ.whatsappToken !== 'undefined') setWhatsappToken(integ.whatsappToken || '');
-        if (typeof integ.whatsappPhoneId !== 'undefined') setWhatsappPhoneId(integ.whatsappPhoneId || '');
         if (typeof integ.smsApiKey !== 'undefined') setSmsApiKey(integ.smsApiKey || '');
         if (typeof integ.swiggyRestaurantId !== 'undefined') setSwiggyRestaurantId(integ.swiggyRestaurantId || (branchId === 'branch-2' ? 'SWIGGY-KCB-CITY' : 'SWIGGY-KCB-MAIN'));
         if (typeof integ.swiggyApiKey !== 'undefined') setSwiggyApiKey(integ.swiggyApiKey || '');
@@ -129,10 +121,6 @@ export default function SettingsView({ selectedBranch }) {
         defaultPaymentMode
       };
       const integPayload = {
-        whatsappProvider,
-        interaktApiKey,
-        whatsappToken,
-        whatsappPhoneId,
         smsApiKey,
         swiggyRestaurantId,
         swiggyApiKey,
@@ -453,15 +441,15 @@ export default function SettingsView({ selectedBranch }) {
               </div>
             </div>
 
-            {/* Trial Mode Info Banner */}
-            <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl flex items-start gap-3">
+            {/* Direct Sharing & Live SMS Banner */}
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-xl flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div className="text-xs space-y-0.5">
                 <p className="font-bold text-emerald-950">
-                  Instant Simulation &amp; Trial Mode Active
+                  Direct WhatsApp Sharing &amp; SMS Gateway Active
                 </p>
                 <p className="text-emerald-800 text-[11px] leading-relaxed">
-                  WhatsApp e-receipts and SMS OTP authentication are fully operational in fallback simulation mode right now. When you enter your official Meta Cloud API or Interakt credentials below, the system seamlessly transitions to live messaging without downtime.
+                  WhatsApp bills are delivered directly via 1-Click WhatsApp Direct Sharing with <strong>zero third-party API fees or subscriptions</strong>. For telecom SMS receipts and OTP login verification, enter your Fast2SMS API key below.
                 </p>
               </div>
             </div>
