@@ -19,15 +19,25 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Edit2
+  Edit2,
+  UserCheck
 } from 'lucide-react';
-import { createSaleTransaction, fetchStoreSettings, socket } from '../services/api';
+import { createSaleTransaction, fetchStoreSettings, fetchStaff, socket } from '../services/api';
 import { PrintService } from '../services/printService';
 import { inventoryStore } from '../services/inventoryStore';
 import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER, isOriginalProduct } from '../data/masterData';
 import AddMenuItemModal from './AddMenuItemModal';
 
-export default function POSBillingView({ products = [], categories = [], onSaleCompleted, onProductCreated, searchQuery = '', onSearchChange, selectedBranch }) {
+export default function POSBillingView({ 
+  products = [], 
+  categories = [], 
+  onSaleCompleted, 
+  onProductCreated, 
+  searchQuery = '', 
+  onSearchChange, 
+  selectedBranch,
+  currentUser
+}) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
   const [activeCategory, setActiveCategory] = useState('all');
@@ -121,6 +131,53 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
   // Quick Action States with localStorage persistence per branch
   const branchKey = selectedBranch?.id || 'branch-1';
+
+  // Dynamic Cashier State (Hybrid: Logged-in user default + Quick staff dropdown switcher)
+  const [activeStaffList, setActiveStaffList] = useState([]);
+  const [cashierName, setCashierName] = useState(() => {
+    return localStorage.getItem(`kc_cashier_name_${branchKey}`) || currentUser?.name || 'Cashier';
+  });
+
+  useEffect(() => {
+    if (currentUser?.name && !localStorage.getItem(`kc_cashier_name_${branchKey}`)) {
+      setCashierName(currentUser.name);
+    }
+  }, [currentUser?.name, branchKey]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadStaff = async () => {
+      try {
+        const res = await fetchStaff(branchKey);
+        if (isMounted && res && res.success && Array.isArray(res.staff)) {
+          setActiveStaffList(res.staff);
+        }
+      } catch (err) {
+        console.warn('[POS] Failed to fetch staff for cashier selector:', err);
+      }
+    };
+    loadStaff();
+    return () => { isMounted = false; };
+  }, [branchKey]);
+
+  const cashierOptions = useMemo(() => {
+    const list = [];
+    if (currentUser?.name && !list.includes(currentUser.name)) {
+      list.push(currentUser.name);
+    }
+    activeStaffList.forEach(s => {
+      if (s.name && !list.includes(s.name)) {
+        list.push(s.name);
+      }
+    });
+    if (cashierName && !list.includes(cashierName)) {
+      list.push(cashierName);
+    }
+    if (!list.includes('Cashier')) {
+      list.push('Cashier');
+    }
+    return list;
+  }, [currentUser?.name, cashierName, activeStaffList]);
   const [heldBills, setHeldBills] = useState(() => {
     try {
       const saved = localStorage.getItem(`kc_held_bills_${branchKey}`);
@@ -446,7 +503,7 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
       customerName: customerName.trim() || null,
       customerPhone: phoneInput.trim() || null,
       orderNote,
-      cashierName: 'Shruthy',
+      cashierName: cashierName || currentUser?.name || 'Cashier',
       channel: 'POS',
       branchId
     };
@@ -944,6 +1001,28 @@ export default function POSBillingView({ products = [], categories = [], onSaleC
 
           {/* Bill to Customer Section */}
           <div className="space-y-1.5 pt-2 border-t border-[#cabb9e]">
+            {/* Cashier on Duty Quick Selector */}
+            <div className="flex items-center justify-between px-2.5 py-1 bg-[#ebe0cb]/60 rounded-lg border border-[#cabb9e]">
+              <div className="flex items-center gap-1.5 text-[#557361] font-bold text-[10.5px]">
+                <UserCheck className={`w-3.5 h-3.5 ${isBrownBranch ? 'text-[#3E2312]' : 'text-[#0f3823]'}`} />
+                <span>Cashier:</span>
+              </div>
+              <select
+                value={cashierName}
+                onChange={(e) => {
+                  setCashierName(e.target.value);
+                  try {
+                    localStorage.setItem(`kc_cashier_name_${branchKey}`, e.target.value);
+                  } catch (err) {}
+                }}
+                className={`bg-transparent font-black ${isBrownBranch ? 'text-[#3E2312]' : 'text-[#0f3823]'} text-xs cursor-pointer focus:outline-none border-b border-[#0f3823]/30 pb-0.5 text-right font-serif`}
+              >
+                {cashierOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black text-[#11291f] uppercase tracking-wider">Bill to Customer</span>
               

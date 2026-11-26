@@ -69,6 +69,7 @@ export class PrintService {
           <div class="flex"><span>Invoice #:</span> <span class="bold">${sale.billNumber}</span></div>
           <div class="flex"><span>Date:</span> <span>${dateFormatted}</span></div>
           <div class="flex"><span>Time:</span> <span>${timeFormatted}</span></div>
+          ${sale.cashierName ? `<div class="flex"><span>Cashier:</span> <span class="bold">${sale.cashierName}</span></div>` : ''}
         </div>
 
         <div class="divider"></div>

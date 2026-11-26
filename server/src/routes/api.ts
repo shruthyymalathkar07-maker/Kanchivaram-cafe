@@ -2255,7 +2255,7 @@ export function createApiRouter(io: SocketServer) {
       receiptType: receiptType || 'PAPER',
       customerPhone,
       customerName,
-      cashierName: cashierName || 'Shruthy',
+      cashierName: cashierName || 'Cashier',
       orderNote: orderNote ? String(orderNote).trim() : null,
       status: 'COMPLETED',
       channel: channel || 'POS',
@@ -2813,7 +2813,7 @@ export function createApiRouter(io: SocketServer) {
               paymentMethod: s.paymentMethod || 'CASH',
               receiptType: s.receiptType || 'PAPER',
               channel: s.channel || 'POS',
-              cashierName: s.cashierName || 'Shruthy',
+              cashierName: s.cashierName || 'Cashier',
               items: (s.items || []).map(i => ({
                 id: i.productId || i.id,
                 name: i.name,

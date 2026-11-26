@@ -713,6 +713,7 @@ export default function App() {
                 products={productsData.products}
                 categories={productsData.categories}
                 selectedBranch={selectedBranch}
+                currentUser={authState.currentUser}
                 onSaleCompleted={() => {
                   fetchDashboardStats(salesTimeframe).then(setStats);
                 }}
