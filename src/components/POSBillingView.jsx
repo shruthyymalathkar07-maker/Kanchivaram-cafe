@@ -1025,7 +1025,7 @@ export default function POSBillingView({
 
           {/* Bill to Customer Section */}
           <div className="space-y-1.5 pt-2 border-t border-[#cabb9e]">
-            {/* Cashier on Duty Quick Selector - Centered Dropdown */}
+            {/* Cashier on Duty Quick Selector */}
             <div 
               ref={cashierDropdownRef}
               className="relative flex items-center justify-between px-2.5 py-1.5 bg-[#ebe0cb]/60 rounded-lg border border-[#cabb9e]"
@@ -1035,58 +1035,55 @@ export default function POSBillingView({
                 <span>Cashier:</span>
               </div>
 
-              {/* Centered Cashier Selector */}
-              <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
+              {/* Cashier Selector with Arrow on the Right (Where it was originally) */}
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsCashierDropdownOpen(prev => !prev)}
-                  className={`flex items-center justify-center gap-1.5 bg-transparent font-black ${
+                  className={`flex items-center gap-1.5 bg-transparent font-black ${
                     isBrownBranch ? 'text-[#3E2312]' : 'text-[#0f3823]'
                   } text-xs cursor-pointer focus:outline-none border-b border-[#0f3823]/30 pb-0.5 font-serif select-none hover:opacity-80 transition-opacity`}
                   title="Click to select active cashier"
                 >
-                  <span className="truncate max-w-[150px]">{cashierName || cashierOptions[0] || 'Cashier 1'}</span>
+                  <span>{cashierName || cashierOptions[0] || 'Cashier 1'}</span>
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCashierDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Dropdown Menu under the right button, with names centered inside this box */}
+                {isCashierDropdownOpen && (
+                  <div className="absolute top-full mt-1.5 right-0 min-w-[150px] bg-[#fdfbf7] border-2 border-[#cabb9e] rounded-xl shadow-2xl z-50 overflow-hidden py-1 animate-fadeIn">
+                    <div className="px-3 py-1 border-b border-[#cabb9e]/50 text-[9px] font-mono font-bold text-[#557361] uppercase tracking-wider text-center select-none bg-[#ebe0cb]/50">
+                      Select Cashier
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {cashierOptions.map((name) => {
+                        const isSelected = (cashierName || cashierOptions[0]) === name;
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => {
+                              setCashierName(name);
+                              try {
+                                localStorage.setItem(`kc_cashier_name_${branchKey}`, name);
+                              } catch (err) {}
+                              setIsCashierDropdownOpen(false);
+                            }}
+                            className={`w-full text-center px-4 py-2 text-xs font-serif font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 ${
+                              isSelected
+                                ? `${isBrownBranch ? 'bg-[#3E2312] text-white' : 'bg-[#0f3823] text-white'} font-black shadow-inner`
+                                : `${isBrownBranch ? 'text-[#3E2312] hover:bg-[#ebe0cb]' : 'text-[#0f3823] hover:bg-[#ebe0cb]'}`
+                            }`}
+                          >
+                            <span>{name}</span>
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Right invisible spacer to balance flex row */}
-              <div className="w-4 h-4 pointer-events-none shrink-0" />
-
-              {/* Centered Dropdown Menu Options */}
-              {isCashierDropdownOpen && (
-                <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 min-w-[170px] bg-[#fdfbf7] border-2 border-[#cabb9e] rounded-xl shadow-2xl z-50 overflow-hidden py-1 animate-fadeIn">
-                  <div className="px-3 py-1 border-b border-[#cabb9e]/50 text-[9px] font-mono font-bold text-[#557361] uppercase tracking-wider text-center select-none bg-[#ebe0cb]/50">
-                    Select Cashier
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {cashierOptions.map((name) => {
-                      const isSelected = (cashierName || cashierOptions[0]) === name;
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() => {
-                            setCashierName(name);
-                            try {
-                              localStorage.setItem(`kc_cashier_name_${branchKey}`, name);
-                            } catch (err) {}
-                            setIsCashierDropdownOpen(false);
-                          }}
-                          className={`w-full text-center px-4 py-2 text-xs font-serif font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 ${
-                            isSelected
-                              ? `${isBrownBranch ? 'bg-[#3E2312] text-white' : 'bg-[#0f3823] text-white'} font-black shadow-inner`
-                              : `${isBrownBranch ? 'text-[#3E2312] hover:bg-[#ebe0cb]' : 'text-[#0f3823] hover:bg-[#ebe0cb]'}`
-                          }`}
-                        >
-                          <span>{name}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center justify-between">
