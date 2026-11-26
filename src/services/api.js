@@ -769,6 +769,24 @@ export async function createStockOutTransaction(stockOutPayload, branchId = 'bra
   }
 }
 
+export async function sendSmsReceiptApi(sale, phoneNumber) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/sales/send-receipt`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ sale, customerPhone: phoneNumber })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Send SMS receipt error:', err.message);
+    return { success: false, message: err.message };
+  }
+}
+
+
 
 
 

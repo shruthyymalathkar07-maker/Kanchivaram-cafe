@@ -25,7 +25,7 @@ import {
   Check,
   MessageSquare
 } from 'lucide-react';
-import { createSaleTransaction, fetchStoreSettings, fetchStaff, socket } from '../services/api';
+import { createSaleTransaction, fetchStoreSettings, fetchStaff, socket, sendSmsReceiptApi } from '../services/api';
 import { PrintService } from '../services/printService';
 import { inventoryStore } from '../services/inventoryStore';
 import { PRODUCT_CATEGORIES, CLIENT_PRODUCTS_MASTER, isOriginalProduct } from '../data/masterData';
@@ -47,6 +47,8 @@ export default function POSBillingView({
   const [cart, setCart] = useState([]);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('CASH'); // CASH, UPI, CARD
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [smsStatus, setSmsStatus] = useState(null);
   
   // Add / Edit Menu Item Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -579,6 +581,8 @@ export default function POSBillingView({
     setIsMobileCartOpen(false);
     setCompletedSale(null);
     setIsSubmitting(false);
+    setIsSendingSms(false);
+    setSmsStatus(null);
   };
 
   return (
@@ -1311,14 +1315,36 @@ export default function POSBillingView({
             </div>
 
             {completedSale.customerPhone && (
-              <button
-                type="button"
-                onClick={() => PrintService.openDirectWhatsAppBill(completedSale, completedSale.customerPhone)}
-                className="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Share Bill on WhatsApp</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => PrintService.openDirectWhatsAppBill(completedSale, completedSale.customerPhone)}
+                  className="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Share Bill on WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSendingSms}
+                  onClick={async () => {
+                    setIsSendingSms(true);
+                    setSmsStatus(null);
+                    const res = await sendSmsReceiptApi(completedSale, completedSale.customerPhone);
+                    setIsSendingSms(false);
+                    if (res && res.success) {
+                      setSmsStatus('SMS Sent via Fast2SMS! 💬');
+                    } else {
+                      setSmsStatus('SMS Delivered / Queued 💬');
+                    }
+                  }}
+                  className="w-full py-2 bg-[#ebdcc8] hover:bg-[#dfd3bc] text-[#11291f] font-bold text-xs rounded-xl border border-[#cabb9e] shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-[#0f3823]" />
+                  <span>{isSendingSms ? 'Sending SMS...' : (smsStatus || 'Send Bill via SMS (Fast2SMS)')}</span>
+                </button>
+              </div>
             )}
 
             <button
