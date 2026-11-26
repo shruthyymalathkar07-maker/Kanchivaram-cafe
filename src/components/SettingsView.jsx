@@ -65,10 +65,10 @@ export default function SettingsView({ selectedBranch }) {
       if (isMounted && data) {
         if (data.storeName) setStoreName(data.storeName);
         if (data.branchName) setBranchName(data.branchName);
-        if (data.gstin) setGstin(data.gstin);
-        if (data.fssaiNo) setFssaiNo(data.fssaiNo);
-        if (data.contactPhone) setContactPhone(data.contactPhone);
-        if (data.contactEmail) setContactEmail(data.contactEmail);
+        if (typeof data.gstin !== 'undefined') setGstin(data.gstin || '');
+        if (typeof data.fssaiNo !== 'undefined') setFssaiNo(data.fssaiNo || '');
+        if (typeof data.contactPhone !== 'undefined') setContactPhone(data.contactPhone || '');
+        if (typeof data.contactEmail !== 'undefined') setContactEmail(data.contactEmail || '');
         if (typeof data.cgstPercent !== 'undefined') setCgstPercent(String(data.cgstPercent));
         if (typeof data.sgstPercent !== 'undefined') setSgstPercent(String(data.sgstPercent));
         if (typeof data.autoPrintReceipt !== 'undefined') setAutoPrintReceipt(Boolean(data.autoPrintReceipt));
@@ -113,14 +113,14 @@ export default function SettingsView({ selectedBranch }) {
 
     try {
       const storePayload = {
-        storeName,
-        branchName,
-        gstin,
-        fssaiNo,
-        contactPhone,
-        contactEmail,
-        cgstPercent: parseFloat(cgstPercent) || 2.5,
-        sgstPercent: parseFloat(sgstPercent) || 2.5,
+        storeName: (storeName || '').trim() || 'Kanchivaram Café',
+        branchName: (branchName || '').trim() || (branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road'),
+        gstin: (gstin || '').trim(),
+        fssaiNo: (fssaiNo || '').trim(),
+        contactPhone: (contactPhone || '').trim(),
+        contactEmail: (contactEmail || '').trim(),
+        cgstPercent: isNaN(parseFloat(cgstPercent)) ? 0.0 : parseFloat(cgstPercent),
+        sgstPercent: isNaN(parseFloat(sgstPercent)) ? 0.0 : parseFloat(sgstPercent),
         autoPrintReceipt,
         defaultPaymentMode
       };
