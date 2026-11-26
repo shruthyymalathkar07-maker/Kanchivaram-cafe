@@ -41,7 +41,7 @@ import {
 } from '../auth';
 import { processKVCMQuery } from '../ai';
 import { executeProductionHandoverCleanup } from '../cleanupProductionDatabase';
-import { sendWhatsAppReceipt, DigitalReceiptPayload } from '../whatsapp';
+import { sendWhatsAppReceipt, sendSmsReceipt, DigitalReceiptPayload } from '../whatsapp';
 import { Server as SocketServer } from 'socket.io';
 
 export function createApiRouter(io: SocketServer) {
@@ -2616,7 +2616,15 @@ export function createApiRouter(io: SocketServer) {
         branchId
       };
 
-      const result = await sendWhatsAppReceipt(payload, integrations);
+      const smsApiKey = integrations?.smsApiKey || process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY;
+      const requestedChannel = (req.body.channel || '').toLowerCase();
+
+      let result: any;
+      if (requestedChannel === 'whatsapp' && (integrations?.interaktApiKey || integrations?.whatsappToken)) {
+        result = await sendWhatsAppReceipt(payload, integrations);
+      } else {
+        result = await sendSmsReceipt(targetPhone, payload, smsApiKey);
+      }
 
       return res.json({
         success: result.success,
@@ -2667,7 +2675,15 @@ export function createApiRouter(io: SocketServer) {
       };
 
       const integrations = branchDb.getIntegrations(branchId);
-      const result = await sendWhatsAppReceipt(payload, integrations);
+      const smsApiKey = integrations?.smsApiKey || process.env.FAST2SMS_API_KEY || process.env.TWO_FACTOR_API_KEY;
+      const requestedChannel = (req.body.channel || '').toLowerCase();
+
+      let result: any;
+      if (requestedChannel === 'whatsapp' && (integrations?.interaktApiKey || integrations?.whatsappToken)) {
+        result = await sendWhatsAppReceipt(payload, integrations);
+      } else {
+        result = await sendSmsReceipt(targetPhone, payload, smsApiKey);
+      }
 
       return res.json({
         success: result.success,

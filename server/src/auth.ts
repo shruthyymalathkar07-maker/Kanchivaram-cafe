@@ -324,9 +324,31 @@ export async function sendTwoFactorOtp(mobile: string): Promise<{ success: boole
     return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
   }
 
-  const otpProvider = (process.env.OTP_PROVIDER || 'mock').trim().toLowerCase();
-  const apiKey = process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY || process.env.FAST2SMS_API_KEY;
+  const fast2smsKey = process.env.FAST2SMS_API_KEY || (process.env.TWO_FACTOR_API_KEY && process.env.TWO_FACTOR_API_KEY.length > 25 && !process.env.TWO_FACTOR_API_KEY.includes('-') ? process.env.TWO_FACTOR_API_KEY : '');
+  const apiKey = fast2smsKey || process.env.TWO_FACTOR_API_KEY || process.env.TWOFACTOR_API_KEY;
   const templateName = process.env.TWO_FACTOR_OTP_TEMPLATE;
+  const otpProvider = (process.env.OTP_PROVIDER || '').trim().toLowerCase();
+
+  // 1. Production Fast2SMS OTP Provider (Quick SMS route - Highest Priority)
+  if (fast2smsKey && fast2smsKey !== 'YOUR_FAST2SMS_API_KEY') {
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    mockOtpStore.set(cleanMobile, { otp: generatedOtp, expiresAt });
+
+    try {
+      const msg = `Your Kanchivaram Cafe login verification OTP is ${generatedOtp}. Valid for 10 minutes. Do not share this code.`;
+      const fUrl = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(fast2smsKey)}&route=q&message=${encodeURIComponent(msg)}&flash=0&numbers=${cleanMobile}`;
+      const fRes = await fetch(fUrl, { method: 'GET' });
+      const fData: any = await fRes.json().catch(() => ({}));
+      if (fRes.ok && (fData.return === true || fData.status_code === 200)) {
+        console.log(`[Fast2SMS OTP Sent] To +91 ${cleanMobile} | Code: ${generatedOtp}`);
+        return { success: true, message: `OTP sent successfully via SMS to +91 ******${cleanMobile.slice(-4)}.` };
+      }
+      console.warn('[Fast2SMS OTP Error]', fData);
+    } catch (err: any) {
+      console.error('[Fast2SMS OTP Network Error]', err.message);
+    }
+  }
 
   const isMockMode = (
     otpProvider === 'mock' ||

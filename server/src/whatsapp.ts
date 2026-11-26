@@ -122,7 +122,7 @@ export function formatSmsReceiptMessage(receipt: DigitalReceiptPayload): string 
   const cust = (receipt.customerName && receipt.customerName.trim() && !receipt.customerName.includes('Customer'))
     ? ` Dear ${receipt.customerName.trim()},`
     : '';
-  return `Kanchivaram Cafe (${branchTitle}):${cust} Thank you for your visit! Bill #${receipt.billNumber} of Rs.${total} is generated. Good Food, Happier People!`;
+  return `Kanchivaram Cafe:${cust} Thank you for dining with us! Bill #${receipt.billNumber} for Rs.${total} is generated. Have a wonderful day!`;
 }
 
 /**
