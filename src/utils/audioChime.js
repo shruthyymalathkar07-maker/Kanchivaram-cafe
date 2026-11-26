@@ -96,3 +96,19 @@ class SoundChimeService {
 export const chimeService = new SoundChimeService();
 export const playOnlineOrderChime = () => chimeService.playOrderAlertChime();
 export const playOrderAcceptedTone = () => chimeService.playOrderAcceptedTone();
+
+// Automatically unlock and prime audio context on the first user interaction anywhere on the page
+if (typeof window !== 'undefined') {
+  const autoUnlockAudio = () => {
+    try {
+      const ctx = chimeService.getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    } catch (e) {}
+  };
+
+  ['click', 'touchstart', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, autoUnlockAudio, { passive: true });
+  });
+}
