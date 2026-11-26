@@ -22,7 +22,8 @@ import {
   Edit2,
   UserCheck,
   ChevronDown,
-  Check
+  Check,
+  MessageSquare
 } from 'lucide-react';
 import { createSaleTransaction, fetchStoreSettings, fetchStaff, socket } from '../services/api';
 import { PrintService } from '../services/printService';
@@ -1308,6 +1309,18 @@ export default function POSBillingView({
               <p>Payment Mode: <strong className="text-[#11291f]">{completedSale.paymentMethod}</strong></p>
               <p>Receipt Mode: <strong className="text-[#11291f]">{completedSale.receiptType}</strong></p>
             </div>
+
+            {completedSale.customerPhone && (
+              <button
+                type="button"
+                onClick={() => PrintService.openDirectWhatsAppBill(completedSale, completedSale.customerPhone)}
+                className="w-full py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Share Bill on WhatsApp</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={(e) => {

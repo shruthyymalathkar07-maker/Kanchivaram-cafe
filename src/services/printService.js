@@ -190,6 +190,25 @@ export class PrintService {
   }
 
   /**
+   * Opens 1-Click WhatsApp Direct Share with pre-formatted bill message
+   * Works on mobile WhatsApp and desktop WhatsApp Web with zero API fees or Meta developer setup.
+   */
+  static openDirectWhatsAppBill(sale, phoneNumber) {
+    if (!phoneNumber) return;
+    const cleanPhone = String(phoneNumber).replace(/\D/g, '');
+    const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+    const itemsList = (sale.items || []).map(it => `• ${it.quantity || it.qty || 1}x ${it.name || it.productName} - ₹${Number((it.unitPrice || it.price || 0) * (it.quantity || it.qty || 1)).toFixed(2)}`).join('\n');
+
+    const message = `*Kanchivaram Café* ☕\n_Good Food, Happier People_\n\n*INVOICE: #${sale.billNumber}*\nDate: ${new Date(sale.createdAt || Date.now()).toLocaleDateString('en-IN')}\n\n*Items Ordered:*\n${itemsList}\n\n*Total Paid: ₹${Number(sale.grandTotal || sale.total || 0).toFixed(2)}*\nPayment: ${sale.paymentMethod || 'Cash'}\n\nThank you for dining with us! Have a wonderful day! 🙏`;
+
+    const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
+    if (typeof window !== 'undefined') {
+      window.open(waUrl, '_blank');
+    }
+  }
+
+  /**
    * Generates formatted Kitchen Order Ticket (KOT) for thermal printers (80mm / 58mm)
    * Designed specifically for online Swiggy, Zomato & counter kitchen dispatch
    */
