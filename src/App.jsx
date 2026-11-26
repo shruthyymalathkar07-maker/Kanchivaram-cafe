@@ -232,7 +232,7 @@ export default function App() {
       {/* 1. SEAMLESS BRANCH SELECTION OVERLAY (Cross-fades smoothly over the ready Home Dashboard) */}
       {(!authState.selectedBranch || isBranchTransitioning) && (
         <div 
-          className={`fixed inset-0 z-50 transition-opacity duration-380 ease-out bg-[#F8F0E3] ${
+          className={`fixed inset-0 z-50 overflow-y-auto overflow-x-hidden transition-opacity duration-380 ease-out bg-[#F8F0E3] ${
             isBranchTransitioning ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >

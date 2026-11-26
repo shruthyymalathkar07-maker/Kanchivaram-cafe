@@ -335,7 +335,7 @@ export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialSt
   };
 
   return (
-    <div className={`min-h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe transition-opacity duration-380 ease-out ${
+    <div className={`min-h-full sm:min-h-screen w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe transition-opacity duration-380 ease-out ${
       isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
     }`}>
       
@@ -487,7 +487,7 @@ export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialSt
         /* ------------------------------------------------------------------------- */
         /* BRANCH SELECTION PAGE: MASTER REFERENCE LAYOUT WITH 3D SLANTED CARDS     */
         /* ------------------------------------------------------------------------- */
-        <div className="w-full max-w-[1440px] mx-auto my-auto flex-1 flex flex-col items-center justify-center relative z-10 py-2 px-2 sm:px-4 overflow-visible min-h-0 animate-branch-reveal">
+        <div className="w-full max-w-[1440px] mx-auto my-2 md:my-auto flex-1 flex flex-col items-center justify-start md:justify-center relative z-10 py-2 px-2 sm:px-4 pb-8 md:pb-2 overflow-visible min-h-0 animate-branch-reveal">
           
           {/* Main Content Layout with Side Quotes Inline so Quotes Are 100% Visible */}
           <div className="w-full max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-center gap-4 lg:gap-8 relative z-10 overflow-visible">
