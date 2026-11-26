@@ -1,32 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Mail, Phone, X, Tag, Package, ShoppingBag, User, FileText, ArrowRight, Coffee, Building2, LogOut } from 'lucide-react';
+import { CLIENT_PRODUCTS_MASTER, CLIENT_RAW_MATERIALS_MASTER } from '../data/masterData';
 
-// Comprehensive mock database index for real POS search filtering
+// Live Café Navigation Pages
+const APP_PAGES = [
+  { id: 'page-pos', category: 'Navigation & Modules', title: 'POS / Billing Terminal', detail: 'New orders, table billing & counter sales', tab: 'pos' },
+  { id: 'page-orders', category: 'Navigation & Modules', title: 'Online Orders Channel', detail: 'Live Swiggy & Zomato order management', tab: 'online-orders' },
+  { id: 'page-inventory', category: 'Navigation & Modules', title: 'Real-Time Inventory', detail: 'Stock status, raw materials & threshold alerts', tab: 'inventory' },
+  { id: 'page-purchase', category: 'Navigation & Modules', title: 'Purchase & Stock In', detail: 'Vendor invoices & raw material receiving', tab: 'purchase' },
+  { id: 'page-reports', category: 'Navigation & Modules', title: 'Sales & Financial Reports', detail: 'Daily revenue, tax audit & performance trends', tab: 'sales-reports' },
+  { id: 'page-customers', category: 'Navigation & Modules', title: 'Customer CRM & Loyalty', detail: 'Customer directory & purchase history', tab: 'customers' },
+  { id: 'page-expenses', category: 'Navigation & Modules', title: 'Daily Operational Expenses', detail: 'Track petty cash, utilities & operational costs', tab: 'expenses' },
+  { id: 'page-staff', category: 'Navigation & Modules', title: 'Staff & Shift Management', detail: 'Staff roster, roles, shifts & duty status', tab: 'staff' },
+  { id: 'page-assistant', category: 'Navigation & Modules', title: 'KVCM Assistant', detail: 'Smart AI operations & analytics assistant', tab: 'kvcm-assistant' },
+  { id: 'page-settings', category: 'Navigation & Modules', title: 'Café Store Settings', detail: 'GST rates, printer, branch info & FSSAI', tab: 'settings' },
+  { id: 'page-home', category: 'Navigation & Modules', title: 'Dashboard Overview', detail: 'Daily sales, revenue KPIs & executive overview', tab: 'home' }
+];
+
+// Live search index generated strictly from real café menu items, kitchen inventory, and live pages
 const SEARCH_DATABASE = [
-  { id: 'p1', category: 'Menu & Products', title: 'South Indian Filter Coffee', detail: '₹50 • Beverages', tab: 'menu' },
-  { id: 'p2', category: 'Menu & Products', title: 'Special Cold Coffee with Ice Cream', detail: '₹120 • Beverages', tab: 'menu' },
-  { id: 'p3', category: 'Menu & Products', title: 'Kanchivaram Special Masala Dosa', detail: '₹90 • Tiffin', tab: 'menu' },
-  { id: 'p4', category: 'Menu & Products', title: 'Paneer Butter Masala', detail: '₹180 • Main Course', tab: 'menu' },
-  { id: 'p5', category: 'Menu & Products', title: 'Espresso Latte', detail: '₹110 • Coffee', tab: 'menu' },
-  { id: 'p6', category: 'Menu & Products', title: 'Fresh Chocolate Muffin & Pastry', detail: '₹75 • Bakery', tab: 'menu' },
-
-  { id: 'o1', category: 'Orders & Bills', title: 'Order #1024 (Table 4)', detail: '₹450 • Paid via Cash • 10 mins ago', tab: 'pos' },
-  { id: 'o2', category: 'Orders & Bills', title: 'Order #1025 (Takeaway)', detail: '₹1,200 • Paid via UPI', tab: 'pos' },
-  { id: 'o3', category: 'Orders & Bills', title: 'Bill #B-8891 (Table 2)', detail: '₹340 • Completed', tab: 'pos' },
-  { id: 'o4', category: 'Orders & Bills', title: 'Bill #B-8892 (Swiggy Delivery)', detail: '₹850 • Dispatched', tab: 'online-orders' },
-
-  { id: 'i1', category: 'Inventory & Stock', title: 'Milk Packet 500ml', detail: 'Critical: 5 packets left', tab: 'inventory' },
-  { id: 'i2', category: 'Inventory & Stock', title: 'Arabica Coffee Beans', detail: 'Approaching Limit: 15 bags left', tab: 'inventory' },
-  { id: 'i3', category: 'Inventory & Stock', title: 'Fresh Cucumbers & Vegetables', detail: 'Critical: 15 bags left', tab: 'inventory' },
-  { id: 'i4', category: 'Inventory & Stock', title: 'Cardamom & Spices Stock', detail: 'In Stock: 45 units', tab: 'inventory' },
-
-  { id: 'c1', category: 'Customers', title: 'Sundar Raman (VIP)', detail: '+91 98765 43210 • 42 Orders', tab: 'customers' },
-  { id: 'c2', category: 'Customers', title: 'Rajesh Kumar', detail: '+91 91234 56789 • 12 Orders', tab: 'customers' },
-  { id: 'c3', category: 'Customers', title: 'Ananya Sharma', detail: '+91 99887 76655 • 8 Orders', tab: 'customers' },
-
-  { id: 's1', category: 'Online Channels', title: 'Swiggy Delivery Orders', detail: 'Today Sales: ₹8,450 (18 Orders)', tab: 'online-orders' },
-  { id: 's2', category: 'Online Channels', title: 'Zomato Online Sales', detail: 'Today Sales: ₹8,450 (16 Orders)', tab: 'online-orders' },
-  { id: 's3', category: 'Online Channels', title: 'Dunzo Local Express', detail: 'Today Sales: ₹6,450 (11 Orders)', tab: 'online-orders' },
+  ...APP_PAGES,
+  ...CLIENT_PRODUCTS_MASTER.map(p => ({
+    id: `prod-${p.id}`,
+    category: `Menu • ${p.categoryName || p.categoryId || 'Dishes'}`,
+    title: p.name,
+    detail: `₹${p.price} • POS Menu Item • Dine-in & Delivery`,
+    tab: 'pos'
+  })),
+  ...CLIENT_RAW_MATERIALS_MASTER.map(rm => ({
+    id: `rm-${rm.id}`,
+    category: `Kitchen Inventory • ${rm.category || 'Raw Materials'}`,
+    title: rm.name,
+    detail: `Kitchen Raw Material • Unit: ${rm.unit || 'units'}`,
+    tab: 'inventory'
+  }))
 ];
 
 export default function Header({ onNavigateTab, onOpenNotifications, searchQuery: externalSearchQuery, onSearchChange, activeTab, currentUser, selectedBranch, onLogout, onChangeBranch }) {
