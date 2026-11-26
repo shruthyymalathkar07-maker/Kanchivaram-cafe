@@ -580,31 +580,63 @@ export function createApiRouter(io: SocketServer) {
 
       // 4. Find existing user in PostgreSQL or provision new user from verified Google profile
       let user = await findUserByEmail(normalizedEmail, true);
+      const isOwnerAccount = 
+        normalizedEmail === 'kanchivaramcafe3@gmail.com' ||
+        normalizedEmail.includes('shruthy') ||
+        googleProfile.name.toLowerCase().includes('shruth') ||
+        googleProfile.name.toLowerCase().includes('malathkar');
+
+      const designatedName = isOwnerAccount ? 'Kanchivaram Café Admin' : (googleProfile.name || 'Staff Member');
+      const designatedRole = isOwnerAccount ? 'Owner & General Manager' : 'CASHIER';
+      const designatedAvatar = isOwnerAccount ? 'KC' : 'SA';
+      const designatedPhone = isOwnerAccount ? '+91 82484 26348' : `+91-${Date.now()}`;
+
       if (!user) {
         try {
           user = await prisma.user.create({
             data: {
               email: normalizedEmail,
-              name: googleProfile.name || 'Staff Member',
-              phone: `+91-${Date.now()}`,
-              role: 'CASHIER',
+              name: designatedName,
+              phone: designatedPhone,
+              role: designatedRole,
+              avatar: designatedAvatar,
               branchId: 'branch-1',
               isActive: true,
               passwordHash: await hashPassword(Math.random().toString(36))
             },
             include: { branch: true }
           });
-          console.log(`[Google OAuth] Auto-provisioned user account for ${normalizedEmail}`);
+          console.log(`[Google OAuth] Auto-provisioned user account for ${normalizedEmail} as ${designatedName}`);
         } catch (dbErr: any) {
           // If DB insert fails (e.g. offline fallback), create in-memory profile
           user = {
-            id: `usr-google-${Date.now()}`,
-            name: googleProfile.name || 'Staff Member',
+            id: isOwnerAccount ? 'user-1' : `usr-google-${Date.now()}`,
+            name: designatedName,
             email: normalizedEmail,
-            role: 'CASHIER',
+            role: designatedRole,
+            avatar: designatedAvatar,
+            phone: designatedPhone,
             branchId: 'branch-1',
             isActive: true
           };
+        }
+      } else if (isOwnerAccount) {
+        // Upgrade existing user in DB so name & role reflect Admin
+        try {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              name: 'Kanchivaram Café Admin',
+              role: 'Owner & General Manager',
+              avatar: 'KC',
+              phone: '+91 82484 26348'
+            },
+            include: { branch: true }
+          });
+        } catch (updateErr: any) {
+          user.name = 'Kanchivaram Café Admin';
+          user.role = 'Owner & General Manager';
+          user.avatar = 'KC';
         }
       }
 
@@ -1437,7 +1469,7 @@ export function createApiRouter(io: SocketServer) {
             `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
              ON CONFLICT ("id") DO NOTHING;`,
-            purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
+            purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Kanchivaram Café Admin', todayIso
           );
         } catch (insertErr: any) {
           console.warn('[API /inventory/purchases] Initial insert failed, attempting dynamic legacy cleanup:', insertErr.message);
@@ -1481,7 +1513,7 @@ export function createApiRouter(io: SocketServer) {
             `INSERT INTO "public"."Purchase" ("id", "branchId", "invoiceRef", "supplier", "category", "notes", "totalAmount", "recordedBy", "dateIso", "createdAt")
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)
              ON CONFLICT ("id") DO NOTHING;`,
-            purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Shruthy A', todayIso
+            purchaseId, branchId, finalInvoiceRef, finalSupplier, items[0]?.category || 'Raw Ingredients', notes || 'Incoming stock purchase', totalAmount, 'Kanchivaram Café Admin', todayIso
           );
         }
 
@@ -1493,7 +1525,7 @@ export function createApiRouter(io: SocketServer) {
           category: items[0]?.category || 'Raw Ingredients',
           notes: notes || 'Incoming stock purchase',
           totalAmount,
-          recordedBy: 'Shruthy A',
+          recordedBy: 'Kanchivaram Café Admin',
           dateIso: todayIso,
           createdAt: new Date()
         };
@@ -2989,7 +3021,7 @@ export function createApiRouter(io: SocketServer) {
             dateIso: r.dateIso || todayIso,
             displayDate,
             notes: r.notes || '',
-            recordedBy: r.recordedBy || 'Shruthy A',
+            recordedBy: r.recordedBy || 'Kanchivaram Café Admin',
             createdAt: r.createdAt
           };
         });
@@ -3051,7 +3083,7 @@ export function createApiRouter(io: SocketServer) {
     const cleanCategory = (category || 'Other').trim();
     const cleanPaymentMode = (paymentMode || 'Cash').trim();
     const cleanNotes = notes ? String(notes).trim() : 'General operational expense';
-    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Shruthy A';
+    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Kanchivaram Café Admin';
 
     try {
       if (prisma) {
@@ -3264,7 +3296,7 @@ export function createApiRouter(io: SocketServer) {
               "businessDate" TEXT NOT NULL,
               "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
               "notes" TEXT,
-              "recordedBy" TEXT NOT NULL DEFAULT 'Shruthy A',
+              "recordedBy" TEXT NOT NULL DEFAULT 'Kanchivaram Café Admin',
               "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
               "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
               CONSTRAINT "DailyBalance_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "public"."Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -3310,7 +3342,7 @@ export function createApiRouter(io: SocketServer) {
         let suggestedOpeningBalance = 0;
         let isSet = false;
         let notes = '';
-        let recordedBy = 'Shruthy A';
+        let recordedBy = 'Kanchivaram Café Admin';
         let id = null;
 
         if (records.length > 0) {
@@ -3319,7 +3351,7 @@ export function createApiRouter(io: SocketServer) {
           openingBalance = parseFloat(records[0].openingBalance) || 0;
           suggestedOpeningBalance = openingBalance;
           notes = records[0].notes || '';
-          recordedBy = records[0].recordedBy || 'Shruthy A';
+          recordedBy = records[0].recordedBy || 'Kanchivaram Café Admin';
         } else {
           // Find most recent previous day's opening balance
           const prevRecords = await prisma.$queryRawUnsafe<any[]>(
@@ -3396,7 +3428,7 @@ export function createApiRouter(io: SocketServer) {
     const businessDate = (date || todayIso).trim();
     const numOpening = Math.max(0, parseFloat(openingBalance) || 0);
     const cleanNotes = notes ? String(notes).trim() : '';
-    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Shruthy A';
+    const cleanRecordedBy = recordedBy ? String(recordedBy).trim() : 'Kanchivaram Café Admin';
     const balanceId = `bal-${branchId}-${businessDate}`;
 
     try {
@@ -3410,7 +3442,7 @@ export function createApiRouter(io: SocketServer) {
               "businessDate" TEXT NOT NULL,
               "openingBalance" DOUBLE PRECISION NOT NULL DEFAULT 0,
               "notes" TEXT,
-              "recordedBy" TEXT NOT NULL DEFAULT 'Shruthy A',
+              "recordedBy" TEXT NOT NULL DEFAULT 'Kanchivaram Café Admin',
               "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
               "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
               CONSTRAINT "DailyBalance_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "public"."Branch"("id") ON DELETE RESTRICT ON UPDATE CASCADE

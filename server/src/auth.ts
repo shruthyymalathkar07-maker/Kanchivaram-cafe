@@ -663,14 +663,23 @@ export function toSafeUser(user: any): SafeUser {
     throw new Error('User record required for sanitization');
   }
 
+  const isLegacyOrShruth = (user.name && (user.name.toLowerCase().includes('shruth') || user.name.toLowerCase().includes('malathkar'))) ||
+    (user.email && (user.email.toLowerCase().includes('kanchivaramcafe3') || user.email.toLowerCase().includes('shruthy'))) ||
+    user.id === 'user-1';
+
+  const finalName = isLegacyOrShruth ? 'Kanchivaram Café Admin' : user.name;
+  const finalRole = isLegacyOrShruth ? 'Owner & General Manager' : user.role;
+  const finalAvatar = isLegacyOrShruth ? 'KC' : (user.avatar || 'KC');
+  const finalPhone = isLegacyOrShruth ? '+91 82484 26348' : user.phone;
+
   return {
     id: user.id,
     branchId: user.branchId ?? null,
-    name: user.name,
+    name: finalName,
     email: user.email,
-    phone: user.phone,
-    role: user.role,
-    avatar: user.avatar || 'SA',
+    phone: finalPhone,
+    role: finalRole,
+    avatar: finalAvatar,
     isActive: user.isActive ?? true,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -919,14 +928,18 @@ export async function seedDefaultUsers(forceReset = false) {
       });
       console.log(`[Auth Seed] Created user ${u.name} (${u.email}) with bcrypt hashed password.`);
     } else {
-      // If user exists, ensure password is a valid bcrypt hash
-      if (forceReset || !existing.passwordHash.startsWith('$2')) {
-        await prisma.user.update({
-          where: { id: existing.id },
-          data: { passwordHash: hashedPassword }
-        });
-        console.log(`[Auth Seed] Updated user ${u.name} password to bcrypt hash.`);
-      }
+      // If user exists, ensure name, role, avatar and password hash are fully up to date
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { 
+          name: u.name,
+          role: u.role,
+          avatar: u.avatar,
+          phone: u.phone,
+          ...(forceReset || !existing.passwordHash.startsWith('$2') ? { passwordHash: hashedPassword } : {})
+        }
+      });
+      console.log(`[Auth Seed] Synchronized user ${u.name} (${u.role}) in PostgreSQL.`);
     }
   }
 }

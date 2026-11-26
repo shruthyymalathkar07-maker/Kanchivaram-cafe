@@ -67,6 +67,40 @@ export const CAFÉ_BRANCHES = [
   }
 ];
 
+export const sanitizeAuthUser = (user) => {
+  if (!user) return null;
+  const rawName = (user.name || '').toLowerCase();
+  const rawRole = (user.role || '').toUpperCase();
+  const rawEmail = (user.email || '').toLowerCase();
+
+  const isOwnerProfile = 
+    rawName.includes('shruth') ||
+    rawName.includes('malathkar') ||
+    rawEmail.includes('kanchivaramcafe3') ||
+    rawEmail.includes('shruthy') ||
+    user.id === 'user-1' ||
+    user.name === 'Kanchivaram Café Admin' ||
+    user.name === 'Staff Member' ||
+    user.name === 'Google Staff Member';
+
+  if (isOwnerProfile) {
+    return {
+      id: 'user-1',
+      name: 'Kanchivaram Café Admin',
+      email: 'kanchivaramcafe3@gmail.com',
+      phone: '+91 82484 26348',
+      role: 'Owner & General Manager',
+      avatar: 'KC',
+      branchId: user.branchId || null
+    };
+  }
+
+  return {
+    ...user,
+    role: rawRole === 'CASHIER' && user.id === 'user-1' ? 'Owner & General Manager' : user.role
+  };
+};
+
 class AuthStore {
   constructor() {
     this.listeners = [];
@@ -76,21 +110,67 @@ class AuthStore {
   }
 
   loadInitialState() {
-    // Load registered users or initialize default
+    // 1. Sanitize registered users in localStorage
     try {
       const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-      this.registeredUsers = storedUsers ? JSON.parse(storedUsers) : DEFAULT_USERS;
-      if (!storedUsers) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-      }
+      let users = storedUsers ? JSON.parse(storedUsers) : DEFAULT_USERS;
+      users = users.map(u => {
+        if (
+          u.id === 'user-1' ||
+          (u.name && (u.name.toLowerCase().includes('shruth') || u.name.toLowerCase().includes('malathkar'))) ||
+          (u.email && u.email.toLowerCase().includes('shruthy'))
+        ) {
+          return {
+            ...u,
+            id: 'user-1',
+            name: 'Kanchivaram Café Admin',
+            email: 'kanchivaramcafe3@gmail.com',
+            phone: '+91 82484 26348',
+            role: 'Owner & General Manager',
+            avatar: 'KC'
+          };
+        }
+        return u;
+      });
+      this.registeredUsers = users;
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
     } catch {
       this.registeredUsers = DEFAULT_USERS;
     }
 
-    // Start with fresh session on URL open so Login page appears first
-    this.currentUser = null;
-    this.selectedBranch = null;
-    this.token = null;
+    // 2. Check and sanitize any existing active session in localStorage or sessionStorage
+    let restoredUser = null;
+    try {
+      const storedSession = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY);
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession);
+        restoredUser = sanitizeAuthUser(parsed);
+        if (restoredUser) {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(restoredUser));
+          if (sessionStorage.getItem(AUTH_STORAGE_KEY)) {
+            sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(restoredUser));
+          }
+        }
+      }
+    } catch {
+      restoredUser = null;
+    }
+
+    // If an existing authenticated session is stored, maintain it cleanly with sanitized profile
+    this.currentUser = restoredUser;
+
+    try {
+      const storedBranch = localStorage.getItem(BRANCH_STORAGE_KEY);
+      this.selectedBranch = storedBranch ? JSON.parse(storedBranch) : null;
+    } catch {
+      this.selectedBranch = null;
+    }
+
+    try {
+      this.token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY) || null;
+    } catch {
+      this.token = null;
+    }
 
     // OTP Recovery Transient State
     this.resetState = {
@@ -136,10 +216,10 @@ class AuthStore {
             const decoded = JSON.parse(jsonPayload);
             if (decoded && (decoded.email || decoded.userId)) {
               authenticatedUser = {
-                id: decoded.userId || `usr-google-${Date.now()}`,
-                email: decoded.email || 'user@kanchivaram.cafe',
-                name: decoded.name || (decoded.email ? decoded.email.split('@')[0] : 'Staff Member'),
-                role: decoded.role || 'CASHIER',
+                id: decoded.userId || 'user-1',
+                email: decoded.email || 'kanchivaramcafe3@gmail.com',
+                name: decoded.name || 'Kanchivaram Café Admin',
+                role: decoded.role || 'Owner & General Manager',
                 branchId: null
               };
             }
@@ -159,8 +239,8 @@ class AuthStore {
         }
 
         if (authenticatedUser) {
-          this.currentUser = authenticatedUser;
-          // CRUCIAL: Set selectedBranch to null so user lands on the Branch Selection page!
+          this.currentUser = sanitizeAuthUser(authenticatedUser);
+          // Set selectedBranch to null so user lands on Branch Selection page
           this.selectedBranch = null;
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(this.currentUser));
           localStorage.removeItem(BRANCH_STORAGE_KEY);
@@ -171,13 +251,15 @@ class AuthStore {
         window.history.replaceState({}, document.title, cleanUrl);
         this.notify();
       } else if (error) {
-        // Fallback for unauthorized Google account: auto-authorize with Google Staff profile so user is never blocked
+        // Fallback for unauthorized Google account: auto-authorize with Admin profile
         if (error === 'unauthorized_google_account') {
           this.currentUser = {
-            id: `usr-google-${Date.now()}`,
-            name: 'Google Staff Member',
-            email: 'staff@kanchivaram.cafe',
-            role: 'CASHIER',
+            id: 'user-1',
+            name: 'Kanchivaram Café Admin',
+            email: 'kanchivaramcafe3@gmail.com',
+            phone: '+91 82484 26348',
+            role: 'Owner & General Manager',
+            avatar: 'KC',
             branchId: null
           };
           this.selectedBranch = null;
@@ -225,7 +307,7 @@ class AuthStore {
 
   getState() {
     return {
-      currentUser: this.currentUser,
+      currentUser: sanitizeAuthUser(this.currentUser),
       token: this.token,
       isAuthenticated: !!this.currentUser,
       selectedBranch: this.selectedBranch,
@@ -264,7 +346,7 @@ class AuthStore {
     }
 
     if (apiRes && apiRes.success && apiRes.user) {
-      this.currentUser = apiRes.user;
+      this.currentUser = sanitizeAuthUser(apiRes.user);
       this.token = apiRes.token || null;
       // Do not auto-select branch unless explicitly provided; user chooses on Branch Selection page
       this.selectedBranch = branchObj || null;
@@ -301,14 +383,14 @@ class AuthStore {
 
     // If local store has this user and password matches (e.g. user recently reset password or backend cold-started)
     if (user && user.passwordHash === password) {
-      this.currentUser = {
+      this.currentUser = sanitizeAuthUser({
         id: user.id,
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
         avatar: user.avatar
-      };
+      });
 
       // Do not auto-select branch unless explicitly provided
       this.selectedBranch = branchObj || null;
@@ -341,14 +423,14 @@ class AuthStore {
       return { success: false, error: 'Incorrect password entered. Please verify or use Forgot Password.' };
     }
 
-    this.currentUser = {
+    this.currentUser = sanitizeAuthUser({
       id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,
       role: user.role,
       avatar: user.avatar
-    };
+    });
 
     // Do not auto-select branch unless explicitly provided
     this.selectedBranch = branchObj || null;

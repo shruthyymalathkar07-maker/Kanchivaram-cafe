@@ -17,7 +17,13 @@ export default function GreetingBanner({
         {/* Left Welcome Text */}
         <div className="space-y-1 z-10">
           <h2 className="text-xl sm:text-2xl font-bold font-sans text-[#10271d] flex items-center gap-2">
-            Good Morning, {currentUser?.name || 'Kanchivaram Café Admin'}! <span className="text-xl">☕</span>
+            Good Morning, {(() => {
+              const rawName = currentUser?.name || '';
+              if (!rawName || rawName.toLowerCase().includes('shruth') || rawName.toLowerCase().includes('malathkar') || rawName === 'Staff Member' || rawName === 'Google Staff Member') {
+                return 'Kanchivaram Café Admin';
+              }
+              return rawName;
+            })()}! <span className="text-xl">☕</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#476655] font-semibold">
             Fresh brews. Smooth operations. You've got this!

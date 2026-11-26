@@ -296,7 +296,13 @@ export default function App() {
                   <div className="relative overflow-hidden bg-[#ebdcc8] text-[#122c20] rounded-2xl p-3.5 sm:p-4 shadow-sm border border-[#cabb9e] flex flex-col md:flex-row md:items-center justify-between gap-2 min-h-[56px]">
                     <div className="space-y-0.5 z-10">
                       <h2 className="text-lg sm:text-xl font-extrabold font-sans text-[#11291f] flex items-center gap-2">
-                        Good Morning, {authState.currentUser?.name || 'Kanchivaram Café Admin'}! <span className="text-base">☕</span>
+                        Good Morning, {(() => {
+                          const rawName = authState.currentUser?.name || '';
+                          if (!rawName || rawName.toLowerCase().includes('shruth') || rawName.toLowerCase().includes('malathkar') || rawName === 'Staff Member' || rawName === 'Google Staff Member') {
+                            return 'Kanchivaram Café Admin';
+                          }
+                          return rawName;
+                        })()}! <span className="text-base">☕</span>
                       </h2>
                       <p className="text-xs text-[#456351] font-bold">
                         Fresh brews. Smooth operations. You've got this!

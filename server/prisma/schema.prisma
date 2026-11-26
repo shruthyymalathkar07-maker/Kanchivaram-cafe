@@ -172,7 +172,7 @@ model Sale {
   paymentMethod   String           @default("CASH") // 'CASH', 'UPI', 'CARD'
   receiptType     String           @default("PAPER") // 'PAPER', 'DIGITAL'
   status          String           @default("COMPLETED")
-  cashierName     String           @default("Shruthy")
+  cashierName     String           @default("Cashier 1")
   orderNote       String?
   isCancelled     Boolean          @default(false)
   dateIso         String           // 'YYYY-MM-DD'
@@ -226,7 +226,7 @@ model Purchase {
   category        String           @default("Raw Ingredients")
   notes           String?
   totalAmount     Float            @default(0.0)
-  recordedBy      String           @default("Shruthy A")
+  recordedBy      String           @default("Kanchivaram Café Admin")
   dateIso         String
   createdAt       DateTime         @default(now())
 
@@ -258,7 +258,7 @@ model Expense {
   paymentMode     String           @default("Cash") // 'Cash', 'UPI', 'Bank'
   dateIso         String
   notes           String?
-  recordedBy      String           @default("Shruthy A")
+  recordedBy      String           @default("Kanchivaram Café Admin")
   createdAt       DateTime         @default(now())
 }
 
@@ -325,7 +325,7 @@ model DailyBalance {
   businessDate    String           // 'YYYY-MM-DD'
   openingBalance  Float            @default(0.0)
   notes           String?
-  recordedBy      String           @default("Shruthy A")
+  recordedBy      String           @default("Kanchivaram Café Admin")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 

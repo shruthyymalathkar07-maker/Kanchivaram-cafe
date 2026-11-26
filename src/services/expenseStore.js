@@ -191,7 +191,7 @@ class ExpenseStore {
         date: targetDate,
         openingBalance: numOpening,
         notes: cleanNotes,
-        recordedBy: 'Shruthy A'
+        recordedBy: 'Kanchivaram Café Admin'
       }, branchId);
 
       if (res && res.success) {
@@ -203,7 +203,7 @@ class ExpenseStore {
           openingBalance: numOpening,
           suggestedOpeningBalance: numOpening,
           notes: cleanNotes,
-          recordedBy: 'Shruthy A'
+          recordedBy: 'Kanchivaram Café Admin'
         };
         if (!this.branches[branchId]) this.branches[branchId] = { expenses: [], dailyBalances: {} };
         if (!this.branches[branchId].dailyBalances) this.branches[branchId].dailyBalances = {};
@@ -234,7 +234,7 @@ class ExpenseStore {
         paymentMode: cleanPaymentMode,
         date: dateIso,
         notes: notes ? notes.trim() : 'General operational expense',
-        recordedBy: 'Shruthy A'
+        recordedBy: 'Kanchivaram Café Admin'
       }, branchId);
 
       if (res && res.success && res.expense) {

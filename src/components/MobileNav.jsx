@@ -267,17 +267,34 @@ export default function MobileNav({
             {/* User & Logout Section */}
             <div className="pt-3 border-t border-white/10 space-y-2 shrink-0">
               <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-full text-white font-extrabold text-xs flex items-center justify-center ${
-                    isBrownBranch ? 'bg-[#542A16]' : 'bg-[#048450]'
-                  }`}>
-                    {currentUser?.avatar || 'KC'}
-                  </div>
-                  <div className="text-left leading-tight">
-                    <p className="text-xs font-bold text-white truncate">{currentUser?.name || 'Kanchivaram Café Admin'}</p>
-                    <p className="text-[9.5px] text-slate-300 font-medium">{currentUser?.role || 'Owner'}</p>
-                  </div>
-                </div>
+                {(() => {
+                  const isOwnerProfile = !currentUser ||
+                    !currentUser.name ||
+                    currentUser.name.toLowerCase().includes('shruth') ||
+                    currentUser.name.toLowerCase().includes('malathkar') ||
+                    currentUser.name === 'Staff Member' ||
+                    currentUser.name === 'Google Staff Member' ||
+                    currentUser.role?.toUpperCase() === 'CASHIER' ||
+                    currentUser.id === 'user-1';
+
+                  const safeName = isOwnerProfile ? 'Kanchivaram Café Admin' : currentUser.name;
+                  const safeRole = isOwnerProfile ? 'Owner & General Manager' : (currentUser.role || 'Owner');
+                  const safeAvatar = isOwnerProfile ? 'KC' : (currentUser.avatar || 'KC');
+
+                  return (
+                    <div className="flex items-center gap-2">
+                      <div className={`w-7 h-7 rounded-full text-white font-extrabold text-xs flex items-center justify-center ${
+                        isBrownBranch ? 'bg-[#542A16]' : 'bg-[#048450]'
+                      }`}>
+                        {safeAvatar}
+                      </div>
+                      <div className="text-left leading-tight">
+                        <p className="text-xs font-bold text-white truncate">{safeName}</p>
+                        <p className="text-[9.5px] text-slate-300 font-medium">{safeRole}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <button
                   onClick={() => {

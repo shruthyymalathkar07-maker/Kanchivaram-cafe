@@ -12,7 +12,7 @@ const SEARCH_DATABASE = [
 
   { id: 'o1', category: 'Orders & Bills', title: 'Order #1024 (Table 4)', detail: '₹450 • Paid via Cash • 10 mins ago', tab: 'pos' },
   { id: 'o2', category: 'Orders & Bills', title: 'Order #1025 (Takeaway)', detail: '₹1,200 • Paid via UPI', tab: 'pos' },
-  { id: 'o3', category: 'Orders & Bills', title: 'Bill #B-8891 (Shruthy A)', detail: '₹340 • Completed', tab: 'pos' },
+  { id: 'o3', category: 'Orders & Bills', title: 'Bill #B-8891 (Table 2)', detail: '₹340 • Completed', tab: 'pos' },
   { id: 'o4', category: 'Orders & Bills', title: 'Bill #B-8892 (Swiggy Delivery)', detail: '₹850 • Dispatched', tab: 'online-orders' },
 
   { id: 'i1', category: 'Inventory & Stock', title: 'Milk Packet 500ml', detail: 'Critical: 5 packets left', tab: 'inventory' },
@@ -20,7 +20,7 @@ const SEARCH_DATABASE = [
   { id: 'i3', category: 'Inventory & Stock', title: 'Fresh Cucumbers & Vegetables', detail: 'Critical: 15 bags left', tab: 'inventory' },
   { id: 'i4', category: 'Inventory & Stock', title: 'Cardamom & Spices Stock', detail: 'In Stock: 45 units', tab: 'inventory' },
 
-  { id: 'c1', category: 'Customers', title: 'Shruthy A (VIP)', detail: '+91 98765 43210 • 42 Orders', tab: 'customers' },
+  { id: 'c1', category: 'Customers', title: 'Sundar Raman (VIP)', detail: '+91 98765 43210 • 42 Orders', tab: 'customers' },
   { id: 'c2', category: 'Customers', title: 'Rajesh Kumar', detail: '+91 91234 56789 • 12 Orders', tab: 'customers' },
   { id: 'c3', category: 'Customers', title: 'Ananya Sharma', detail: '+91 99887 76655 • 8 Orders', tab: 'customers' },
 
@@ -160,23 +160,40 @@ export default function Header({ onNavigateTab, onOpenNotifications, searchQuery
         </button>
 
         {/* User Profile Badge */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:px-3 sm:py-1 bg-[#ebe5d8] border border-[#c4b6a2] rounded-full cursor-pointer hover:bg-[#dfd7c6] transition-all shadow-xs shrink-0">
-          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full text-white font-black text-[10px] sm:text-xs flex items-center justify-center shadow-xs border ${
-            selectedBranch?.id === 'branch-2' 
-              ? 'bg-[#3E2312] border-[#542A16] text-[#C69A4B]' 
-              : 'bg-[#0f3823] border-[#194c31] text-[#4ade80]'
-          }`}>
-            {currentUser?.avatar || 'KC'}
-          </div>
-          <div className="text-left leading-tight hidden sm:block">
-            <p className="font-extrabold text-[11px] text-[#122c20] tracking-tight truncate max-w-[120px]">
-              {currentUser?.name || 'Kanchivaram Café Admin'}
-            </p>
-            <p className="text-[9px] font-bold text-[#557361] truncate">
-              {currentUser?.role ? currentUser.role.split(' ')[0] : 'Owner'}
-            </p>
-          </div>
-        </div>
+        {(() => {
+          const isOwnerProfile = !currentUser ||
+            !currentUser.name ||
+            currentUser.name.toLowerCase().includes('shruth') ||
+            currentUser.name.toLowerCase().includes('malathkar') ||
+            currentUser.name === 'Staff Member' ||
+            currentUser.name === 'Google Staff Member' ||
+            currentUser.role?.toUpperCase() === 'CASHIER' ||
+            currentUser.id === 'user-1';
+
+          const safeName = isOwnerProfile ? 'Kanchivaram Café Admin' : currentUser.name;
+          const safeRole = isOwnerProfile ? 'Owner' : (currentUser.role ? currentUser.role.split(' ')[0] : 'Owner');
+          const safeAvatar = isOwnerProfile ? 'KC' : (currentUser.avatar || 'KC');
+
+          return (
+            <div className="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:px-3 sm:py-1 bg-[#ebe5d8] border border-[#c4b6a2] rounded-full cursor-pointer hover:bg-[#dfd7c6] transition-all shadow-xs shrink-0">
+              <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full text-white font-black text-[10px] sm:text-xs flex items-center justify-center shadow-xs border ${
+                selectedBranch?.id === 'branch-2' 
+                  ? 'bg-[#3E2312] border-[#542A16] text-[#C69A4B]' 
+                  : 'bg-[#0f3823] border-[#194c31] text-[#4ade80]'
+              }`}>
+                {safeAvatar}
+              </div>
+              <div className="text-left leading-tight hidden sm:block">
+                <p className="font-extrabold text-[11px] text-[#122c20] tracking-tight truncate max-w-[120px]">
+                  {safeName}
+                </p>
+                <p className="text-[9px] font-bold text-[#557361] truncate">
+                  {safeRole}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Log Out Button */}
         <button

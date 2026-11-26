@@ -236,7 +236,7 @@ export default function NetSalesModal({ isOpen, onClose }) {
         {/* Modal Footer */}
         <div className="px-6 py-3.5 bg-[#ebdcc8] border-t border-[#cabb9e] flex items-center justify-between">
           <p className="text-xs text-[#456351] font-bold">
-            Audit generated for <strong className="text-[#11291f]">Shruthy (Manager)</strong> on {new Date().toLocaleDateString('en-GB')}
+            Audit generated for <strong className="text-[#11291f]">Kanchivaram Café Admin</strong> on {new Date().toLocaleDateString('en-GB')}
           </p>
 
           <div className="flex items-center gap-2.5">

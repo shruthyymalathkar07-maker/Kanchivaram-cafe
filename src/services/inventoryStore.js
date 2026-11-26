@@ -682,7 +682,7 @@ class InventoryStore {
       paymentMethod: paymentMethod || 'CASH',
       receiptType: receiptType || 'PAPER',
       channel: channel || 'POS',
-      cashierName: cashierName || 'Shruthy',
+      cashierName: cashierName || 'Cashier 1',
       orderNote: orderNote || ''
     };
 

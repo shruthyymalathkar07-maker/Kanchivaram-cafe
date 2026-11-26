@@ -29,7 +29,7 @@ const DDL_STATEMENTS: string[] = [
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Recipe_productId_key\" ON \"public\".\"Recipe\"(\"productId\");",
   "ALTER TABLE \"public\".\"Recipe\" ADD COLUMN IF NOT EXISTS \"servingUom\" TEXT NOT NULL DEFAULT 'units';",
   "CREATE TABLE IF NOT EXISTS \"public\".\"RecipeItem\" (\n    \"id\" TEXT NOT NULL,\n    \"recipeId\" TEXT NOT NULL,\n    \"stepNumber\" INTEGER NOT NULL DEFAULT 1,\n    \"rawMaterialName\" TEXT NOT NULL,\n    \"inventoryItemId\" TEXT,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"uom\" TEXT NOT NULL,\n    \"process\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"RecipeItem_pkey\" PRIMARY KEY (\"id\")\n  );",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Sale\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"billNumber\" TEXT NOT NULL,\n    \"customerId\" TEXT,\n    \"customerName\" TEXT,\n    \"customerPhone\" TEXT,\n    \"channel\" TEXT NOT NULL DEFAULT 'POS',\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"discount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"tax\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"receiptType\" TEXT NOT NULL DEFAULT 'PAPER',\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETED',\n    \"cashierName\" TEXT NOT NULL DEFAULT 'Shruthy',\n    \"orderNote\" TEXT,\n    \"isCancelled\" BOOLEAN NOT NULL DEFAULT false,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Sale_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Sale\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"billNumber\" TEXT NOT NULL,\n    \"customerId\" TEXT,\n    \"customerName\" TEXT,\n    \"customerPhone\" TEXT,\n    \"channel\" TEXT NOT NULL DEFAULT 'POS',\n    \"subtotal\" DOUBLE PRECISION NOT NULL,\n    \"discount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"tax\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"grandTotal\" DOUBLE PRECISION NOT NULL,\n    \"paymentMethod\" TEXT NOT NULL DEFAULT 'CASH',\n    \"receiptType\" TEXT NOT NULL DEFAULT 'PAPER',\n    \"status\" TEXT NOT NULL DEFAULT 'COMPLETED',\n    \"cashierName\" TEXT NOT NULL DEFAULT 'Cashier 1',\n    \"orderNote\" TEXT,\n    \"isCancelled\" BOOLEAN NOT NULL DEFAULT false,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Sale_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Sale_billNumber_key\" ON \"public\".\"Sale\"(\"billNumber\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"SaleItem\" (\n    \"id\" TEXT NOT NULL,\n    \"saleId\" TEXT NOT NULL,\n    \"productId\" TEXT,\n    \"name\" TEXT NOT NULL,\n    \"quantity\" DOUBLE PRECISION NOT NULL,\n    \"price\" DOUBLE PRECISION NOT NULL,\n    \"total\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL DEFAULT 'units',\n    \"categoryName\" TEXT,\n    CONSTRAINT \"SaleItem_pkey\" PRIMARY KEY (\"id\")\n  );",
   "CREATE TABLE IF NOT EXISTS \"public\".\"StockLedger\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"itemId\" TEXT NOT NULL,\n    \"itemName\" TEXT NOT NULL,\n    \"type\" TEXT NOT NULL,\n    \"qty\" DOUBLE PRECISION NOT NULL,\n    \"unit\" TEXT NOT NULL,\n    \"supplier\" TEXT DEFAULT '-',\n    \"ref\" TEXT NOT NULL,\n    \"source\" TEXT NOT NULL DEFAULT 'POS / Sales',\n    \"notes\" TEXT,\n    \"remainingAfter\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"purchaseId\" TEXT,\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"StockLedger_pkey\" PRIMARY KEY (\"id\")\n  );",
@@ -44,13 +44,13 @@ const DDL_STATEMENTS: string[] = [
   "ALTER TABLE \"public\".\"Sale\" ADD COLUMN IF NOT EXISTS \"customerId\" TEXT;",
   "DROP INDEX IF EXISTS \"public\".\"Customer_phone_key\";",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"Customer_phone_branchId_key\" ON \"public\".\"Customer\"(\"phone\", \"branchId\");",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Purchase\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"invoiceRef\" TEXT NOT NULL,\n    \"supplier\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL DEFAULT 'Raw Ingredients',\n    \"notes\" TEXT,\n    \"totalAmount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Shruthy A',\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Purchase_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Purchase\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"invoiceRef\" TEXT NOT NULL,\n    \"supplier\" TEXT NOT NULL,\n    \"category\" TEXT NOT NULL DEFAULT 'Raw Ingredients',\n    \"notes\" TEXT,\n    \"totalAmount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Kanchivaram Café Admin',\n    \"dateIso\" TEXT NOT NULL,\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Purchase_pkey\" PRIMARY KEY (\"id\")\n  );",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"invoiceRef\" TEXT;",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"supplier\" TEXT;",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"category\" TEXT DEFAULT 'Raw Ingredients';",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"notes\" TEXT;",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"totalAmount\" DOUBLE PRECISION DEFAULT 0.0;",
-  "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT DEFAULT 'Shruthy A';",
+  "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT DEFAULT 'Kanchivaram Café Admin';",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"dateIso\" TEXT;",
   "ALTER TABLE \"public\".\"Purchase\" ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;",
   "ALTER TABLE \"public\".\"Purchase\" DROP COLUMN IF EXISTS \"poNumber\", DROP COLUMN IF EXISTS \"supplierName\", DROP COLUMN IF EXISTS \"supplierPhone\", DROP COLUMN IF EXISTS \"supplierGstin\", DROP COLUMN IF EXISTS \"supplierAddress\", DROP COLUMN IF EXISTS \"totalCost\", DROP COLUMN IF EXISTS \"paidAmount\", DROP COLUMN IF EXISTS \"paymentStatus\", DROP COLUMN IF EXISTS \"paymentMethod\", DROP COLUMN IF EXISTS \"deliveryStatus\", DROP COLUMN IF EXISTS \"receivedBy\";",
@@ -75,7 +75,7 @@ const DDL_STATEMENTS: string[] = [
   "ALTER TABLE \"public\".\"InventoryItem\" ADD COLUMN IF NOT EXISTS \"lastMovement\" TIMESTAMP(3);",
   "ALTER TABLE \"public\".\"InventoryItem\" ADD COLUMN IF NOT EXISTS \"costPerUnit\" DOUBLE PRECISION DEFAULT 0.0;",
   "ALTER TABLE \"public\".\"InventoryItem\" ADD COLUMN IF NOT EXISTS \"supplier\" TEXT;",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"Expense\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"description\" TEXT NOT NULL DEFAULT '',\n    \"category\" TEXT NOT NULL DEFAULT 'Other',\n    \"amount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"dateIso\" TEXT NOT NULL,\n    \"notes\" TEXT,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Shruthy A',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Expense_pkey\" PRIMARY KEY (\"id\")\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"Expense\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"description\" TEXT NOT NULL DEFAULT '',\n    \"category\" TEXT NOT NULL DEFAULT 'Other',\n    \"amount\" DOUBLE PRECISION NOT NULL DEFAULT 0.0,\n    \"dateIso\" TEXT NOT NULL,\n    \"notes\" TEXT,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Kanchivaram Café Admin',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Expense_pkey\" PRIMARY KEY (\"id\")\n  );",
   "ALTER TABLE \"public\".\"Branch\" ADD COLUMN IF NOT EXISTS \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"description\" TEXT NOT NULL DEFAULT '';",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"category\" TEXT NOT NULL DEFAULT 'Other';",
@@ -83,9 +83,9 @@ const DDL_STATEMENTS: string[] = [
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"dateIso\" TEXT;",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"notes\" TEXT;",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"paymentMode\" TEXT NOT NULL DEFAULT 'Cash';",
-  "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT DEFAULT 'Shruthy A';",
+  "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"recordedBy\" TEXT DEFAULT 'Kanchivaram Café Admin';",
   "ALTER TABLE \"public\".\"Expense\" ADD COLUMN IF NOT EXISTS \"createdAt\" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP;",
-  "CREATE TABLE IF NOT EXISTS \"public\".\"DailyBalance\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"branchId\" TEXT NOT NULL,\n    \"businessDate\" TEXT NOT NULL,\n    \"openingBalance\" DOUBLE PRECISION NOT NULL DEFAULT 0,\n    \"notes\" TEXT,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Shruthy A',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"DailyBalance_branchId_fkey\" FOREIGN KEY (\"branchId\") REFERENCES \"public\".\"Branch\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n  );",
+  "CREATE TABLE IF NOT EXISTS \"public\".\"DailyBalance\" (\n    \"id\" TEXT NOT NULL PRIMARY KEY,\n    \"branchId\" TEXT NOT NULL,\n    \"businessDate\" TEXT NOT NULL,\n    \"openingBalance\" DOUBLE PRECISION NOT NULL DEFAULT 0,\n    \"notes\" TEXT,\n    \"recordedBy\" TEXT NOT NULL DEFAULT 'Kanchivaram Café Admin',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    \"updatedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"DailyBalance_branchId_fkey\" FOREIGN KEY (\"branchId\") REFERENCES \"public\".\"Branch\"(\"id\") ON DELETE RESTRICT ON UPDATE CASCADE\n  );",
   "CREATE UNIQUE INDEX IF NOT EXISTS \"DailyBalance_branchId_businessDate_key\" ON \"public\".\"DailyBalance\"(\"branchId\", \"businessDate\");",
   "CREATE TABLE IF NOT EXISTS \"public\".\"Staff\" (\n    \"id\" TEXT NOT NULL,\n    \"branchId\" TEXT NOT NULL,\n    \"name\" TEXT NOT NULL,\n    \"role\" TEXT NOT NULL,\n    \"shift\" TEXT NOT NULL DEFAULT 'Morning',\n    \"shiftType\" TEXT NOT NULL DEFAULT 'Morning Shift (06:00 AM - 02:00 PM)',\n    \"startTime\" TEXT NOT NULL DEFAULT '06:00 AM',\n    \"endTime\" TEXT NOT NULL DEFAULT '02:00 PM',\n    \"phone\" TEXT NOT NULL,\n    \"status\" TEXT NOT NULL DEFAULT 'On Duty',\n    \"monthlyPay\" DOUBLE PRECISION NOT NULL DEFAULT 18000.0,\n    \"joinedDate\" TEXT NOT NULL DEFAULT 'Today',\n    \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    CONSTRAINT \"Staff_pkey\" PRIMARY KEY (\"id\")\n  );",
   "ALTER TABLE \"public\".\"Staff\" ADD COLUMN IF NOT EXISTS \"shiftType\" TEXT DEFAULT 'Morning Shift (06:00 AM - 02:00 PM)';",
@@ -482,6 +482,31 @@ export async function ensureDatabaseInitialized() {
 
     // 7. Seed Default Admin & Manager Auth Users with bcrypt hashes
     await seedDefaultUsers();
+
+    // 8. Sanitize any legacy User records in PostgreSQL so owner profile always reflects Kanchivaram Café Admin
+    try {
+      await prisma.user.updateMany({
+        where: {
+          OR: [
+            { id: 'user-1' },
+            { name: { contains: 'Shruth', mode: 'insensitive' } },
+            { name: { contains: 'Malathkar', mode: 'insensitive' } },
+            { email: { contains: 'shruthy', mode: 'insensitive' } },
+            { email: { contains: 'kanchivaramcafe3', mode: 'insensitive' } }
+          ]
+        },
+        data: {
+          name: 'Kanchivaram Café Admin',
+          role: 'Owner & General Manager',
+          email: 'kanchivaramcafe3@gmail.com',
+          phone: '+91 82484 26348',
+          avatar: 'KC'
+        }
+      });
+      console.log('✅ [DB Init] Sanitized legacy admin records to Kanchivaram Café Admin.');
+    } catch (migErr: any) {
+      console.warn('⚠️ [DB Init] User sanitization notice:', migErr.message);
+    }
 
     console.log('✅ [DB Init] Master database verification completed.');
   } catch (seedErr: any) {
