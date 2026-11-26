@@ -823,6 +823,108 @@ class InventoryStore {
     return completedTransaction;
   }
 
+  // DEDUCT RECIPE RAW MATERIALS FOR ONLINE ORDER (Zomato / Swiggy)
+  async deductRecipeForOnlineOrder(order, branchId = this.currentBranchId) {
+    if (!order) return { success: false, reason: 'No order provided' };
+    const orderRef = order.id || order.billNumber || 'ONLINE-ORDER';
+    const platform = (order.platform || 'ONLINE').toUpperCase();
+
+    // Prevent double deduction
+    const deductedCacheKey = `bom_deducted_${orderRef}`;
+    if (order._bomDeducted || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(deductedCacheKey))) {
+      console.log(`[InventoryStore] Order ${orderRef} BOM already deducted. Skipping.`);
+      return { success: true, alreadyDeducted: true, deductedCount: 0 };
+    }
+
+    // Extract raw items
+    let rawItems = [];
+    if (Array.isArray(order.itemsRaw) && order.itemsRaw.length > 0) {
+      rawItems = order.itemsRaw;
+    } else if (Array.isArray(order.items)) {
+      rawItems = order.items;
+    } else if (typeof order.items === 'string' && order.items.trim()) {
+      // Parse "2x Masala Chai, 1x Lemon Soda"
+      const parts = order.items.split(',');
+      parts.forEach(p => {
+        const match = p.trim().match(/^(\d+)x?\s*(.+)$/i);
+        if (match) {
+          rawItems.push({ quantity: parseInt(match[1], 10), name: match[2].trim() });
+        } else {
+          rawItems.push({ quantity: 1, name: p.trim() });
+        }
+      });
+    }
+
+    if (rawItems.length === 0) {
+      return { success: false, reason: 'No items found in order to deduct' };
+    }
+
+    const targetBranch = branchId || this.currentBranchId;
+    const deductions = [];
+
+    for (const it of rawItems) {
+      const productQty = parseFloat(it.quantity || it.qty || 1);
+      const prodName = (it.name || it.productName || '').trim();
+      const prodId = it.id || it.productId;
+
+      const matchedBOM = CLIENT_BOM_MASTER.find(b => 
+        (prodId && b.productId === prodId) || 
+        (prodName && b.productName.toLowerCase() === prodName.toLowerCase())
+      ) || this.customRecipes?.[prodId] || this.customRecipes?.[prodName.toLowerCase()] || (it.recipe ? {
+        productId: prodId,
+        productName: prodName,
+        status: 'COMPLETE',
+        processes: (it.recipe.ingredients || []).map(ing => ({
+          rawMaterialId: ing.rawMaterialId,
+          rawMaterialName: ing.rawMaterialName,
+          qty: parseFloat(ing.quantity || ing.qty || 0),
+          uom: ing.uom || ing.unit || 'units',
+          process: ing.process || 'Add'
+        }))
+      } : null);
+
+      if (matchedBOM && matchedBOM.status === 'COMPLETE' && matchedBOM.processes && matchedBOM.processes.length > 0) {
+        for (const proc of matchedBOM.processes) {
+          const rawQtyToDeduct = (parseFloat(proc.qty) || 0) * productQty;
+          if (rawQtyToDeduct > 0) {
+            try {
+              await this.recordStockOut({
+                itemId: proc.rawMaterialId,
+                itemName: proc.rawMaterialName,
+                qty: rawQtyToDeduct,
+                unit: proc.uom,
+                source: `${platform} / Recipe BOM`,
+                ref: orderRef,
+                notes: `Online Order BOM: ${productQty} x ${prodName} (${proc.process || 'Kitchen Prep'})`
+              }, targetBranch);
+              deductions.push({
+                productName: prodName,
+                rawMaterial: proc.rawMaterialName,
+                qty: rawQtyToDeduct,
+                unit: proc.uom
+              });
+            } catch (err) {
+              console.warn('[InventoryStore] Stock-out error for', proc.rawMaterialName, err);
+            }
+          }
+        }
+      }
+    }
+
+    order._bomDeducted = true;
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem(deductedCacheKey, 'true');
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      deductions,
+      deductedCount: deductions.length
+    };
+  }
+
   loadCustomRecipes() {
     try {
       if (typeof window !== 'undefined') {

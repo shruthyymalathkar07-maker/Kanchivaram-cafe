@@ -188,4 +188,121 @@ export class PrintService {
       };
     }
   }
+
+  /**
+   * Generates formatted Kitchen Order Ticket (KOT) for thermal printers (80mm / 58mm)
+   * Designed specifically for online Swiggy, Zomato & counter kitchen dispatch
+   */
+  static printKOT(order, branchInfo = null) {
+    console.log('[PrintService] Formatting KOT thermal print job for Order:', order.id || order.billNumber);
+    const branchName = branchInfo?.name || (order.branchId === 'branch-2' ? 'City Branch - Anna Salai' : 'Main Branch - Gandhi Road');
+    const orderDate = new Date(order.createdAt || Date.now());
+    const dateFormatted = orderDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeFormatted = orderDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const platform = (order.platform || 'ONLINE').toUpperCase();
+
+    // Items list formatting
+    let itemsHtml = '';
+    if (Array.isArray(order.itemsRaw) && order.itemsRaw.length > 0) {
+      itemsHtml = order.itemsRaw.map(it => `
+        <tr>
+          <td class="bolder" style="font-size: 14px; width: 22%; text-align: left; padding: 4px 0;">${it.quantity || it.qty || 1}x</td>
+          <td class="bold" style="font-size: 13px; text-align: left; padding: 4px 0;">${it.name || it.productName}</td>
+        </tr>
+      `).join('');
+    } else {
+      const itemStrings = typeof order.items === 'string' ? order.items.split(',') : [String(order.items || 'Online Order Dishes')];
+      itemsHtml = itemStrings.map(str => `
+        <tr>
+          <td class="bold" style="font-size: 13px; text-align: left; padding: 4px 0;">[ ] ${str.trim()}</td>
+        </tr>
+      `).join('');
+    }
+
+    const kotHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>KOT - ${order.id || order.billNumber}</title>
+        <meta charset="utf-8" />
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            width: 76mm;
+            padding: 10px 6px;
+            margin: 0 auto;
+            color: #000;
+            font-size: 13px;
+            line-height: 1.35;
+            background: #fff;
+          }
+          .text-center { text-align: center; }
+          .bold { font-weight: 700; }
+          .bolder { font-weight: 900; }
+          .divider { border-top: 2px dashed #000; margin: 8px 0; }
+          .double-divider { border-top: 3px solid #000; margin: 8px 0; }
+          .flex { display: flex; justify-content: space-between; align-items: center; }
+          .channel-badge {
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 900;
+            padding: 4px 10px;
+            border: 2px solid #000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 4px 0;
+          }
+          table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+          td { padding: 4px 0; vertical-align: top; }
+        </style>
+      </head>
+      <body>
+        <div class="text-center">
+          <div class="bold" style="font-size: 16px; letter-spacing: 1px;">KITCHEN ORDER TICKET</div>
+          <div style="font-size: 11px; margin-top: 2px;">${branchName}</div>
+          <div class="channel-badge">${platform} ORDER</div>
+        </div>
+
+        <div class="double-divider"></div>
+
+        <div>
+          <div class="flex"><span>Order ID:</span> <span class="bolder" style="font-size: 14px;">${order.id || order.billNumber}</span></div>
+          <div class="flex"><span>Time:</span> <span>${timeFormatted} (${dateFormatted})</span></div>
+          <div class="flex"><span>Customer:</span> <span class="bold">${order.customer || 'Online Customer'}</span></div>
+          ${order.address ? `<div style="font-size: 11px; margin-top: 3px;"><span>Delivery:</span> ${order.address}</div>` : ''}
+        </div>
+
+        <div class="divider"></div>
+        <div class="bold" style="font-size: 12px; text-transform: uppercase;">PREPARE ITEMS:</div>
+
+        <table>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+
+        <div class="double-divider"></div>
+
+        <div class="text-center bold" style="font-size: 11px; margin-top: 6px;">
+          --- Ready for Dispatch / Packaging ---
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(kotHtml);
+      printWindow.document.close();
+    }
+  }
 }

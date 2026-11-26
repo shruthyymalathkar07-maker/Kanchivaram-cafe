@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Bike, 
@@ -15,15 +15,24 @@ import {
   X,
   MapPin,
   Phone,
-  User
+  User,
+  Printer,
+  Bell
 } from 'lucide-react';
-import { fetchSales, socket } from '../services/api';
+import { fetchSales, updateSaleStatus, socket } from '../services/api';
+import { PrintService } from '../services/printService';
+import { inventoryStore } from '../services/inventoryStore';
+import { playOnlineOrderChime, playOrderAcceptedTone } from '../utils/audioChime';
 
 export default function OnlineOrdersView({ selectedBranch }) {
   const isBrownBranch = selectedBranch?.id === 'branch-2';
 
   // Orders State (Default empty array [] -> Populated from PostgreSQL)
   const [orders, setOrders] = useState([]);
+
+  // Track known order IDs to detect newly arriving orders for audio chime
+  const knownOrderIdsRef = useRef(new Set());
+  const isInitializedRef = useRef(false);
 
   // Load online orders from PostgreSQL backend
   useEffect(() => {
@@ -35,17 +44,59 @@ export default function OnlineOrdersView({ selectedBranch }) {
         if (isMounted && Array.isArray(salesData)) {
           const mapped = salesData
             .filter(s => s.channel && !['POS', 'IN_STORE', 'In-Store POS'].includes(s.channel))
-            .map(s => ({
-              id: s.billNumber || s.id,
-              platform: (s.channel || 'ONLINE').toUpperCase(),
-              customer: s.customerName || 'Online Customer',
-              phone: s.customerPhone || 'Phone unavailable',
-              address: s.orderNote || 'Delivery Address',
-              items: (s.items || []).map(i => `${i.quantity || 1}x ${i.name || i.productName}`).join(', ') || 'Online Order Items',
-              total: s.grandTotal || 0,
-              status: s.status || 'DONE',
-              createdAt: s.createdAt
-            }));
+            .map(s => {
+              let rawItems = [];
+              if (Array.isArray(s.items)) {
+                rawItems = s.items;
+              } else if (typeof s.items === 'string' && s.items.trim()) {
+                try {
+                  const parsed = JSON.parse(s.items);
+                  if (Array.isArray(parsed)) rawItems = parsed;
+                } catch (e) {
+                  const parts = s.items.split(',');
+                  parts.forEach(p => {
+                    const match = p.trim().match(/^(\d+)x?\s*(.+)$/i);
+                    if (match) {
+                      rawItems.push({ quantity: parseInt(match[1], 10), name: match[2].trim() });
+                    } else if (p.trim()) {
+                      rawItems.push({ quantity: 1, name: p.trim() });
+                    }
+                  });
+                }
+              }
+
+              const formattedItemsText = rawItems.length > 0
+                ? rawItems.map(i => `${i.quantity || i.qty || 1}x ${i.name || i.productName}`).join(', ')
+                : (typeof s.items === 'string' ? s.items : 'Online Order Items');
+
+              return {
+                id: s.billNumber || s.id,
+                billNumber: s.billNumber || s.id,
+                platform: (s.channel || 'ONLINE').toUpperCase(),
+                customer: s.customerName || 'Online Customer',
+                phone: s.customerPhone || 'Phone unavailable',
+                address: s.orderNote || 'Delivery Address',
+                items: formattedItemsText,
+                itemsRaw: rawItems,
+                total: s.grandTotal || 0,
+                status: (s.status || 'NEW').toUpperCase(),
+                createdAt: s.createdAt,
+                saleRaw: s
+              };
+            });
+
+          // Detect new incoming orders and trigger audio chime
+          const hasNewOrderArrival = mapped.some(o => 
+            o.status === 'NEW' && !knownOrderIdsRef.current.has(o.id)
+          );
+
+          if (isInitializedRef.current && hasNewOrderArrival) {
+            console.log('[OnlineOrdersView] New online order arrived! Playing chime.');
+            playOnlineOrderChime();
+          }
+
+          mapped.forEach(o => knownOrderIdsRef.current.add(o.id));
+          isInitializedRef.current = true;
           setOrders(mapped);
         }
       } catch (err) {
@@ -56,10 +107,17 @@ export default function OnlineOrdersView({ selectedBranch }) {
     loadOnlineOrders();
 
     if (socket) {
-      socket.on('sale_created', loadOnlineOrders);
+      socket.on('sale_created', (newSale) => {
+        if (newSale && newSale.channel && !['POS', 'IN_STORE'].includes(newSale.channel)) {
+          playOnlineOrderChime();
+        }
+        loadOnlineOrders();
+      });
+      socket.on('sale_status_updated', loadOnlineOrders);
       return () => {
         isMounted = false;
         socket.off('sale_created', loadOnlineOrders);
+        socket.off('sale_status_updated', loadOnlineOrders);
       };
     }
 
@@ -116,11 +174,57 @@ export default function OnlineOrdersView({ selectedBranch }) {
     return true;
   });
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    if (activeOrderDetail && activeOrderDetail.id === orderId) {
-      setActiveOrderDetail(prev => prev ? { ...prev, status: newStatus } : null);
+  const updateOrderStatus = async (orderId, newStatus) => {
+    const order = orders.find(o => o.id === orderId);
+
+    // If order was NEW and transitioning to PREPARING, automatically deduct recipe BOM
+    if (order && order.status === 'NEW' && ['PREPARING', 'PREP', 'DISPATCHED', 'DONE'].includes(newStatus.toUpperCase())) {
+      try {
+        await inventoryStore.deductRecipeForOnlineOrder(order, selectedBranch?.id);
+      } catch (err) {
+        console.warn('[OnlineOrdersView] Auto recipe deduction notice:', err);
+      }
     }
+
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus.toUpperCase() } : o));
+    if (activeOrderDetail && activeOrderDetail.id === orderId) {
+      setActiveOrderDetail(prev => prev ? { ...prev, status: newStatus.toUpperCase() } : null);
+    }
+
+    // Persist status change to backend
+    try {
+      await updateSaleStatus(orderId, newStatus, selectedBranch?.id);
+    } catch (err) {
+      console.warn('[OnlineOrdersView] Status update notice:', err);
+    }
+  };
+
+  // Handle Accept & Print KOT
+  const handleAcceptAndPrintKOT = async (order) => {
+    if (!order) return;
+
+    // 1. Play pleasant confirmation audio tone
+    playOrderAcceptedTone();
+
+    // 2. Open ESC/POS Kitchen Order Ticket dialog
+    PrintService.printKOT(order, selectedBranch);
+
+    // 3. Deduct raw materials from inventory for this order's dishes
+    try {
+      const deductionResult = await inventoryStore.deductRecipeForOnlineOrder(order, selectedBranch?.id);
+      console.log('[OnlineOrdersView] Recipe deduction result for Order', order.id, deductionResult);
+    } catch (err) {
+      console.warn('[OnlineOrdersView] Error deducting recipe ingredients:', err);
+    }
+
+    // 4. Update status to PREPARING
+    updateOrderStatus(order.id, 'PREPARING');
+  };
+
+  // Standalone Print KOT action
+  const handlePrintKOTOnly = (order) => {
+    if (!order) return;
+    PrintService.printKOT(order, selectedBranch);
   };
 
   return (
@@ -148,16 +252,25 @@ export default function OnlineOrdersView({ selectedBranch }) {
           </div>
         </div>
 
-        {/* Right Side: Decorative Illustration */}
-        {orders.length > 0 && (
-          <div className="flex items-center gap-2 z-10 text-right shrink-0">
+        {/* Right Side: Bell Chime Test Button & Decorative Illustration */}
+        <div className="flex items-center gap-2.5 z-10 text-right shrink-0">
+          <button
+            onClick={() => playOnlineOrderChime()}
+            title="Test incoming order sound chime"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-[#fdfbf7] hover:bg-white text-[#0f3823] border border-[#cabb9e] shadow-xs transition-all cursor-pointer"
+          >
+            <Bell className="w-3.5 h-3.5 text-[#0f3823]" />
+            <span className="hidden sm:inline">Test Bell</span>
+          </button>
+
+          {orders.length > 0 && (
             <img
               src="/online_orders_empty_illustration.png"
               alt="Online Orders Delivery Illustration"
-              className="h-16 sm:h-20 max-h-20 w-auto object-contain drop-shadow-xs"
+              className="h-14 sm:h-18 max-h-18 w-auto object-contain drop-shadow-xs"
             />
-          </div>
-        )}
+          )}
+        </div>
 
       </div>
 
@@ -348,7 +461,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
               No online orders yet!
             </h3>
             <p className="text-xs sm:text-sm font-bold text-[#547363] max-w-md mx-auto leading-relaxed">
-              Orders from Zomato, Swiggy, Dunzo and other channels will appear here automatically once integrated.
+              Orders from Zomato and Swiggy will appear here automatically with audible kitchen chime and one-click KOT thermal printing.
             </p>
           </div>
 
@@ -371,6 +484,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
                 const isZomato = order.platform?.toUpperCase() === 'ZOMATO';
                 const isSwiggy = order.platform?.toUpperCase() === 'SWIGGY';
                 const badgeBg = isZomato ? 'bg-[#cb202d]' : isSwiggy ? 'bg-[#fc8019]' : 'bg-[#0f3823]';
+                const isNewOrder = order.status?.toUpperCase() === 'NEW' || !order.status;
 
                 return (
                   <div
@@ -411,45 +525,86 @@ export default function OnlineOrdersView({ selectedBranch }) {
                       </p>
                     </div>
 
-                    {/* Amount & Time */}
+                    {/* Amount & Status Label */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[11px] font-bold text-[#547363]">Grand Total</span>
-                      <span className="font-black text-base font-mono text-black">
-                        ₹{Number(order.total || 0).toFixed(2)}
+                      <div>
+                        <span className="text-[10px] font-bold text-[#547363] uppercase">Grand Total</span>
+                        <p className="font-black text-base font-mono text-black leading-none mt-0.5">
+                          ₹{Number(order.total || 0).toFixed(2)}
+                        </p>
+                      </div>
+                      <span className={`px-2.5 py-1 text-xs font-black rounded-lg ${
+                        isNewOrder 
+                          ? 'bg-red-100 text-red-700 border border-red-200' 
+                          : ['PREP', 'PREPARING'].includes(order.status)
+                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                            : ['DISPATCH', 'DISPATCHED'].includes(order.status)
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      }`}>
+                        {order.status || 'NEW'}
                       </span>
                     </div>
 
-                    {/* Status Actions Row */}
+                    {/* Primary Accept & Print KOT button when order is NEW */}
+                    {isNewOrder && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAcceptAndPrintKOT(order);
+                        }}
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
+                          isBrownBranch
+                            ? 'bg-[#542A16] hover:bg-[#3E2312] text-white border border-[#7A4325]'
+                            : 'bg-[#0f3823] hover:bg-[#194c31] text-white border border-[#194c31]'
+                        }`}
+                      >
+                        <Printer className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Accept & Print KOT</span>
+                      </button>
+                    )}
+
+                    {/* Status Actions Row with standalone Print KOT Icon */}
                     <div 
                       onClick={(e) => e.stopPropagation()} 
-                      className="bg-[#ebdcc8]/50 p-1 rounded-xl border border-[#cabb9e] grid grid-cols-4 gap-1 text-center"
+                      className="flex items-center gap-1.5"
                     >
-                      {[
-                        { id: 'NEW', label: 'New' },
-                        { id: 'PREPARING', label: 'Prep' },
-                        { id: 'DISPATCHED', label: 'Dispatch' },
-                        { id: 'DONE', label: 'Done' }
-                      ].map(st => {
-                        const currentSt = order.status?.toUpperCase();
-                        const isMatch = (st.id === 'PREPARING' && ['PREP', 'PREPARING'].includes(currentSt)) ||
-                                        (st.id === 'DISPATCHED' && ['DISPATCH', 'DISPATCHED'].includes(currentSt)) ||
-                                        (st.id === 'DONE' && ['DONE', 'DELIVERED', 'COMPLETED'].includes(currentSt)) ||
-                                        (currentSt === st.id);
+                      <div className="flex-1 bg-[#ebdcc8]/50 p-1 rounded-xl border border-[#cabb9e] grid grid-cols-4 gap-1 text-center">
+                        {[
+                          { id: 'NEW', label: 'New' },
+                          { id: 'PREPARING', label: 'Prep' },
+                          { id: 'DISPATCHED', label: 'Dispatch' },
+                          { id: 'DONE', label: 'Done' }
+                        ].map(st => {
+                          const currentSt = order.status?.toUpperCase();
+                          const isMatch = (st.id === 'PREPARING' && ['PREP', 'PREPARING'].includes(currentSt)) ||
+                                          (st.id === 'DISPATCHED' && ['DISPATCH', 'DISPATCHED'].includes(currentSt)) ||
+                                          (st.id === 'DONE' && ['DONE', 'DELIVERED', 'COMPLETED'].includes(currentSt)) ||
+                                          (currentSt === st.id);
 
-                        return (
-                          <button
-                            key={st.id}
-                            onClick={() => updateOrderStatus(order.id, st.id)}
-                            className={`py-1 rounded-lg text-[10px] font-black transition-all ${
-                              isMatch
-                                ? 'bg-[#0f3823] text-white shadow-xs'
-                                : 'text-[#547363] hover:text-[#11291f]'
-                            }`}
-                          >
-                            {st.label}
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={st.id}
+                              onClick={() => updateOrderStatus(order.id, st.id)}
+                              className={`py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                isMatch
+                                  ? (isBrownBranch ? 'bg-[#542A16]' : 'bg-[#0f3823]') + ' text-white shadow-xs'
+                                  : 'text-[#547363] hover:text-[#11291f]'
+                              }`}
+                            >
+                              {st.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => handlePrintKOTOnly(order)}
+                        title="Print Kitchen Order Ticket (KOT)"
+                        className="p-2 bg-[#ebdcc8]/50 hover:bg-[#ebdcc8] text-[#0f3823] rounded-xl border border-[#cabb9e] transition-colors cursor-pointer shrink-0"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
                   </div>
@@ -480,7 +635,7 @@ export default function OnlineOrdersView({ selectedBranch }) {
               </div>
               <button
                 onClick={() => setActiveOrderDetail(null)}
-                className="p-1 text-[#547363] hover:text-[#11291f] rounded-lg hover:bg-[#ebdcc8]/50"
+                className="p-1 text-[#547363] hover:text-[#11291f] rounded-lg hover:bg-[#ebdcc8]/50 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -534,13 +689,39 @@ export default function OnlineOrdersView({ selectedBranch }) {
             </div>
 
             {/* Modal Actions */}
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex items-center justify-between gap-2">
               <button
-                onClick={() => setActiveOrderDetail(null)}
-                className="px-5 py-2 bg-[#0f3823] text-white text-xs font-black rounded-xl shadow-xs border border-[#194c31]"
+                onClick={() => handlePrintKOTOnly(activeOrderDetail)}
+                className="px-4 py-2 bg-[#ebdcc8] hover:bg-[#dfceb9] text-[#11291f] text-xs font-black rounded-xl border border-[#cabb9e] flex items-center gap-1.5 cursor-pointer"
               >
-                Close Order Details
+                <Printer className="w-3.5 h-3.5 text-[#0f3823]" />
+                <span>Print KOT</span>
               </button>
+
+              <div className="flex items-center gap-2">
+                {activeOrderDetail.status?.toUpperCase() === 'NEW' && (
+                  <button
+                    onClick={() => {
+                      handleAcceptAndPrintKOT(activeOrderDetail);
+                      setActiveOrderDetail(prev => prev ? { ...prev, status: 'PREPARING' } : null);
+                    }}
+                    className={`px-5 py-2 text-white text-xs font-black rounded-xl shadow-xs border flex items-center gap-1.5 cursor-pointer ${
+                      isBrownBranch
+                        ? 'bg-[#542A16] hover:bg-[#3E2312] border-[#7A4325]'
+                        : 'bg-[#0f3823] hover:bg-[#194c31] border-[#194c31]'
+                    }`}
+                  >
+                    <Printer className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Accept & Print KOT</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveOrderDetail(null)}
+                  className="px-4 py-2 bg-white text-[#547363] hover:text-[#11291f] text-xs font-bold rounded-xl border border-[#cabb9e] cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
           </div>

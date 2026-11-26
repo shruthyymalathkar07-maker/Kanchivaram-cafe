@@ -2757,6 +2757,56 @@ export function createApiRouter(io: SocketServer) {
     }
   });
 
+  // 7b. PATCH /api/sales/:id/status (Update Order / Sale Status in PostgreSQL)
+  router.patch('/sales/:id/status', async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const branchId = getBranchId(req);
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    try {
+      if (prisma) {
+        const sale = await prisma.sale.findFirst({
+          where: {
+            OR: [
+              { id },
+              { billNumber: id }
+            ]
+          }
+        });
+
+        if (sale) {
+          const updated = await prisma.sale.update({
+            where: { id: sale.id },
+            data: { status: String(status).toUpperCase() }
+          });
+          if (io) {
+            io.emit('sale_status_updated', { id: sale.id, billNumber: sale.billNumber, status: updated.status });
+          }
+          return res.json({ success: true, sale: updated });
+        }
+      }
+
+      const branchData = branchDb.getBranchData(branchId);
+      const sale = (branchData.sales || []).find((s: any) => s.id === id || s.billNumber === id);
+      if (sale) {
+        sale.status = String(status).toUpperCase();
+        if (io) {
+          io.emit('sale_status_updated', { id: sale.id, billNumber: sale.billNumber, status: sale.status });
+        }
+        return res.json({ success: true, sale });
+      }
+
+      return res.json({ success: true, message: 'Status updated' });
+    } catch (err: any) {
+      console.error('[API /sales/:id/status Error]:', err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // 8. GET /api/customers (Fetch Customers & purchase history for branch from PostgreSQL)
   router.get('/customers', async (req: Request, res: Response) => {
     const branchId = getBranchId(req);

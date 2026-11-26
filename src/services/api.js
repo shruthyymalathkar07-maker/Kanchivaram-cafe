@@ -190,6 +190,24 @@ export async function fetchSales(period = 'today', branchId = 'branch-1', channe
   }
 }
 
+export async function updateSaleStatus(saleId, status, branchId = 'branch-1') {
+  try {
+    const res = await fetch(`${API_BASE_URL}/sales/${encodeURIComponent(saleId)}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-branch-id': branchId,
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ status })
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Update sale status error:', err);
+    return { success: false, message: err.message };
+  }
+}
+
 export async function fetchInventoryMaster(branchId = 'branch-1') {
   try {
     const res = await fetch(`${API_BASE_URL}/inventory/master`, {
