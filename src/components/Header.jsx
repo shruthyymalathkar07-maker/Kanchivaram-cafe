@@ -157,14 +157,14 @@ export default function Header({ onNavigateTab, onOpenNotifications, searchQuery
           <span className="absolute top-0.5 right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-600 rounded-full ring-2 ring-[#f8f6f0]"></span>
         </button>
 
-        {/* Phone Icon Button */}
-        <button 
-          onClick={() => alert('Kanchivaram Café Support Hotline: +91 98765 43210 (Backend helpline integration pending)')}
-          className="p-1.5 sm:p-2 bg-[#ebe5d8] hover:bg-[#dfd7c6] rounded-full border border-[#c4b6a2] text-[#11291f] transition-all cursor-pointer shadow-xs shrink-0 active:scale-95"
-          title="Support / Calls (+91 98765 43210)"
+        {/* Phone Icon Button - Connect to Café Manager */}
+        <a 
+          href="tel:+918248426348"
+          className="p-1.5 sm:p-2 bg-[#ebe5d8] hover:bg-[#dfd7c6] rounded-full border border-[#c4b6a2] text-[#11291f] transition-all cursor-pointer shadow-xs shrink-0 active:scale-95 flex items-center justify-center"
+          title="Call Café Manager (+91 82484 26348)"
         >
           <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#11291f] stroke-[2.2]" />
-        </button>
+        </a>
 
         {/* User Profile Badge */}
         {(() => {
