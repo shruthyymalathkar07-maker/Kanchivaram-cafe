@@ -16,8 +16,7 @@ import {
   MapPin,
   Phone,
   User,
-  Printer,
-  Bell
+  Printer
 } from 'lucide-react';
 import { fetchSales, updateSaleStatus, socket } from '../services/api';
 import { PrintService } from '../services/printService';
@@ -252,25 +251,16 @@ export default function OnlineOrdersView({ selectedBranch }) {
           </div>
         </div>
 
-        {/* Right Side: Bell Chime Test Button & Decorative Illustration */}
-        <div className="flex items-center gap-2.5 z-10 text-right shrink-0">
-          <button
-            onClick={() => playOnlineOrderChime()}
-            title="Test incoming order sound chime"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-[#fdfbf7] hover:bg-white text-[#0f3823] border border-[#cabb9e] shadow-xs transition-all cursor-pointer"
-          >
-            <Bell className="w-3.5 h-3.5 text-[#0f3823]" />
-            <span className="hidden sm:inline">Test Bell</span>
-          </button>
-
-          {orders.length > 0 && (
+        {/* Right Side: Decorative Illustration */}
+        {orders.length > 0 && (
+          <div className="flex items-center gap-2.5 z-10 text-right shrink-0">
             <img
               src="/online_orders_empty_illustration.png"
               alt="Online Orders Delivery Illustration"
               className="h-14 sm:h-18 max-h-18 w-auto object-contain drop-shadow-xs"
             />
-          )}
-        </div>
+          </div>
+        )}
 
       </div>
 
