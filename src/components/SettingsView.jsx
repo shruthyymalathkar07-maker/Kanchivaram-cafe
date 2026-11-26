@@ -182,11 +182,11 @@ export default function SettingsView({ selectedBranch }) {
       </div>
 
       {/* Settings Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#cabb9e] pb-2 overflow-x-auto no-scrollbar w-full">
+      <div className="flex items-center gap-2 border-b border-[#cabb9e] pb-2 overflow-x-auto no-scrollbar w-full py-1">
         <button
           type="button"
           onClick={() => setActiveTab('store')}
-          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal ${
             activeTab === 'store'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
@@ -199,7 +199,7 @@ export default function SettingsView({ selectedBranch }) {
         <button
           type="button"
           onClick={() => setActiveTab('tax')}
-          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal ${
             activeTab === 'tax'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
@@ -212,7 +212,7 @@ export default function SettingsView({ selectedBranch }) {
         <button
           type="button"
           onClick={() => setActiveTab('printer')}
-          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal ${
             activeTab === 'printer'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
@@ -225,7 +225,7 @@ export default function SettingsView({ selectedBranch }) {
         <button
           type="button"
           onClick={() => setActiveTab('integrations')}
-          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal flex-1 sm:flex-initial ${
+          className={`inline-flex items-center justify-center gap-2 h-10 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 leading-normal ${
             activeTab === 'integrations'
               ? `${isBrownBranch ? 'bg-[#3E2312]' : 'bg-[#0f3823]'} text-white shadow-xs`
               : 'bg-[#ebe0cb] text-[#456351] hover:bg-[#ded2bb]'
