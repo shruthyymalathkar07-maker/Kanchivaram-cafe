@@ -475,6 +475,53 @@ export default function KVCMAssistantView({ selectedBranch }) {
   const [isTyping, setIsTyping] = useState(false);
   const chatScrollContainerRef = useRef(null);
 
+  // Mouse Drag-to-Scroll & Wheel handlers for Quick Questions bar
+  const questionsScrollRef = useRef(null);
+  const isDraggingQuestionsRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const handleQuestionsMouseDown = (e) => {
+    if (!questionsScrollRef.current) return;
+    isDraggingQuestionsRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - questionsScrollRef.current.offsetLeft;
+    scrollLeftRef.current = questionsScrollRef.current.scrollLeft;
+  };
+
+  const handleQuestionsMouseMove = (e) => {
+    if (!isDraggingQuestionsRef.current || !questionsScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - questionsScrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.5;
+    if (Math.abs(x - startXRef.current) > 5) {
+      hasDraggedRef.current = true;
+    }
+    questionsScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleQuestionsMouseUpOrLeave = () => {
+    isDraggingQuestionsRef.current = false;
+  };
+
+  const handleQuestionsWheel = (e) => {
+    if (!questionsScrollRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      questionsScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleSafeQuestionClick = (label) => (e) => {
+    if (hasDraggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    handleSend(label);
+  };
+
   // Sync selected branch to stores & update active branch welcome message
   useEffect(() => {
     if (selectedBranch?.id) {
@@ -626,14 +673,22 @@ export default function KVCMAssistantView({ selectedBranch }) {
 
       {/* ── Quick Questions ──────────────────────────────────────────────── */}
       <div className="px-3 sm:px-4 py-2 border-b border-[#e8d8c2] bg-[#fdfbf7] shrink-0">
-        <p className="text-[9.5px] font-mono font-bold text-[#547363] uppercase tracking-wider mb-1.5">Quick Questions</p>
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <p className="text-[9.5px] font-mono font-bold text-[#547363] uppercase tracking-wider mb-1.5 select-none">Quick Questions</p>
+        <div 
+          ref={questionsScrollRef}
+          onMouseDown={handleQuestionsMouseDown}
+          onMouseMove={handleQuestionsMouseMove}
+          onMouseUp={handleQuestionsMouseUpOrLeave}
+          onMouseLeave={handleQuestionsMouseUpOrLeave}
+          onWheel={handleQuestionsWheel}
+          className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden no-scrollbar pb-0.5 select-none cursor-grab active:cursor-grabbing touch-pan-x"
+        >
           {QUICK_QUESTIONS.map((q) => {
             const Icon = q.icon;
             return (
               <button
                 key={q.label}
-                onClick={() => handleSend(q.label)}
+                onClick={handleSafeQuestionClick(q.label)}
                 disabled={isTyping}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${pillIdle}`}
               >
