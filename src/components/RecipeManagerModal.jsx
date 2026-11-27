@@ -14,7 +14,8 @@ import {
   Layers, 
   Filter,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { 
   ALL_RECIPE_CATEGORIES, 
@@ -36,6 +37,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
   const [selectedCatId, setSelectedCatId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, COMPLETE, REVIEW
+  const [mobileTab, setMobileTab] = useState('list'); // 'list' | 'editor' (mobile only)
 
   // Master recipe list from BOM + custom recipes in store
   const [activeRecipeKey, setActiveRecipeKey] = useState(null);
@@ -293,7 +295,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
         {/* ================================================================= */}
         {/* 2. CATEGORY TABS (ALL CATEGORIES FULLY VISIBLE & UNCLUTTERED)      */}
         {/* ================================================================= */}
-        <div className="bg-[#f5efe6] border-b border-[#ded3c4] p-3 px-4 sm:px-6 shrink-0">
+        <div className={`bg-[#f5efe6] border-b border-[#ded3c4] p-3 px-4 sm:px-6 shrink-0 ${mobileTab === 'editor' ? 'hidden md:block' : 'block'}`}>
           <div className="flex flex-wrap items-center gap-1.5">
             {ALL_RECIPE_CATEGORIES.map(cat => {
               const isActive = selectedCatId === cat.id;
@@ -327,7 +329,7 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           
           {/* LEFT COLUMN: Dish Selector List (35% width on desktop) */}
-          <div className="w-full md:w-80 lg:w-96 border-r border-[#ded3c4] flex flex-col bg-[#fdfbf7] shrink-0 h-48 md:h-auto overflow-hidden">
+          <div className={`w-full md:w-80 lg:w-96 border-r border-[#ded3c4] flex flex-col bg-[#fdfbf7] shrink-0 md:h-auto overflow-hidden ${mobileTab === 'editor' ? 'hidden md:flex' : 'flex-1 md:flex h-full'}`}>
             
             {/* Search Input & Status Filters */}
             <div className="p-3 border-b border-[#ded3c4] bg-[#f8f3ea] space-y-2 shrink-0">
@@ -388,7 +390,10 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                   return (
                     <button
                       key={item.id}
-                      onClick={() => loadRecipeForEdit(item)}
+                      onClick={() => {
+                        loadRecipeForEdit(item);
+                        setMobileTab('editor');
+                      }}
                       className={`w-full p-2.5 text-left rounded-xl transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
                         isSelected 
                           ? isBrownBranch 
@@ -436,25 +441,40 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
           </div>
 
           {/* RIGHT COLUMN: Recipe Formula Editor */}
-          <div className="flex-1 flex flex-col bg-white min-h-0 overflow-hidden">
+          <div className={`flex-1 flex flex-col bg-white min-h-0 overflow-hidden ${mobileTab === 'list' ? 'hidden md:flex' : 'flex'}`}>
             {selectedRecipe ? (
               <div className="flex-1 flex flex-col min-h-0">
                 
+                {/* Mobile Back Button — ONLY visible on mobile */}
+                <div className="md:hidden px-3.5 py-2.5 bg-[#f5efe6] border-b border-[#ded3c4] flex items-center justify-between shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('list')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-[#122c20] text-xs font-black border border-[#ded3c4] shadow-xs cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-[#122c20]" />
+                    <span>Back to Dishes List</span>
+                  </button>
+                  <span className="text-[11px] font-bold text-[#5a7a67]">
+                    Editing Recipe
+                  </span>
+                </div>
+
                 {/* Dish Header Card */}
-                <div className="p-4 sm:px-6 bg-[#fbf8f3] border-b border-[#ded3c4] flex items-center justify-between gap-4 shrink-0">
+                <div className="p-3 sm:p-4 sm:px-6 bg-[#fbf8f3] border-b border-[#ded3c4] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shrink-0">
                   <div className="flex items-center gap-3 min-w-0">
                     <img 
                       src={selectedRecipe.image} 
                       alt={selectedRecipe.name} 
                       onError={(e) => { e.target.src = '/branch_main.jpg'; }}
-                      className="w-12 h-12 rounded-xl object-cover border border-[#ded3c4] shadow-xs" 
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-[#ded3c4] shadow-xs shrink-0" 
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm sm:text-base font-black text-[#122c20] font-serif truncate">
                           {selectedRecipe.name}
                         </h3>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                           selectedRecipe.isComplete 
                             ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
                             : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -462,30 +482,32 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                           {selectedRecipe.isComplete ? '🟢 Active Recipe' : '🟡 Review Quantities'}
                         </span>
                       </div>
-                      <p className="text-xs text-[#5a7a67] mt-0.5">
+                      <p className="text-[11px] sm:text-xs text-[#5a7a67] mt-0.5">
                         Category: <strong className="text-[#122c20]">{selectedRecipe.category}</strong> • Price: <strong className="text-[#122c20]">₹{selectedRecipe.price}</strong>
                       </p>
                     </div>
                   </div>
 
                   {/* Serving Yield Input */}
-                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#ded3c4] shrink-0 text-xs shadow-xs">
-                    <span className="text-[#5a7a67] font-semibold">Yield / Serving:</span>
-                    <input
-                      type="number"
-                      value={editServingQty}
-                      onChange={(e) => setEditServingQty(e.target.value)}
-                      className="w-12 text-center font-bold text-[#122c20] bg-stone-50 rounded border border-[#ded3c4] py-0.5"
-                    />
-                    <select
-                      value={editServingUom}
-                      onChange={(e) => setEditServingUom(e.target.value)}
-                      className="bg-stone-50 font-bold text-[#122c20] rounded border border-[#ded3c4] py-0.5 px-1"
-                    >
-                      {STANDARD_UOMS.map(u => (
-                        <option key={u} value={u}>{u}</option>
-                      ))}
-                    </select>
+                  <div className="flex items-center justify-between sm:justify-start gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#ded3c4] shrink-0 text-xs shadow-xs w-full sm:w-auto">
+                    <span className="text-[#5a7a67] font-semibold whitespace-nowrap">Yield / Serving:</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        value={editServingQty}
+                        onChange={(e) => setEditServingQty(e.target.value)}
+                        className="w-14 text-center font-bold text-[#122c20] bg-stone-50 rounded border border-[#ded3c4] py-1"
+                      />
+                      <select
+                        value={editServingUom}
+                        onChange={(e) => setEditServingUom(e.target.value)}
+                        className="bg-stone-50 font-bold text-[#122c20] rounded border border-[#ded3c4] py-1 px-1.5"
+                      >
+                        {STANDARD_UOMS.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -635,43 +657,43 @@ export default function RecipeManagerModal({ isOpen, onClose, selectedBranch }) 
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="p-3.5 px-6 bg-[#f5efe6] border-t border-[#ded3c4] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-                  <div className="flex items-center gap-2">
+                <div className="p-3 sm:p-3.5 sm:px-6 bg-[#f5efe6] border-t border-[#ded3c4] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-start gap-2">
                     <button
                       type="button"
                       onClick={() => setIsConfirmDeleteOpen(true)}
                       className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
                       title="Discontinue dish and delete from Recipe Manager and POS Billing"
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Delete Dish & Recipe</span>
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span>Delete Dish</span>
                     </button>
                     <p className="text-[11px] text-[#5a7a67] hidden md:block">
                       Formulas sync instantly across branches.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => loadRecipeForEdit(selectedRecipe)}
-                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-200 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-stone-600 bg-white sm:bg-transparent hover:bg-stone-200 border sm:border-0 border-[#ded3c4] transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Reset Changes</span>
+                      <span>Reset</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={handleSaveRecipe}
-                      className={`px-6 py-2.5 rounded-xl text-xs font-black text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
+                      className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
                         isBrownBranch 
                           ? 'bg-[#3E2312] hover:bg-[#542A16] border border-[#704225]' 
                           : 'bg-[#122c20] hover:bg-[#1a3d2d] border border-[#23553e]'
                       }`}
                     >
                       <Save className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="whitespace-nowrap">Save & Activate Recipe</span>
+                      <span className="whitespace-nowrap">Save Recipe</span>
                     </button>
                   </div>
                 </div>

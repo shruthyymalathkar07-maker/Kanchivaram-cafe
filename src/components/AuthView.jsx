@@ -335,7 +335,7 @@ export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialSt
   };
 
   return (
-    <div className={`min-h-full sm:min-h-screen w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-2.5 sm:pb-4 lg:pb-6 pt-safe pb-safe transition-opacity duration-380 ease-out ${
+    <div className={`min-h-screen min-h-[100dvh] w-full overflow-y-auto lg:overflow-hidden bg-[#F8F0E3] flex flex-col justify-between relative select-none font-sans selection:bg-[#0D3B2E] selection:text-white px-3 sm:px-4 lg:px-6 pt-3 min-[380px]:pt-4 sm:pt-4 lg:pt-6 pb-6 sm:pb-4 lg:pb-6 pt-safe pb-safe transition-opacity duration-380 ease-out ${
       isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
     }`}>
       
@@ -1107,7 +1107,7 @@ export default function AuthView({ onAuthSuccess, onBranchSelectStart, initialSt
       {/* ========================================================================= */}
       {/* 4. BOTTOM BRANDING FOOTER (STRICTLY CENTERED & CLEARLY VISIBLE)           */}
       {/* ========================================================================= */}
-      <div className="w-full text-center z-30 pointer-events-none pb-2 pt-1 shrink-0 flex items-center justify-center">
+      <div className="w-full text-center z-30 pointer-events-none pb-6 sm:pb-2 pt-1 shrink-0 flex items-center justify-center">
         <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-mono tracking-[0.25em] font-bold text-[#4A2C1A] uppercase bg-[#F8F0E3]/95 px-5 py-1.5 rounded-full border border-[#E8DCC8]/80 shadow-xs">
           <span>GOOD FOOD HAPPIER PEOPLE</span>
           <span className="text-red-700 text-xs sm:text-sm">♥</span>

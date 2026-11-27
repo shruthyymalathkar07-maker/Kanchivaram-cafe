@@ -4,7 +4,9 @@
 
 @layer base {
   html, body, #root {
-    background-color: #f8f6f0;
+    background-color: #F8F0E3;
+    min-height: 100%;
+    min-height: 100dvh;
     color: #0f172a;
   }
 }
